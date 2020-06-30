@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<link rel="stylesheet" type="text/css" href="../css/styles.css">
+		<script type="module" src="../js/customElements/ScrollDiv.js"></script>
+		<script type="module" src="../js/customElements/ResizeDiv.js"></script>
+		<script type="module" src="./MandelbrotCanvasElement.js"></script>
+		<script src="./script.js"></script>
+		<title>Mandelbrot Renderer test</title>
+	</head>
+	<body class="flex-column">
+        <div class="toolbar-top">
+			<span class="h3-white">peabrainiac.github.io/<span class="orange" style="font-size:1.05em">MandelbrotJS</span></span>
+        </div>
+        <div class="flex-row" style="min-height: 0">
+            <resize-div class="sidebar-left" resize-x="1" resize-y="0" style="width:300px;background:#202020">
+                <scroll-div style="height:100%">
+                    <div style="padding:20px">
+                        <span class="h3">Mandelbrot Renderer Test</span>
+                        <br><br>
+						A mandelbrot set renderer written in Javascript.
+						<br><br>
+						Not particularly fast at the moment, I'm just experimenting with a few different rendering methods here.
+                    </div>
+                </scroll-div>
+			</resize-div>
+			<div class="panel">
+				<resize-div class="centered project" resize-x="2" resize-y="2" style="z-index:0;width:960px;height:720px">
+					<mandelbrot-canvas-element></mandelbrot-canvas-element>
+				</resize-div>
+			</div>
+        </div>
+	</body>
+</html>
