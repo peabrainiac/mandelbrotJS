@@ -10,7 +10,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
 			<style>
-				host {
+				:host {
 					display: block;
 					position: relative;
 				}
@@ -19,24 +19,34 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 					width: 100%;
 					height: 100%;
 				}
+				#canvas-2 {
+					display: none;
+				}
 			</style>
-			<canvas></canvas>
+			<canvas id="canvas-1"></canvas>
+			<canvas id="canvas-2"></canvas>
 		`;
-		this._canvas = this.shadowRoot.querySelector("canvas");
-		this._ctx = this._canvas.getContext("2d");
+		this._canvas1 = this.shadowRoot.getElementById("canvas-1");
+		this._canvas2 = this.shadowRoot.getElementById("canvas-2");
+		this._ctx1 = this._canvas1.getContext("2d");
+		this._ctx2 = this._canvas2.getContext("2d");
 		this._lastScreenRefresh = Date.now();
 		this.render();
 	}
 
 	async render() {
 		let start = Date.now();
-		this._canvas.width = this._width;
-		this._canvas.height = this._height;
+		this._canvas1.width = this._width;
+		this._canvas1.height = this._height;
+		this._canvas2.width = this._width;
+		this._canvas2.height = this._height;
 		this._pixels = new Uint32Array(this._width*this._height);
+		this._imageData = new ImageData(new Uint8ClampedArray(this._pixels.buffer),this._width);
 		await this._renderPart(64);
 		await this._renderPart(16);
 		await this._renderPart(4);
 		await this._renderPart(1);
+		this._refreshCanvas();
 		console.log(`Finished in ${Math.floor((Date.now()-start)*10)/10}ms!`);
 	}
 
@@ -70,8 +80,10 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	_renderPixel(x,y,pixelSize){
 		if (x+pixelSize>0&&y+pixelSize>0&&x<this._width&&y<this._height){
 			let color = this.getPixelColor(Math.floor(x+pixelSize/2),Math.floor(y+pixelSize/2));
-			this._ctx.fillStyle = "#"+(((color>>>16)&0xff)+(((color>>>8)&0xff)<<8)+((color&0xff)<<16)).toString(16).padStart(6,0);
-			this._ctx.fillRect(x,y,pixelSize,pixelSize);
+			if (pixelSize>1){
+				this._ctx1.fillStyle = "#"+(((color>>>16)&0xff)+(((color>>>8)&0xff)<<8)+((color&0xff)<<16)).toString(16).padStart(6,0);
+				this._ctx1.fillRect(x,y,pixelSize,pixelSize);
+			}
 		}
 	}
 
@@ -92,7 +104,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 				zy = 2*zx*zy+cy;
 				zx = temp;
 			}
-			//for (let i2=0;i2<3000000;i2++){}
+			//for (let i2=0;i2<100000;i2++){}
 			let color = (i==iterations?0:Math.floor(255.999*i/iterations)+(Math.floor(175.999*i/iterations)<<8))+0xff000000;
 			this._pixels[index] = color;
 			return color;
@@ -101,11 +113,17 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	async _waitForScreenRefresh(){
 		if (Date.now()-this._lastScreenRefresh>100){
+			this._refreshCanvas();
 			await new Promise((resolve)=>{
 				requestAnimationFrame(resolve);
 			});
 			this._lastScreenRefresh = Date.now();
 		}
+	}
+
+	_refreshCanvas(){
+		this._ctx2.putImageData(this._imageData,0,0);
+		this._ctx1.drawImage(this._canvas2,0,0,this._width,this._height);
 	}
 }
 customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);
