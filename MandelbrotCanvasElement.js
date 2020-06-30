@@ -32,11 +32,12 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		let start = Date.now();
 		this._canvas.width = this._width;
 		this._canvas.height = this._height;
+		this._pixels = new Uint32Array(this._width*this._height);
 		await this._renderPart(64);
 		await this._renderPart(16);
 		await this._renderPart(4);
 		await this._renderPart(1);
-		console.log(`Finished in ${Math.floor((Date.now()-start)*10)/10}ms!`)
+		console.log(`Finished in ${Math.floor((Date.now()-start)*10)/10}ms!`);
 	}
 
 	async _renderPart(pixelSize){
@@ -69,27 +70,32 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	_renderPixel(x,y,pixelSize){
 		if (x+pixelSize>0&&y+pixelSize>0&&x<this._width&&y<this._height){
 			let color = this.getPixelColor(Math.floor(x+pixelSize/2),Math.floor(y+pixelSize/2));
-			this._ctx.fillStyle = "#"+color.toString(16).padStart(6,0);
+			this._ctx.fillStyle = "#"+(((color>>>16)&0xff)+(((color>>>8)&0xff)<<8)+((color&0xff)<<16)).toString(16).padStart(6,0);
 			this._ctx.fillRect(x,y,pixelSize,pixelSize);
 		}
 	}
 
 	getPixelColor(x,y){
-		let cx = this._x+(x-this._width/2)/this._zoom;
-		let cy = this._y+(y-this._height/2)/this._zoom;
-		let zx = cx;
-		let zy = cy;
-		let i;
-		let iterations = this._iterations;
-		for (i=0;i<iterations&&zx*zx+zy*zy<4;i++){
-			let temp = zx*zx-zy*zy+cx;
-			zy = 2*zx*zy+cy;
-			zx = temp;
-		}
-		if (i==iterations){
-			return 0;
+		let index = x+y*this._width;
+		let cachedColor = this._pixels[index];
+		if (cachedColor!=0){
+			return cachedColor;
 		}else{
-			return (Math.floor(255.999*i/iterations)<<16)+(Math.floor(175.999*i/iterations)<<8);
+			let cx = this._x+(x-this._width/2)/this._zoom;
+			let cy = this._y+(y-this._height/2)/this._zoom;
+			let zx = cx;
+			let zy = cy;
+			let i;
+			let iterations = this._iterations;
+			for (i=0;i<iterations&&zx*zx+zy*zy<4;i++){
+				let temp = zx*zx-zy*zy+cx;
+				zy = 2*zx*zy+cy;
+				zx = temp;
+			}
+			//for (let i2=0;i2<3000000;i2++){}
+			let color = (i==iterations?0:Math.floor(255.999*i/iterations)+(Math.floor(175.999*i/iterations)<<8))+0xff000000;
+			this._pixels[index] = color;
+			return color;
 		}
 	}
 
