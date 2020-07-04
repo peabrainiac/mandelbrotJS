@@ -13,6 +13,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 				:host {
 					display: block;
 					position: relative;
+					cursor: crosshair;
 				}
 				canvas {
 					position: absolute;
@@ -128,6 +129,38 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	get canvas(){
 		return this._canvas2;
+	}
+
+	set x(x){
+		this._x = x;
+	}
+
+	get x(){
+		return this._x;
+	}
+
+	set y(y){
+		this._y = y;
+	}
+
+	get y(){
+		return this._y;
+	}
+
+	set zoom(zoom){
+		this._zoom = zoom;
+	}
+
+	get zoom(){
+		return this._zoom;
+	}
+
+	mouseXToFractalX(x){
+		return this._x+(x/this.offsetWidth-0.5)*this._width/this._zoom;
+	}
+
+	mouseYToFractalY(y){
+		return this._y+(y/this.offsetHeight-0.5)*this._height/this._zoom;
 	}
 }
 customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);
