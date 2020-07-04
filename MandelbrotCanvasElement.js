@@ -6,7 +6,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._x = -0.75;
 		this._y = 0;
 		this._zoom = 200;
-		this._iterations = 200;
+		this._iterations = 2000;
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
 			<style>
