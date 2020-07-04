@@ -125,5 +125,9 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._ctx2.putImageData(this._imageData,0,0);
 		this._ctx1.drawImage(this._canvas2,0,0,this._width,this._height);
 	}
+
+	get canvas(){
+		return this._canvas2;
+	}
 }
 customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);

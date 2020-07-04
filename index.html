@@ -6,7 +6,7 @@
 		<script type="module" src="../js/customElements/ScrollDiv.js"></script>
 		<script type="module" src="../js/customElements/ResizeDiv.js"></script>
 		<script type="module" src="./MandelbrotCanvasElement.js"></script>
-		<script src="./script.js"></script>
+		<script type="module" src="./script.js"></script>
 		<title>Mandelbrot Renderer test</title>
 	</head>
 	<body class="flex-column">
@@ -26,7 +26,7 @@
                 </scroll-div>
 			</resize-div>
 			<div class="panel">
-				<resize-div class="centered project" resize-x="2" resize-y="2" style="z-index:0;width:960px;height:720px">
+				<resize-div id="container" class="centered project" resize-x="2" resize-y="2" style="z-index:0;width:960px;height:720px">
 					<mandelbrot-canvas-element style="width:100%;height:100%"></mandelbrot-canvas-element>
 				</resize-div>
 			</div>
