@@ -41,7 +41,9 @@ export default class ZoomPreviewElement extends HTMLElement {
 		let height = this._targetCanvas.height/zoom;
 		this._previewCanvas.width = width;
 		this._previewCanvas.height = height;
-		this._previewCtx.putImageData(this._targetCtx.getImageData(Math.round(x-width/2),Math.round(y-height/2),width,height),0,0);
+		let pixelOffsetX = Math.round(x*this._targetCanvas.width/this.parentElement.offsetWidth-width/2);
+		let pixelOffsetY = Math.round(y*this._targetCanvas.height/this.parentElement.offsetHeight-height/2);
+		this._previewCtx.putImageData(this._targetCtx.getImageData(pixelOffsetX,pixelOffsetY,width,height),0,0);
 	}
 
 	show(){
