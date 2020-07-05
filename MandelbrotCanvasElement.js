@@ -162,5 +162,35 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	mouseYToFractalY(y){
 		return this._y+(y/this.offsetHeight-0.5)*this._height/this._zoom;
 	}
+
+	set width(width){
+		this.setAttribute("width",width);
+	}
+
+	get width(){
+		return this._width;
+	}
+
+	set height(height){
+		this.setAttribute("height",height);
+	}
+
+	get height(){
+		return this._height;
+	}
+
+	static get observedAttributes(){
+		return ["width","height"];
+	}
+
+	attributeChangedCallback(name,oldValue,newValue){
+		if (name==="width"){
+			this._width = newValue*1;
+			this.render();
+		}else if (name=="height"){
+			this._height = newValue*1;
+			this.render();
+		}
+	}
 }
 customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);

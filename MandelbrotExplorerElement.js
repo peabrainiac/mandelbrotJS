@@ -74,6 +74,42 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		innerContainer.addEventListener("mouseleave",(e)=>{
 			zoomPreviewElement.hide();
 		});
+		this._width = 960;
+		this._height = 720;
+		this._outerContainer = outerContainer;
+		this._fractalCanvas = fractalCanvas;
+	}
+
+	set width(width){
+		this.setAttribute("width",width);
+	}
+
+	get width(){
+		return this._width;
+	}
+
+	set height(height){
+		this.setAttribute("height",height);
+	}
+
+	get height(){
+		return this._height;
+	}
+
+	static get observedAttributes(){
+		return ["width","height"];
+	}
+
+	attributeChangedCallback(name,oldValue,newValue){
+		if (name==="width"){
+			this._width = newValue*1;
+			this._outerContainer.ratio = this._width/this._height;
+			this._fractalCanvas.width = this.width;
+		}else if (name=="height"){
+			this._height = newValue*1;
+			this._outerContainer.ratio = this._width/this._height;
+			this._fractalCanvas.height = this.height;
+		}
 	}
 }
 customElements.define("mandelbrot-explorer-element",MandelbrotExplorerElement);
