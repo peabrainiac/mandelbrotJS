@@ -1,3 +1,5 @@
+import MandelMaths from "./MandelMaths.js";
+
 export const STATE_PENDING_RENDER = 1;
 export const STATE_RENDERING = 2;
 export const STATE_PENDING_CANCEL = 3;
@@ -144,17 +146,9 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		}else{
 			let cx = this._x+(x-this._width/2)/this._zoom;
 			let cy = this._y+(y-this._height/2)/this._zoom;
-			let zx = cx;
-			let zy = cy;
-			let i;
-			let iterations = this._iterations;
-			for (i=0;i<iterations&&zx*zx+zy*zy<4;i++){
-				let temp = zx*zx-zy*zy+cx;
-				zy = 2*zx*zy+cy;
-				zx = temp;
-			}
-			//for (let i2=0;i2<100000;i2++){}
-			let color = (i==iterations?0:Math.floor(255.999*i/iterations)+(Math.floor(175.999*i/iterations)<<8))+0xff000000;
+			let maxIterations = this._iterations;
+			let i = MandelMaths.iterate(cx,cy,{maxIterations});
+			let color = (i==maxIterations?0:Math.floor(255.999*i/maxIterations)+(Math.floor(175.999*i/maxIterations)<<8))+0xff000000;
 			this._pixels[index] = color;
 			return color;
 		}
