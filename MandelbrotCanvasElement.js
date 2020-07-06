@@ -1,3 +1,8 @@
+export const STATE_PENDING_RENDER = 1;
+export const STATE_RENDERING = 2;
+export const STATE_PENDING_CANCEL = 3;
+export const STATE_CANCELLED = 4;
+export const STATE_FINISHED = 5;
 export default class MandelbrotCanvasElement extends HTMLElement {
 	constructor(){
 		super();
@@ -35,7 +40,44 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this.render();
 	}
 
+	/**
+	 * Starts rendering the fractal after a short timeout and completes once the rendering process is finished or cancelled.
+	 * 
+	 * Will cancel the previous rendering process if it is still and already running, but just wait for it to complete if it has already been scheduled but not started yet.
+	 */
 	async render() {
+		if (this._state===STATE_PENDING_RENDER){
+			await this._finishRenderCallPromise;
+		}else{
+			if (this._state===STATE_RENDERING||this._state===STATE_PENDING_CANCEL){
+				this._state = STATE_PENDING_CANCEL;
+				await this._finishRenderCallPromise;
+				await this.render();
+			}else{
+				this._state = STATE_PENDING_RENDER;
+				let promise = this._finishRenderCallPromise = new Promise(async(resolve)=>{
+					console.log("Queued Rendering!");
+					let renderQueueTimeoutID = setTimeout(async()=>{
+						await this._render();
+						resolve();
+					},0);
+					this._cancelQueuedRendering = ()=>{
+						clearTimeout(renderQueueTimeoutID);
+						this._state = STATE_CANCELLED;
+						resolve();
+					};
+				});
+				await promise;
+			}
+		}
+	}
+
+	/**
+	 * The actual rendering method. Immediately starts rendering regardless of current state.
+	 */
+	async _render(){
+		this._state = STATE_RENDERING;
+		console.log("Started Rendering!");
 		let start = Date.now();
 		this._canvas1.width = this._width;
 		this._canvas1.height = this._height;
@@ -48,13 +90,19 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		await this._renderPart(4);
 		await this._renderPart(1);
 		this._refreshCanvas();
-		console.log(`Finished in ${Math.floor((Date.now()-start)*10)/10}ms!`);
+		if (this._state===STATE_PENDING_CANCEL){
+			this._state = STATE_CANCELLED;
+			console.log("Cancelled Rendering!");
+		}else{
+			this._state = STATE_FINISHED;
+			console.log(`Finished Rendering in ${Math.floor((Date.now()-start)*10)/10}ms!`);
+		}
 	}
 
 	async _renderPart(pixelSize){
 		let x = (Math.round(this._width*0.5/pixelSize)-1)*pixelSize;
 		let y = Math.round(this._height*0.5/pixelSize)*pixelSize;
-		for (let i=0,r=Math.ceil(Math.max(this._width,this._height)*0.5/pixelSize);i<r*2;i+=2){
+		for (let i=0,r=Math.ceil(Math.max(this._width,this._height)*0.5/pixelSize);i<r*2&this._state===STATE_RENDERING;i+=2){
 			for (let i2=0;i2<i;i2++){
 				this._renderPixel(x,y,pixelSize);
 				x -= pixelSize;
@@ -131,8 +179,13 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		return this._canvas2;
 	}
 
+	get state(){
+		return this._state;
+	}
+
 	set x(x){
 		this._x = x;
+		this.render();
 	}
 
 	get x(){
@@ -141,6 +194,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	set y(y){
 		this._y = y;
+		this.render();
 	}
 
 	get y(){
@@ -149,6 +203,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	set zoom(zoom){
 		this._zoom = zoom;
+		this.render();
 	}
 
 	get zoom(){

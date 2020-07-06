@@ -47,7 +47,6 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		});
 		innerContainer.addEventListener("mousemove",(e)=>{
 			if (!zoomPreviewElement.hidden){
-				console.log("Move!",e);
 				zoomPreviewElement.setPosition(e.layerX,e.layerY);
 			}
 		});
@@ -58,14 +57,12 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 					fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
 					fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
 					fractalCanvas.zoom *= 8;
-					fractalCanvas.render();
 				}
 			}
 			if (e.button===2){
 				fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
 				fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
 				fractalCanvas.zoom /= 8;
-				fractalCanvas.render();
 			}
 		});
 		innerContainer.addEventListener("contextmenu",(e)=>{
