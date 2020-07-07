@@ -4,6 +4,7 @@
 		<meta charset="UTF-8">
 		<link rel="stylesheet" type="text/css" href="../css/styles.css">
 		<script type="module" src="../js/customElements/SidebarElement.js"></script>
+		<script type="module" src="./SidebarSection.js"></script>
 		<script type="module" src="./MandelbrotExplorerElement.js"></script>
 		<title>Mandelbrot Renderer test</title>
 	</head>
@@ -15,9 +16,20 @@
 			<sidebar-element>
 				<span class="h3">Mandelbrot Renderer Test</span>
 				<br><br>
-				A mandelbrot set renderer written in Javascript.
-				<br><br>
-				Not particularly fast at the moment, I'm just experimenting with a few different rendering methods here.
+				<sidebar-section section-title="About">
+					A mandelbrot set renderer written in Javascript.
+					<br><br>
+					Not particularly fast at the moment, I'm just experimenting with a few different rendering methods here.
+				</sidebar-section>
+				<sidebar-section section-title="General">
+					General settings will go here
+				</sidebar-section>
+				<sidebar-section section-title="Tools">
+					extra tools will go here
+				</sidebar-section>
+				<sidebar-section section-title="idk">
+					just another section example
+				</sidebar-section>
 			</sidebar-element>
 			<div class="panel">
 				<mandelbrot-explorer-element style="width:100%;height:100%" width="1980" height="1080"></mandelbrot-explorer-element>
