@@ -3,8 +3,7 @@
 	<head>
 		<meta charset="UTF-8">
 		<link rel="stylesheet" type="text/css" href="../css/styles.css">
-		<script type="module" src="../js/customElements/ScrollDiv.js"></script>
-		<script type="module" src="../js/customElements/ResizeDiv.js"></script>
+		<script type="module" src="../js/customElements/SidebarElement.js"></script>
 		<script type="module" src="./MandelbrotExplorerElement.js"></script>
 		<title>Mandelbrot Renderer test</title>
 	</head>
@@ -13,17 +12,13 @@
 			<span class="h3-white">peabrainiac.github.io/<span class="orange" style="font-size:1.05em">MandelbrotJS</span></span>
         </div>
         <div class="flex-row" style="min-height: 0">
-            <resize-div class="sidebar-left" resize-x="1" resize-y="0" style="width:300px;background:#202020">
-                <scroll-div style="height:100%">
-                    <div style="padding:20px">
-                        <span class="h3">Mandelbrot Renderer Test</span>
-                        <br><br>
-						A mandelbrot set renderer written in Javascript.
-						<br><br>
-						Not particularly fast at the moment, I'm just experimenting with a few different rendering methods here.
-                    </div>
-                </scroll-div>
-			</resize-div>
+			<sidebar-element>
+				<span class="h3">Mandelbrot Renderer Test</span>
+				<br><br>
+				A mandelbrot set renderer written in Javascript.
+				<br><br>
+				Not particularly fast at the moment, I'm just experimenting with a few different rendering methods here.
+			</sidebar-element>
 			<div class="panel">
 				<mandelbrot-explorer-element style="width:100%;height:100%" width="1980" height="1080"></mandelbrot-explorer-element>
 			</div>
