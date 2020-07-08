@@ -34,7 +34,9 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 			<canvas id="canvas-1"></canvas>
 			<canvas id="canvas-2"></canvas>
 		`;
+		/** @type {HTMLCanvasElement} */
 		this._canvas1 = this.shadowRoot.getElementById("canvas-1");
+		/** @type {HTMLCanvasElement} */
 		this._canvas2 = this.shadowRoot.getElementById("canvas-2");
 		this._ctx1 = this._canvas1.getContext("2d");
 		this._ctx2 = this._canvas2.getContext("2d");

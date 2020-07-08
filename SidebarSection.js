@@ -31,13 +31,11 @@ export default class SidebarSection extends HTMLElement {
 					margin-left: 2px;
 				}
 				#body {
-					transition: height 0.5s ease, margin-bottom 0.5s ease;
+					transition: height 0.5s ease;
 					overflow: hidden;
-					margin-bottom: 15px;
 				}
 				:host(.collapsed) #body {
 					height: 0;
-					margin-bottom: 0;
 				}
 				:host(.collapsed) #header > svg {
 					transform: none;
@@ -51,6 +49,7 @@ export default class SidebarSection extends HTMLElement {
 			</div>
 			<div id="body">
 				<slot></slot>
+				<br><br>
 			</div>
 		`;
 		this.classList.add("collapsed");

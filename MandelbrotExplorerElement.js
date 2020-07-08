@@ -59,7 +59,7 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 					fractalCanvas.zoom *= 8;
 				}
 			}
-			if (e.button===2){
+			if (e.button===2&&!e.shiftKey){
 				fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
 				fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
 				fractalCanvas.zoom /= 8;
@@ -75,6 +75,16 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		this._height = 720;
 		this._outerContainer = outerContainer;
 		this._fractalCanvas = fractalCanvas;
+	}
+
+	/**
+	 * Returns a blob with the current contents of the canvas.
+	 * @returns {Promise<Blob>}
+	 */
+	async toBlob(){
+		return new Promise((resolve)=>{
+			this._fractalCanvas.canvas.toBlob(resolve);
+		});
 	}
 
 	set width(width){
