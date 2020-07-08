@@ -12,6 +12,7 @@ export default class SidebarSection extends HTMLElement {
 					font-size: 1.2em;
 					color: #ffaf00;
 					cursor: default;
+					transition: text-shadow 0.1s ease;
 				}
 				#header > svg {
 					fill: currentcolor;
@@ -19,12 +20,23 @@ export default class SidebarSection extends HTMLElement {
 					transform: rotate(90deg);
 					transition: transform 0.5s ease;
 				}
+				#header:hover {
+					text-shadow: 0 0 2px #ffaf00;
+				}
+				#title {
+					margin-left: 0;
+					transition: margin-left 0.1s ease;
+				}
+				#header:hover #title {
+					margin-left: 2px;
+				}
 				#body {
-					transition: height 0.5s ease, padding 0.5s ease;
+					transition: height 0.5s ease, margin-bottom 0.5s ease;
 					overflow: hidden;
 					margin-bottom: 15px;
 				}
 				:host(.collapsed) #body {
+					height: 0;
 					margin-bottom: 0;
 				}
 				:host(.collapsed) #header > svg {
@@ -41,6 +53,7 @@ export default class SidebarSection extends HTMLElement {
 				<slot></slot>
 			</div>
 		`;
+		this.classList.add("collapsed");
 		this._header = this.shadowRoot.getElementById("header");
 		this._titleSpan = this.shadowRoot.getElementById("title");
 		this._body = this.shadowRoot.getElementById("body");
@@ -50,6 +63,9 @@ export default class SidebarSection extends HTMLElement {
 			}else{
 				this.collapse();
 			}
+		});
+		this._header.addEventListener("mousedown",(e)=>{
+			e.preventDefault();
 		});
 	}
 
@@ -65,7 +81,7 @@ export default class SidebarSection extends HTMLElement {
 		this._body.style.height = this._body.scrollHeight+"px";
 		this.classList.remove("collapsed");
 		setTimeout(()=>{
-			this._body.style.height = "auto";
+			this._body.style.removeProperty("height");
 		},500);
 	}
 
