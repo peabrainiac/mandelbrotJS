@@ -39,7 +39,6 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		this.shadowRoot.appendChild(outerContainer);
 		innerContainer.addEventListener("mousedown",(e)=>{
 			if (e.button!==2){
-				zoomPreviewElement.zoom = 8;
 				zoomPreviewElement.show();
 				zoomPreviewElement.setPosition(e.layerX,e.layerY);
 				e.preventDefault();
@@ -56,13 +55,13 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 				if (e.button===0){
 					fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
 					fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
-					fractalCanvas.zoom *= 8;
+					fractalCanvas.zoom *= this._zoomFactor;
 				}
 			}
 			if (e.button===2&&!e.shiftKey){
 				fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
 				fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
-				fractalCanvas.zoom /= 8;
+				fractalCanvas.zoom /= this._zoomFactor;
 			}
 		});
 		innerContainer.addEventListener("contextmenu",(e)=>{
@@ -75,6 +74,8 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		this._height = 720;
 		this._outerContainer = outerContainer;
 		this._fractalCanvas = fractalCanvas;
+		this._zoomPreviewElement = zoomPreviewElement;
+		this.zoomFactor = 8;
 	}
 
 	/**
@@ -118,5 +119,16 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 			this._fractalCanvas.height = this.height;
 		}
 	}
+
+	set zoomFactor(factor){
+		this._zoomFactor = factor
+		this._zoomPreviewElement.zoom = factor;
+	}
+
+	/** @type {number} */
+	get zoomFactor(){
+		return this._zoomFactor;
+	}
+
 }
 customElements.define("mandelbrot-explorer-element",MandelbrotExplorerElement);

@@ -24,4 +24,7 @@ Utils.onPageLoad(()=>{
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 	});
+	generalSettings.onZoomFactorChange((zoomFactor)=>{
+		fractalExplorer.zoomFactor = zoomFactor;
+	});
 });
