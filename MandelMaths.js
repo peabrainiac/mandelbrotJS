@@ -39,7 +39,7 @@ export default class MandelMaths {
 		let dy = 0;
 		let i;
 		let points = [];
-		let approximationRadius = 1;
+		let approximationRadius = Infinity;
 		for (i=0;i<maxIterations&&zx*zx+zy*zy<4;i++){
 			let d = Math.sqrt(zx*zx+zy*zy);
 			if (d<approximationRadius){

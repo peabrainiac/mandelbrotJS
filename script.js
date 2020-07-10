@@ -2,6 +2,7 @@ import Utils from "../js/Utils.js";
 
 import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
 import {GeneralSettingsGroup,ToolsSettingsGroup} from "./Settings.js";
+import OrbitPointsOverlay from "./OrbitPointsOverlay.js";
 
 Utils.onPageLoad(()=>{
 	/** @type {MandelbrotExplorerElement} */
@@ -29,9 +30,14 @@ Utils.onPageLoad(()=>{
 	generalSettings.onZoomFactorChange((zoomFactor)=>{
 		fractalExplorer.zoomFactor = zoomFactor;
 	});
+	const orbitPointsOverlay = new OrbitPointsOverlay();
+	orbitPointsOverlay.slot = "overlay";
+	fractalExplorer.appendChild(orbitPointsOverlay);
+	fractalExplorer.fractalCanvas.onViewportChange((viewport)=>{
+		orbitPointsOverlay.viewport = viewport;
+	});
 	tools.onFindOrbitButtonClick(()=>{
-		let x = fractalExplorer.fractalCanvas.x;
-		let y = fractalExplorer.fractalCanvas.y;
-		console.log(x,y,MandelMaths.approxNearbyOrbitPoints(x,y,20));
+		orbitPointsOverlay.show();
+		orbitPointsOverlay.showPoints(fractalExplorer.fractalCanvas.x,fractalExplorer.fractalCanvas.y);
 	});
 });

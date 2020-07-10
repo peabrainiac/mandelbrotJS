@@ -14,6 +14,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._y = 0;
 		this._zoom = 200;
 		this._iterations = 2000;
+		this._onViewportChangeCallbacks = [];
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
 			<style>
@@ -181,6 +182,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	set x(x){
 		this._x = x;
+		this._callViewportChangeCallbacks();
 		this.render();
 	}
 
@@ -190,6 +192,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	set y(y){
 		this._y = y;
+		this._callViewportChangeCallbacks();
 		this.render();
 	}
 
@@ -199,11 +202,30 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	set zoom(zoom){
 		this._zoom = zoom;
+		this._callViewportChangeCallbacks();
 		this.render();
 	}
 
 	get zoom(){
 		return this._zoom;
+	}
+
+	get viewport(){
+		return new FractalViewport(this._x-(this._width/this._zoom)/2,this._y-(this._height/this._zoom)/2,this._x+(this._width/this._zoom)/2,this._y+(this._height/this._zoom)/2);
+	}
+
+	/**
+	 * @param {(viewport:FractalViewport)=>{}} callback 
+	 */
+	onViewportChange(callback){
+		this._onViewportChangeCallbacks.push(callback);
+		callback(this.viewport);
+	}
+
+	_callViewportChangeCallbacks(){
+		this._onViewportChangeCallbacks.forEach((callback)=>{
+			callback(this.viewport);
+		});
 	}
 
 	mouseXToFractalX(x){
@@ -237,11 +259,60 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	attributeChangedCallback(name,oldValue,newValue){
 		if (name==="width"){
 			this._width = newValue*1;
+			this._callViewportChangeCallbacks();
 			this.render();
 		}else if (name=="height"){
 			this._height = newValue*1;
+			this._callViewportChangeCallbacks();
 			this.render();
 		}
 	}
 }
 customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);
+
+export class FractalViewport {
+	/**
+	 * @param {number} x1 
+	 * @param {number} y1 
+	 * @param {number} x2 
+	 * @param {number} y2 
+	 */
+	constructor(x1,y1,x2,y2){
+		this.x1 = x1;
+		this.y1 = y1;
+		this.x2 = x2;
+		this.y2 = y2;
+	}
+
+	set width(width){
+		this.x2 = this.x1+width;
+	}
+
+	get width(){
+		return this.x2-this.x1;
+	}
+
+	set height(height){
+		this.y2 = this.y1+height;
+	}
+
+	get height(){
+		return this.y2-this.y1;
+	}
+
+	toFractalX(relativeOffsetX){
+		return this.x1+relativeOffsetX*this.width;
+	}
+
+	toFractalY(relativeOffsetY){
+		return this.y1+relativeOffsetY*this.height;
+	}
+
+	toRelativeX(fractalX){
+		return (fractalX-this.x1)/this.width;
+	}
+
+	toRelativeY(fractalY){
+		return (fractalY-this.y1)/this.height;
+	}
+}

@@ -1,5 +1,5 @@
 export default class ZoomPreviewElement extends HTMLElement {
-	constructor(canvas){
+	constructor(canvas=null){
 		super();
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
@@ -26,9 +26,8 @@ export default class ZoomPreviewElement extends HTMLElement {
 			<canvas></canvas>
 		`;
 		this._previewCanvas = this.shadowRoot.querySelector("canvas");
-		this._targetCanvas = canvas;
 		this._previewCtx = this._previewCanvas.getContext("2d");
-		this._targetCtx = this._targetCanvas.getContext("2d");
+		this.targetCanvas = canvas;
 		this.hide();
 		this.zoom = 8;
 	}
@@ -60,6 +59,16 @@ export default class ZoomPreviewElement extends HTMLElement {
 
 	get hidden(){
 		return this.classList.contains("hidden");
+	}
+
+	set targetCanvas(canvas){
+		this._targetCanvas = canvas;
+		this._targetCtx = canvas?canvas.getContext("2d"):null;
+	}
+
+	/** @type {HTMLCanvasElement} */
+	get targetCanvas(){
+		return this._targetCanvas;
 	}
 
 	set zoom(zoom){

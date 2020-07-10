@@ -12,7 +12,7 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 				:host {
 					display: block;
 				}
-				fixed-ratio-container {
+				#outer-container {
 					width: 100%;
 					height: 100%;
 					background: #101010;
@@ -22,34 +22,43 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 					height: 100%;
 					box-shadow: 0 0 8px #000000;
 				}
-				mandelbrot-canvas-element {
+				#canvas {
+					position: absolute;
+					left: 0;
+					top: 0;
 					width: 100%;
 					height: 100%;
 				}
 			</style>
+			<fixed-ratio-container id="outer-container" ratio="4:3">
+				<div id="inner-container">
+					<mandelbrot-canvas-element id="canvas"></mandelbrot-canvas-element>
+					<zoom-preview-element id="zoom-preview"></zoom-preview-element>
+					<slot name="overlay"></slot>
+				</div>
+			</fixed-ratio-container>
 		`;
-		const outerContainer = new FixedRatioContainer("4:3");
-		const innerContainer = document.createElement("div");
-		const fractalCanvas = new MandelbrotCanvasElement();
-		const zoomPreviewElement = new ZoomPreviewElement(fractalCanvas.canvas);
-		innerContainer.id = "inner-container";
-		innerContainer.appendChild(fractalCanvas);
-		innerContainer.appendChild(zoomPreviewElement);
-		outerContainer.appendChild(innerContainer);
-		this.shadowRoot.appendChild(outerContainer);
-		innerContainer.addEventListener("mousedown",(e)=>{
+		/** @type {FixedRatioContainer} */
+		const outerContainer = this.shadowRoot.getElementById("outer-container");
+		const innerContainer = this.shadowRoot.getElementById("inner-container");
+		/** @type {MandelbrotCanvasElement} */
+		const fractalCanvas = this.shadowRoot.getElementById("canvas")
+		/** @type {ZoomPreviewElement} */
+		const zoomPreviewElement = this.shadowRoot.getElementById("zoom-preview");
+		zoomPreviewElement.targetCanvas = fractalCanvas.canvas;
+		fractalCanvas.addEventListener("mousedown",(e)=>{
 			if (e.button!==2){
 				zoomPreviewElement.show();
 				zoomPreviewElement.setPosition(e.layerX,e.layerY);
 				e.preventDefault();
 			}
 		});
-		innerContainer.addEventListener("mousemove",(e)=>{
+		fractalCanvas.addEventListener("mousemove",(e)=>{
 			if (!zoomPreviewElement.hidden){
 				zoomPreviewElement.setPosition(e.layerX,e.layerY);
 			}
 		});
-		innerContainer.addEventListener("mouseup",(e)=>{
+		fractalCanvas.addEventListener("mouseup",(e)=>{
 			if (!zoomPreviewElement.hidden){
 				zoomPreviewElement.hide();
 				if (e.button===0){
@@ -64,10 +73,10 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 				fractalCanvas.zoom /= this._zoomFactor;
 			}
 		});
-		innerContainer.addEventListener("contextmenu",(e)=>{
+		fractalCanvas.addEventListener("contextmenu",(e)=>{
 			e.preventDefault();
 		});
-		innerContainer.addEventListener("mouseleave",(e)=>{
+		fractalCanvas.addEventListener("mouseleave",(e)=>{
 			zoomPreviewElement.hide();
 		});
 		this._width = 960;
