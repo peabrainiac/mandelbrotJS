@@ -1,14 +1,16 @@
 import Utils from "../js/Utils.js";
 
 import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
-import {GeneralSettingsGroup} from "./Settings.js";
+import {GeneralSettingsGroup,ToolsSettingsGroup} from "./Settings.js";
 
 Utils.onPageLoad(()=>{
 	/** @type {MandelbrotExplorerElement} */
 	const fractalExplorer = document.querySelector("mandelbrot-explorer-element");
 	const sidebar = document.querySelector("sidebar-element");
 	const generalSettings = new GeneralSettingsGroup();
+	const tools = new ToolsSettingsGroup();
 	sidebar.appendChild(generalSettings);
+	sidebar.appendChild(tools);
 	generalSettings.onResolutionChange((width,height)=>{
 		fractalExplorer.width = width;
 		fractalExplorer.height = height;
@@ -26,5 +28,10 @@ Utils.onPageLoad(()=>{
 	});
 	generalSettings.onZoomFactorChange((zoomFactor)=>{
 		fractalExplorer.zoomFactor = zoomFactor;
+	});
+	tools.onFindOrbitButtonClick(()=>{
+		let x = fractalExplorer.fractalCanvas.x;
+		let y = fractalExplorer.fractalCanvas.y;
+		console.log(x,y,MandelMaths.approxNearbyOrbitPoints(x,y,20));
 	});
 });

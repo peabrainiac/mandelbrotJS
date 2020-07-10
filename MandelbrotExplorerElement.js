@@ -88,6 +88,10 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		});
 	}
 
+	get fractalCanvas(){
+		return this._fractalCanvas;
+	}
+
 	set width(width){
 		this.setAttribute("width",width);
 	}

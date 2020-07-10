@@ -9,7 +9,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 			Zoom factor: <select id="zoom-factor-select" class="input-select">
 				<option value="2">2</option>
 				<option value="4">4</option>
-				<option value="8">8</option>
+				<option value="8" selected="">8</option>
 				<option value="16">16</option>
 				<option value="32">32</option>
 				<option value="64">64</option>
@@ -17,7 +17,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 			</select>
 			<br><br>
 			<div style="text-align:center">
-				<span id="screenshot-button" class="button">Save image</span>
+				<span id="screenshot-button" class="button" style="display:inline-block">Save image</span>
 			</div>
 		`;
 		this._widthInput = this.querySelector("#width");
@@ -73,4 +73,23 @@ export class GeneralSettingsGroup extends SidebarSection {
 		return 1*this._heightInput.value;
 	}
 }
+export class ToolsSettingsGroup extends SidebarSection {
+	constructor(){
+		super();
+		this.sectionTitle = "Tools";
+		this.innerHTML = `
+			<div style="text-align:center">
+				<span id="find-orbit-button" class="button" style="display:inline-block">Find orbit points</span>
+			</div>
+		`;
+		this._findOrbitButton = this.querySelector("#find-orbit-button");
+	}
+
+	onFindOrbitButtonClick(callback){
+		this._findOrbitButton.addEventListener("click",()=>{
+			callback();
+		});
+	}
+}
 customElements.define("general-settings-group",GeneralSettingsGroup);
+customElements.define("tools-settings-group",ToolsSettingsGroup);
