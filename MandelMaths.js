@@ -24,41 +24,49 @@ export default class MandelMaths {
 	}
 
 	/**
-	 * Approximates nearby orbit points.
+	 * Approximates nearby orbit points - see `./docs/idk.pdf` for a detailed explanation.
 	 * 
 	 * Only applies a single calculation step without further refining, so the results may be wieldly inaccurate.
-	 * @param {number} cx 
-	 * @param {number} cy 
-	 * @param {number} maxIterations 
-	 * @param {number} zoom 
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @param {number} zoom
 	 */
 	static approxNearbyOrbitPoints(cx,cy,maxIterations=100,zoom=1){
 		let zx = cx;
 		let zy = cy;
 		let dx = 1;
 		let dy = 0;
+		let ddx = 0;
+		let ddy = 0;
 		let i;
 		let points = [];
-		let approximationRadius = Infinity;
+		let steps = [];
 		for (i=0;i<maxIterations&&zx*zx+zy*zy<4;i++){
 			let d = Math.sqrt(zx*zx+zy*zy);
-			if (d<approximationRadius){
+			steps.push({zx,zy,d,dx,dy,i,ddx,ddy});
+			if ((zx*zx+zy*zy)/(dx*dx+dy*dy)<0.5*Math.sqrt((zx*zx+zy*zy)/((ddx*ddx+ddy*ddy)/2))){
 				let pcx = cx-(zx*dx+zy*dy)/(dx*dx+dy*dy);
 				let pcy = cy-(zy*dx-zx*dy)/(dx*dx+dy*dy);
 				points.push(new OrbitPoint(pcx,pcy,dx,dy,i+1));
-				approximationRadius = d/2;
 			}
 			let zx2 = zx*zx-zy*zy+cx;
 			let zy2 = 2*zx*zy+cy;
 			let dx2 = 2*(dx*zx-dy*zy)+1;
 			let dy2 = 2*(dx*zy+dy*zx);
+			let ddx2 = 2*(dx*dx-dy*dy+ddx*zx-ddy*zy);
+			let ddy2 = 2*(2*dx*dy+ddx*zy+ddy*zx);
 			zx = zx2;
 			zy = zy2;
 			dx = dx2;
 			dy = dy2;
+			ddx = ddx2;
+			ddy = ddy2;
 		}
+		points.steps = steps;
 		return points;
 	}
+
 }
 export class OrbitPoint {
 	/**

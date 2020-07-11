@@ -53,9 +53,19 @@ export default class OrbitPointsOverlay extends HTMLElement {
 		this._svg = this.shadowRoot.getElementById("svg");
 		this._div = this.shadowRoot.getElementById("div");
 		this.hide();
-		this.addEventListener("click",(e)=>{
+		this.addEventListener("mousedown",(e)=>{
 			e.stopPropagation();
-			this.hide();
+			e.preventDefault();
+		});
+		this.addEventListener("mouseup",(e)=>{
+			e.stopPropagation();
+			if (e.button==1){
+				let fractalX = this._viewport.toFractalX(e.offsetX/this.offsetWidth);
+				let fractalY = this._viewport.toFractalY(e.offsetY/this.offsetHeight);
+				console.log(MandelMaths.approxNearbyOrbitPoints(fractalX,fractalY,2000));
+			}else{
+				this.hide();
+			}
 		});
 		this.addEventListener("mousemove",(e)=>{
 			let fractalX = this._viewport.toFractalX(e.offsetX/this.offsetWidth);
