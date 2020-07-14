@@ -29,7 +29,7 @@ Also, knowing the orbit length of a specific minibrot or disk can be useful as w
 
 Finally, being able to automatically analyze the location, orbit length and orientation of minibrot sets may eventually enable us to build an algorithm that can automatically skip iterating through the full cycle and just compute iterations on the minibrot directly; this would allow rendering nested minibrots and julia sets in $O(log(n))$-complexity.
 
-\subsection{Computation}
+\subsection{Computation (just some rough notes of mine right now - WIP)}
 
 So, given all of that, how can these points be computed?
 
@@ -49,6 +49,14 @@ However, computing the second derivative is also required to make sure that the 
 	&= \frac{d(2\frac{dz_n}{dz_0}z_n+1)}{dz_0}\\
 	&= 2\frac{d(\frac{dz_n}{dz_0}z_n)}{dz_0}\\
 	&= 2\cdot(\frac{dz_n}{dz_0})^2+2\cdot\frac{d^2z_n}{dz_0^2}z_n.
+}
+Higher derivatives can be calculated in a similar fashion:
+\eqar{
+	\frac{d^3z_{n+1}}{dz_0^3} &= \frac{d(\frac{d^2z_{n+1}}{dz_0^2})}{dz_0}\\
+	&= \frac{d(2(\frac{dz_n}{dz_0})^2+2\frac{d^2z_n}{dz_0^2}z_n)}{dz_0}\\
+	&= 2\cdot\frac{d((\frac{dz_n}{dz_0})^2)}{dz_0}+2\cdot\frac{d(\frac{d^2z_n}{dz_0^2}z_n)}{dz_0}\\
+	&= 4\cdot\frac{d^2z_n}{dz_0^2}\cdot\frac{dz_n}{dz_0}+2\cdot\frac{d^3z_n}{dz_0^3}z_n+2\cdot\frac{d^2z_n}{dz_0^2}\cdot\frac{dz_n}{dz_0}\\
+	&= 6\cdot\frac{d^2z_n}{dz_0^2}\cdot\frac{dz_n}{dz_0}+2\cdot\frac{d^3z_n}{dz_0^3}z_n
 }
 
 \end{document}
