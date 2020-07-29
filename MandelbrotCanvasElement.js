@@ -5,6 +5,7 @@ export const STATE_RENDERING = 2;
 export const STATE_PENDING_CANCEL = 3;
 export const STATE_CANCELLED = 4;
 export const STATE_FINISHED = 5;
+export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
 export default class MandelbrotCanvasElement extends HTMLElement {
 	constructor(){
 		super();
@@ -32,15 +33,11 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 					display: none;
 				}
 			</style>
-			<canvas id="canvas-1"></canvas>
-			<canvas id="canvas-2"></canvas>
+			<canvas id="canvas"></canvas>
 		`;
 		/** @type {HTMLCanvasElement} */
-		this._canvas1 = this.shadowRoot.getElementById("canvas-1");
-		/** @type {HTMLCanvasElement} */
-		this._canvas2 = this.shadowRoot.getElementById("canvas-2");
-		this._ctx1 = this._canvas1.getContext("2d");
-		this._ctx2 = this._canvas2.getContext("2d");
+		this._canvas = this.shadowRoot.getElementById("canvas");
+		this._ctx = this._canvas.getContext("2d");
 		this._lastScreenRefresh = Date.now();
 		this.render();
 	}
@@ -84,12 +81,12 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._state = STATE_RENDERING;
 		console.log("Started Rendering!");
 		let start = Date.now();
-		this._canvas1.width = this._width;
-		this._canvas1.height = this._height;
-		this._canvas2.width = this._width;
-		this._canvas2.height = this._height;
-		this._pixels = new Uint32Array(this._width*this._height);
-		this._imageData = new ImageData(new Uint8ClampedArray(this._pixels.buffer),this._width);
+		this._canvas.width = this._width;
+		this._canvas.height = this._height;
+		this._pixelColors = new Uint32Array(this._width*this._height);
+		this._pixelIterations = new Float64Array(this._width*this._height);
+		this._pixelIterations.fill(ITERATIONS_NOT_YET_KNOWN);
+		this._imageData = new ImageData(new Uint8ClampedArray(this._pixelColors.buffer),this._width);
 		await this._renderPart(64);
 		await this._renderPart(16);
 		await this._renderPart(4);
@@ -135,24 +132,28 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		if (x+pixelSize>0&&y+pixelSize>0&&x<this._width&&y<this._height){
 			let color = this.getPixelColor(Math.floor(x+pixelSize/2),Math.floor(y+pixelSize/2));
 			if (pixelSize>1){
-				this._ctx1.fillStyle = "#"+(((color>>>16)&0xff)+(((color>>>8)&0xff)<<8)+((color&0xff)<<16)).toString(16).padStart(6,0);
-				this._ctx1.fillRect(x,y,pixelSize,pixelSize);
+				for (let x2=Math.max(0,x),x3=Math.min(this._width,x+pixelSize);x2<x3;x2++){
+					for (let y2=Math.max(0,y),y3=Math.min(this._height,y+pixelSize);y2<y3;y2++){
+						this._pixelColors[x2+y2*this._width] = color;
+					}
+				}
 			}
 		}
 	}
 
 	getPixelColor(x,y){
 		let index = x+y*this._width;
-		let cachedColor = this._pixels[index];
-		if (cachedColor!=0){
-			return cachedColor;
+		let cachedValue = this._pixelIterations[index];
+		if (cachedValue!=ITERATIONS_NOT_YET_KNOWN){
+			return this._pixelColors[index];
 		}else{
 			let cx = this._x+(x-this._width/2)/this._zoom;
 			let cy = this._y+(y-this._height/2)/this._zoom;
 			let maxIterations = this._iterations;
 			let i = MandelMaths.iterate(cx,cy,{maxIterations});
 			let color = (i==maxIterations?0:Math.floor(255.999*i/maxIterations)+(Math.floor(175.999*i/maxIterations)<<8))+0xff000000;
-			this._pixels[index] = color;
+			this._pixelIterations[index] = i;
+			this._pixelColors[index] = color;
 			return color;
 		}
 	}
@@ -168,12 +169,11 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	}
 
 	_refreshCanvas(){
-		this._ctx2.putImageData(this._imageData,0,0);
-		this._ctx1.drawImage(this._canvas2,0,0,this._width,this._height);
+		this._ctx.putImageData(this._imageData,0,0);
 	}
 	
 	get canvas(){
-		return this._canvas2;
+		return this._canvas;
 	}
 
 	get state(){
