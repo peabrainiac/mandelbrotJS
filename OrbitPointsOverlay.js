@@ -1,5 +1,5 @@
 import {FractalViewport} from "./MandelbrotCanvasElement.js";
-import MandelMaths, {OrbitPoint} from "./MandelMaths.js";
+import MandelMaths from "./MandelMaths.js";
 
 export default class OrbitPointsOverlay extends HTMLElement {
 	constructor(){
@@ -85,7 +85,7 @@ export default class OrbitPointsOverlay extends HTMLElement {
 			let point = points[i];
 			let x = this._viewport.toRelativeX(point.x);
 			let y = this._viewport.toRelativeY(point.y);
-			html += `<div class="point" style="left:${100*x}%;top:${100*y}%"><span class="point-label">${point.orbitLength}</span></div>`;
+			html += `<div class="point" style="left:${100*x}%;top:${100*y}%"><span class="point-label">${point.cycleLength}</span></div>`;
 		}
 		this._div.innerHTML = html;
 	}

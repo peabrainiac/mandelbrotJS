@@ -57,18 +57,20 @@ export default class MandelMaths {
 				let pdx = root.dx+1;
 				let pdy = root.dy;
 				if (pdx*pdx+pdy*pdy<0.5*0.5){
-					let point = new OrbitPoint(pcx,pcy,dx,dy,i+1);
-					Object.assign(point,{pdx,pdy,ddx,ddy,dddx,dddy});
 					let discard = false;
 					for (let i2=0;i2<points.length;i2++){
 						let p = points[i2];
-						if (Complex.distance(new Complex(p.x,p.y),new Complex(point.x,point.y))<(point.orbitLength%p.orbitLength==0?0.5:0.1)*Complex.distance(new Complex(pcx,pcy),new Complex(cx,cy))){
+						if (Complex.distance(new Complex(p.x,p.y),new Complex(pcx,pcy))<((i+1)%p.cycleLength==0?0.5:0.1)*Complex.distance(new Complex(pcx,pcy),new Complex(cx,cy))){
 							discard = true;
 							break;
 						}
 					}
 					if (!discard){
-						points.push(point);
+						let point = MandelMaths.getNearbyCyclicPoint(pcx,pcy,i+1);
+						if (point!=null){
+							point.firstEstimate = {x:pcx,y:pcy,dx,dy,ddx,ddy,dddx,dddy,pdx,pdy};
+							points.push(point);
+						}
 					}
 				}
 			}
@@ -93,20 +95,94 @@ export default class MandelMaths {
 		return points;
 	}
 
-}
-export class OrbitPoint {
 	/**
-	 * @param {number} x 
-	 * @param {number} y 
-	 * @param {number} dx 
-	 * @param {number} dy 
+	 * Finds the exact location of a nearby cyclic point and calculates its properties, such as its scale and type. See `./docs/idk.pdf`.
+	 * 
+	 * If the estimate diverges, `null` is returned instead.
+	 * 
+	 * @todo also return `null` if the estimate doesn't converge fast enough for this to be precise.
+	 * 
+	 * @param {number} startX
+	 * @param {number} startY
+	 * @param {number} cycleLength
 	 */
-	constructor(x,y,dx,dy,orbitLength){
+	static getNearbyCyclicPoint(startX,startY,cycleLength){
+		let cx = startX;
+		let cy = startY;
+		let estimates = [];
+		for (var steps=0;steps<20;steps++){
+			let x = cx;
+			let y = cy;
+			let dx = 1;
+			let dy = 0;
+			for (let i=1;i<cycleLength;i++){
+				let x2 = x*x-y*y+cx;
+				let y2 = 2*x*y+cy;
+				let dx2 = 2*(dx*x-dy*y)+1;
+				let dy2 = 2*(dx*y+dy*x);
+				x = x2;
+				y = y2;
+				dx = dx2;
+				dy = dy2;
+			}
+			let temp = Complex.quotient(new Complex(x,y),new Complex(dx,dy));
+			estimates.push(new Complex(cx,cy));
+			cx -= temp.x;
+			cy -= temp.y;
+			if (temp.length<1e-10){
+				steps++;
+				break;
+			}else if (!(cx*cx+cy*cy<4)){
+				return null;
+			}
+		}
+		let ax = cx;
+		let ay = cy;
+		let x = cx;
+		let y = cy;
+		let dx = 1;
+		let dy = 0;
+		for (let i=1;i<cycleLength;i++){
+			let x2 = x*x-y*y+cx;
+			let y2 = 2*x*y+cy;
+			let dx2 = 2*(dx*x-dy*y)+1;
+			let dy2 = 2*(dx*y+dy*x);
+			x = x2;
+			y = y2;
+			dx = dx2;
+			dy = dy2;
+			if (i<cycleLength-1){
+				let ax2 = ax*x-ay*y;
+				let ay2 = ax*y+ay*x;
+				ax = ax2;
+				ay = ay2;
+			}
+		}
+		let a = new Complex(ax,ay);
+		a.scale(2**(cycleLength-1));
+		a.multiply(dx,dy);
+		Complex.inverse(a);
+		let point = new CyclicPoint(cx,cy,cycleLength,a,"idk");
+		point.steps = steps;
+		point.estimates = estimates;
+		return point;
+	}
+
+}
+export class CyclicPoint {
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} cycleLength
+	 * @param {Complex} scale
+	 * @param {string} type
+	 */
+	constructor(x,y,cycleLength,scale,type){
 		this.x = x;
 		this.y = y;
-		this.dx = dx;
-		this.dy = dy;
-		this.orbitLength = orbitLength;
+		this.cycleLength = cycleLength;
+		this.scale = scale;
+		this.type = type;
 	}
 }
 export class Complex {
