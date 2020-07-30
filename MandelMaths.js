@@ -1,3 +1,5 @@
+export const TYPE_DISK = "disk";
+export const TYPE_MINIBROT = "minibrot";
 export default class MandelMaths {
 	/**
 	 * Returns the iteration count for a specific point in the mandelbrot set.
@@ -142,15 +144,21 @@ export default class MandelMaths {
 		let y = cy;
 		let dx = 1;
 		let dy = 0;
+		let ddx = 0;
+		let ddy = 0;
 		for (let i=1;i<cycleLength;i++){
 			let x2 = x*x-y*y+cx;
 			let y2 = 2*x*y+cy;
 			let dx2 = 2*(dx*x-dy*y)+1;
 			let dy2 = 2*(dx*y+dy*x);
+			let ddx2 = 2*(dx*dx-dy*dy+ddx*x-ddy*y);
+			let ddy2 = 2*(2*dx*dy+ddx*y+ddy*x);
 			x = x2;
 			y = y2;
 			dx = dx2;
 			dy = dy2;
+			ddx = ddx2;
+			ddy = ddy2;
 			if (i<cycleLength-1){
 				let ax2 = ax*x-ay*y;
 				let ay2 = ax*y+ay*x;
@@ -158,13 +166,19 @@ export default class MandelMaths {
 				ay = ay2;
 			}
 		}
-		let a = new Complex(ax,ay);
+		let a = cycleLength>1?new Complex(ax,ay):new Complex(1,0);
 		a.scale(2**(cycleLength-1));
 		a.multiply(dx,dy);
 		Complex.inverse(a);
-		let point = new CyclicPoint(cx,cy,cycleLength,a,"idk");
+		let radius = 0.5*Math.sqrt((dx*dx+dy*dy)/(ddx*ddx+ddy*ddy));
+		let relativeRadius = radius/a.length;
+		let point = new CyclicPoint(cx,cy,cycleLength,a,relativeRadius<1?TYPE_DISK:TYPE_MINIBROT);
 		point.steps = steps;
 		point.estimates = estimates;
+		point.d = new Complex(dx,dy);
+		point.dd = new Complex(ddx,ddy);
+		point["0.5*d/dd"] = radius;
+		point["(0.5*d/dd)/scale"] = relativeRadius;
 		return point;
 	}
 
