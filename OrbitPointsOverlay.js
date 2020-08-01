@@ -1,5 +1,5 @@
 import {FractalViewport} from "./MandelbrotCanvasElement.js";
-import MandelMaths from "./MandelMaths.js";
+import MandelMaths, {Minibrot,Disk} from "./MandelMaths.js";
 
 export default class OrbitPointsOverlay extends HTMLElement {
 	constructor(){
@@ -45,6 +45,15 @@ export default class OrbitPointsOverlay extends HTMLElement {
 					top: 50%;
 					transform: translate(8px,-50%);
 				}
+				.circle {
+					position: absolute;
+					transform: translate(-50%,-50%);
+					border: 2px solid #ffffff80;
+					border-radius: 50%;
+				}
+				.circle.approximationRadius {
+					border-color: #ffffff40;
+				}
 			</style>
 			<svg id="svg" preserveAspectRatio="none"></svg>
 			<div id="div"></div>
@@ -85,7 +94,13 @@ export default class OrbitPointsOverlay extends HTMLElement {
 			let point = points[i];
 			let x = this._viewport.toRelativeX(point.x);
 			let y = this._viewport.toRelativeY(point.y);
-			html += `<div class="point" style="left:${100*x}%;top:${100*y}%"><span class="point-label">${point.cycleLength}</span></div>`;
+			let rx = this._viewport.toRelativeWidth(point.radius);
+			let ry = this._viewport.toRelativeHeight(point.radius);
+			let rx2 = this._viewport.toRelativeWidth(point.approximationRadius);
+			let ry2 = this._viewport.toRelativeHeight(point.approximationRadius);
+			let circleHtml = (rx<2&&ry<2)?`<div class="circle" style="left:${100*x}%;top:${100*y}%;width:${200*rx}%;height:${200*ry}%"></div>`:``;
+			circleHtml += (rx2<2&&ry2<2)?`<div class="circle approximationRadius" style="left:${100*x}%;top:${100*y}%;width:${200*rx2}%;height:${200*ry2}%"></div>`:``;
+			html += `<div class="point" style="left:${100*x}%;top:${100*y}%"><span class="point-label">${point.cycleLength}</span></div>${circleHtml}`;
 		}
 		this._div.innerHTML = html;
 	}

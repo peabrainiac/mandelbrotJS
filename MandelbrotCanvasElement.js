@@ -315,4 +315,21 @@ export class FractalViewport {
 	toRelativeY(fractalY){
 		return (fractalY-this.y1)/this.height;
 	}
+
+	toFractalWidth(relativeWidth){
+		return relativeWidth*this.width;
+	}
+
+	toFractalHeight(relativeHeight){
+		return relativeHeight*this.height;
+	}
+
+	toRelativeWidth(fractalWidth){
+		return fractalWidth/this.width;
+	}
+
+	toRelativeHeight(fractalHeight){
+		return fractalHeight/this.height;
+	}
+
 }

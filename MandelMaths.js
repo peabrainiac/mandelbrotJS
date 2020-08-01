@@ -170,15 +170,9 @@ export default class MandelMaths {
 		a.scale(2**(cycleLength-1));
 		a.multiply(dx,dy);
 		Complex.inverse(a);
-		let radius = 0.5*Math.sqrt((dx*dx+dy*dy)/(ddx*ddx+ddy*ddy));
-		let relativeRadius = radius/a.length;
-		let point = new CyclicPoint(cx,cy,cycleLength,a,relativeRadius<1?TYPE_DISK:TYPE_MINIBROT);
+		let point = CyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);
 		point.steps = steps;
 		point.estimates = estimates;
-		point.d = new Complex(dx,dy);
-		point.dd = new Complex(ddx,ddy);
-		point["0.5*d/dd"] = radius;
-		point["(0.5*d/dd)/scale"] = relativeRadius;
 		return point;
 	}
 
@@ -189,14 +183,60 @@ export class CyclicPoint {
 	 * @param {number} y
 	 * @param {number} cycleLength
 	 * @param {Complex} scale
-	 * @param {string} type
 	 */
-	constructor(x,y,cycleLength,scale,type){
+	constructor(x,y,cycleLength,scale){
 		this.x = x;
 		this.y = y;
 		this.cycleLength = cycleLength;
 		this.scale = scale;
-		this.type = type;
+	}
+
+	/**
+	 * Creates a new Minibrot or Disk object from the given parameters.
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} cycleLength 
+	 * @param {Complex} scale
+	 * @param {number} dx
+	 * @param {number} dy
+	 * @param {number} ddx
+	 * @param {number} ddy
+	 */
+	static create(x,y,cycleLength,scale,dx,dy,ddx,ddy){
+		let radius = 0.5*Math.sqrt((dx*dx+dy*dy)/(ddx*ddx+ddy*ddy));
+		let relativeRadius = radius/scale.length;
+		let point = relativeRadius<=1?new Disk(x,y,cycleLength,scale):new Minibrot(x,y,cycleLength,scale);
+		point.dz = new Complex(dx,dy);
+		point.ddz = new Complex(ddx,ddy);
+		point.approximationRadius = radius;
+		point.relativeApproximationRadius = relativeRadius;
+		return point;
+	}
+}
+export class Minibrot extends CyclicPoint {
+	constructor(x,y,cycleLength,scale){
+		super(x,y,cycleLength,scale)
+	}
+
+	get radius(){
+		return this.scale.length*2;
+	}
+
+	get type(){
+		return TYPE_MINIBROT;
+	}
+}
+export class Disk extends CyclicPoint {
+	constructor(x,y,cycleLength,scale,radius){
+		super(x,y,cycleLength,scale);
+	}
+
+	get radius(){
+		return this.scale.length/2;
+	}
+
+	get type(){
+		return TYPE_DISK;
 	}
 }
 export class Complex {
