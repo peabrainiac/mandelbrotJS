@@ -1,6 +1,7 @@
 import FixedRatioContainer from "../js/customElements/FixedRatioContainer.js";
 
-import MandelbrotCanvasElement from "./MandelbrotCanvasElement.js";
+import MandelbrotCanvasElement, {STATE_RENDERING,STATE_FINISHED,STATE_CANCELLED} from "./MandelbrotCanvasElement.js";
+import MandelbrotExplorerStatusbar from "./MandelbrotExplorerStatusbar.js";
 import ZoomPreviewElement from "./ZoomPreviewElement.js";
 
 export default class MandelbrotExplorerElement extends HTMLElement {
@@ -29,10 +30,17 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 					width: 100%;
 					height: 100%;
 				}
+				#statusbar {
+					position: absolute;
+					left: 0;
+					right: 0;
+					bottom: 0;
+				}
 			</style>
 			<fixed-ratio-container id="outer-container" ratio="4:3">
 				<div id="inner-container">
 					<mandelbrot-canvas-element id="canvas"></mandelbrot-canvas-element>
+					<mandelbrot-explorer-statusbar id="statusbar"></mandelbrot-explorer-statusbar>
 					<zoom-preview-element id="zoom-preview"></zoom-preview-element>
 					<slot name="overlay"></slot>
 				</div>
@@ -85,6 +93,24 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		this._fractalCanvas = fractalCanvas;
 		this._zoomPreviewElement = zoomPreviewElement;
 		this.zoomFactor = 8;
+		/** @type {MandelbrotExplorerStatusbar} */
+		const statusbar = this.shadowRoot.getElementById("statusbar");
+		fractalCanvas.onStateChange((state)=>{
+			if (state==STATE_RENDERING){
+				statusbar.state = "Rendering";
+			}else if (state==STATE_FINISHED){
+				statusbar.state = "Finished";
+			}else if (state==STATE_CANCELLED){
+				statusbar.state = "Cancelled";
+			}
+		});
+		fractalCanvas.onProgress((progress)=>{
+			statusbar.progress = progress;
+		});
+		fractalCanvas.onZoomChange((zoom)=>{
+			statusbar.zoom = zoom;
+			console.log(zoom);
+		});
 	}
 
 	/**

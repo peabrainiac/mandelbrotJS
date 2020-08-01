@@ -1,5 +1,6 @@
 import MandelMaths from "./MandelMaths.js";
 
+export const STATE_LOADING = 0;
 export const STATE_PENDING_RENDER = 1;
 export const STATE_RENDERING = 2;
 export const STATE_PENDING_CANCEL = 3;
@@ -13,9 +14,16 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._height = 720;
 		this._x = -0.75;
 		this._y = 0;
-		this._zoom = 200;
+		this._pixelsPerUnit = 200;
+		this._zoom = 1*this._pixelsPerUnit;
 		this._iterations = 2000;
 		this._onViewportChangeCallbacks = [];
+		this._onStateChangeCallbacks = [];
+		this._onProgressChangeCallbacks = [];
+		this._onZoomChangeCallbacks = [];
+		this._state = STATE_LOADING;
+		this._progress = 0;
+		this._pixelsCalculated = 0;
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
 			<style>
@@ -87,6 +95,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._pixelIterations = new Float64Array(this._width*this._height);
 		this._pixelIterations.fill(ITERATIONS_NOT_YET_KNOWN);
 		this._imageData = new ImageData(new Uint8ClampedArray(this._pixelColors.buffer),this._width);
+		this._pixelsCalculated = 0;
 		await this._renderPart(64);
 		await this._renderPart(16);
 		await this._renderPart(4);
@@ -97,6 +106,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 			console.log("Cancelled Rendering!");
 		}else{
 			this._state = STATE_FINISHED;
+			this._progress = 1;
 			console.log(`Finished Rendering in ${Math.floor((Date.now()-start)*10)/10}ms!`);
 		}
 	}
@@ -129,12 +139,16 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	}
 
 	_renderPixel(x,y,pixelSize){
-		if (x+pixelSize>0&&y+pixelSize>0&&x<this._width&&y<this._height){
-			let color = this.getPixelColor(Math.floor(x+pixelSize/2),Math.floor(y+pixelSize/2));
+		const w = this._width;
+		const h = this._height;
+		if (x+pixelSize>0&&y+pixelSize>0&&x<w&&y<h){
+			let px = Math.max(0,Math.min(w-1,Math.floor(x+pixelSize/2)));
+			let py = Math.max(0,Math.min(h-1,Math.floor(y+pixelSize/2)));
+			let color = this.getPixelColor(px,py);
 			if (pixelSize>1){
-				for (let x2=Math.max(0,x),x3=Math.min(this._width,x+pixelSize);x2<x3;x2++){
-					for (let y2=Math.max(0,y),y3=Math.min(this._height,y+pixelSize);y2<y3;y2++){
-						this._pixelColors[x2+y2*this._width] = color;
+				for (let x2=Math.max(0,x),x3=Math.min(w,x+pixelSize);x2<x3;x2++){
+					for (let y2=Math.max(0,y),y3=Math.min(h,y+pixelSize);y2<y3;y2++){
+						this._pixelColors[x2+y2*w] = color;
 					}
 				}
 			}
@@ -154,6 +168,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 			let color = (i==maxIterations?0:Math.floor(255.999*i/maxIterations)+(Math.floor(175.999*i/maxIterations)<<8))+0xff000000;
 			this._pixelIterations[index] = i;
 			this._pixelColors[index] = color;
+			this._pixelsCalculated++;
 			return color;
 		}
 	}
@@ -170,6 +185,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	_refreshCanvas(){
 		this._ctx.putImageData(this._imageData,0,0);
+		this._progress = this._pixelsCalculated/(this._width*this._height);
 	}
 	
 	get canvas(){
@@ -180,12 +196,57 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		return this._state;
 	}
 
+	/**
+	 * @param {(state:number)=>{}} callback 
+	 */
+	onStateChange(callback){
+		this._onStateChangeCallbacks.push(callback);
+		callback(this.state);
+	}
+
+	set _state(state){
+		this.__state = state;
+		this._onStateChangeCallbacks.forEach((callback)=>{
+			callback(state);
+		});
+	}
+
+	/** @type {number} */
+	get _state(){
+		return this.__state;
+	}
+
+	get progress(){
+		return this._progress;
+	}
+
+	/**
+	 * @param {(progress:number)=>{}} callback 
+	 */
+	onProgress(callback){
+		this._onProgressChangeCallbacks.push(callback);
+		callback(this.progress);
+	}
+
+	set _progress(progress){
+		this.__progress = progress;
+		this._onProgressChangeCallbacks.forEach((callback)=>{
+			callback(progress);
+		})
+	}
+
+	/** @type {number} */
+	get _progress(){
+		return this.__progress;
+	}
+
 	set x(x){
 		this._x = x;
 		this._callViewportChangeCallbacks();
 		this.render();
 	}
 
+	/** @type {number} */
 	get x(){
 		return this._x;
 	}
@@ -196,18 +257,31 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this.render();
 	}
 
+	/** @type {number} */
 	get y(){
 		return this._y;
 	}
 
 	set zoom(zoom){
-		this._zoom = zoom;
+		this._zoom = zoom*this._pixelsPerUnit;
+		this._onZoomChangeCallbacks.forEach((callback)=>{
+			callback(zoom);
+		});
 		this._callViewportChangeCallbacks();
 		this.render();
 	}
 
+	/** @type {number} */
 	get zoom(){
-		return this._zoom;
+		return this._zoom/this._pixelsPerUnit;
+	}
+
+	/**
+	 * @param {(zoom:number)=>{}} callback 
+	 */
+	onZoomChange(callback){
+		this._onZoomChangeCallbacks.push(callback);
+		callback(this.zoom);
 	}
 
 	get viewport(){

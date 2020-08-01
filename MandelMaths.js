@@ -104,6 +104,8 @@ export default class MandelMaths {
 	 * 
 	 * @todo also return `null` if the estimate doesn't converge fast enough for this to be precise.
 	 * 
+	 * @todo scale breaks for cycle length 1025 and larger because `2^1024` overflows to Infinity; multiply twos seperately to fix
+	 * 
 	 * @param {number} startX
 	 * @param {number} startY
 	 * @param {number} cycleLength
