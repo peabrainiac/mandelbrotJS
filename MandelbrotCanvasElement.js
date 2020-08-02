@@ -285,6 +285,17 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		return this._y;
 	}
 
+	set pixelsPerUnit(pixelsPerUnit){
+		this._zoom *= pixelsPerUnit/this._pixelsPerUnit;
+		this._pixelsPerUnit = pixelsPerUnit;
+		this.render();
+	}
+
+	/** @type {number} */
+	get pixelsPerUnit(){
+		return this._pixelsPerUnit;
+	}
+
 	set zoom(zoom){
 		this._zoom = zoom*this._pixelsPerUnit;
 		this._onZoomChangeCallbacks.forEach((callback)=>{

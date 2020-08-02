@@ -5,7 +5,9 @@ export class GeneralSettingsGroup extends SidebarSection {
 		super();
 		this.sectionTitle = "General";
 		this.innerHTML = `
-			Resolution: <input id="width" class="input-number" type="number" value="1920">x<input id="height" class="input-number" type="number" value="1080">
+			Resolution: <input id="width" class="input-number" type="number" value="1920">x<input id="height" class="input-number" type="number" value="1080"><br>
+			Pixels per unit: <input id="pixels-per-unit" class="input-number" type="number" step="any" value="200">
+			<br><br>
 			Zoom factor: <select id="zoom-factor-select" class="input-select">
 				<option value="2">2</option>
 				<option value="4">4</option>
@@ -22,26 +24,67 @@ export class GeneralSettingsGroup extends SidebarSection {
 		`;
 		this._widthInput = this.querySelector("#width");
 		this._heightInput = this.querySelector("#height");
+		this._pixelsPerUnitInput = this.querySelector("#pixels-per-unit");
 		this._screenshotButton = this.querySelector("#screenshot-button");
 		this._zoomFactorSelect = this.querySelector("#zoom-factor-select");
-	}
+		this._onResolutionChangeCallbacks = [];
+		this._onPixelsPerUnitChangeCallbacks = [];
 
-	onResolutionChange(callback){
 		let width = this.width;
 		let height = this.height;
+		let pixelsPerUnit = this.pixelsPerUnit;
 		this._widthInput.addEventListener("change",()=>{
 			if (width!==this.width){
+				let oldWidth = width;
 				width = this.width;
-				callback(width,height);
+				this._onResolutionChangeCallbacks.forEach((callback)=>{
+					callback(width,height);
+				});
+				pixelsPerUnit = 0.01*Math.round(100*this.pixelsPerUnit*Math.sqrt((width*width+height*height)/(oldWidth*oldWidth+height*height)));
+				this.pixelsPerUnit = pixelsPerUnit;
+				this._onPixelsPerUnitChangeCallbacks.forEach((callback)=>{
+					callback(pixelsPerUnit);
+				});
 			}
 		});
 		this._heightInput.addEventListener("change",()=>{
 			if (height!==this.height){
+				let oldHeight = height;
 				height = this.height;
-				callback(width,height);
+				this._onResolutionChangeCallbacks.forEach((callback)=>{
+					callback(width,height);
+				});
+				pixelsPerUnit = 0.01*Math.round(100*this.pixelsPerUnit*Math.sqrt((width*width+height*height)/(width*width+oldHeight*oldHeight)));
+				this.pixelsPerUnit = pixelsPerUnit;
+				this._onPixelsPerUnitChangeCallbacks.forEach((callback)=>{
+					callback(pixelsPerUnit);
+				});
 			}
 		});
-		callback(width,height);
+		this._pixelsPerUnitInput.addEventListener("change",()=>{
+			if (pixelsPerUnit!==this.pixelsPerUnit){
+				pixelsPerUnit = this.pixelsPerUnit;
+				this._onPixelsPerUnitChangeCallbacks.forEach((callback)=>{
+					callback(pixelsPerUnit);
+				});
+			}
+		});
+	}
+
+	/**
+	 * @param {(width:number,height:number)=>{}} callback 
+	 */
+	onResolutionChange(callback){
+		this._onResolutionChangeCallbacks.push(callback);
+		callback(this.width,this.height);
+	}
+
+	/**
+	 * @param {(pixelsPerUnit:number)=>{}} callback 
+	 */
+	onPixelsPerUnitChange(callback){
+		this._onPixelsPerUnitChangeCallbacks.push(callback);
+		callback(this.pixelsPerUnit);
 	}
 
 	onScreenshotTake(callback){
@@ -71,6 +114,14 @@ export class GeneralSettingsGroup extends SidebarSection {
 
 	get height(){
 		return 1*this._heightInput.value;
+	}
+
+	set pixelsPerUnit(pixelsPerUnit){
+		this._pixelsPerUnitInput.value = pixelsPerUnit;
+	}
+
+	get pixelsPerUnit(){
+		return 1*this._pixelsPerUnitInput.value;
 	}
 }
 export class ToolsSettingsGroup extends SidebarSection {

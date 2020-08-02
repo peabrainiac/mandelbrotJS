@@ -16,6 +16,9 @@ Utils.onPageLoad(()=>{
 		fractalExplorer.width = width;
 		fractalExplorer.height = height;
 	});
+	generalSettings.onPixelsPerUnitChange((pixelsPerUnit)=>{
+		fractalExplorer.pixelsPerUnit = pixelsPerUnit;
+	});
 	generalSettings.onScreenshotTake(async()=>{
 		let blob = await fractalExplorer.toBlob();
 		let url = URL.createObjectURL(blob);

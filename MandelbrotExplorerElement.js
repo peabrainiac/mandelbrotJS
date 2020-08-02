@@ -96,6 +96,7 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		});
 		this._width = 960;
 		this._height = 720;
+		this._pixelsPerUnit = 200;
 		this._outerContainer = outerContainer;
 		this._fractalCanvas = fractalCanvas;
 		this._zoomPreviewElement = zoomPreviewElement;
@@ -148,8 +149,16 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		return this._height;
 	}
 
+	set pixelsPerUnit(pixelsPerUnit){
+		this.setAttribute("pixels-per-unit",pixelsPerUnit);
+	}
+
+	get pixelsPerUnit(){
+		return this._pixelsPerUnit;
+	}
+
 	static get observedAttributes(){
-		return ["width","height"];
+		return ["width","height","pixels-per-unit"];
 	}
 
 	attributeChangedCallback(name,oldValue,newValue){
@@ -161,6 +170,9 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 			this._height = newValue*1;
 			this._outerContainer.ratio = this._width/this._height;
 			this._fractalCanvas.height = this.height;
+		}else if(name=="pixels-per-unit"){
+			this._pixelsPerUnit = newValue*1;
+			this._fractalCanvas.pixelsPerUnit = this.pixelsPerUnit;
 		}
 	}
 
