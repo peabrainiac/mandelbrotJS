@@ -7,6 +7,7 @@ export const STATE_PENDING_CANCEL = 3;
 export const STATE_CANCELLED = 4;
 export const STATE_FINISHED = 5;
 export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
+export const RENDER_GRID_SIZES = [64,16,4,1];
 export default class MandelbrotCanvasElement extends HTMLElement {
 	constructor(){
 		super();
@@ -16,7 +17,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._y = 0;
 		this._pixelsPerUnit = 200;
 		this._zoom = 1*this._pixelsPerUnit;
-		this._iterations = 2000;
+		this._iterations = 15000;
 		this._onViewportChangeCallbacks = [];
 		this._onStateChangeCallbacks = [];
 		this._onProgressChangeCallbacks = [];
@@ -96,10 +97,9 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._pixelIterations.fill(ITERATIONS_NOT_YET_KNOWN);
 		this._imageData = new ImageData(new Uint8ClampedArray(this._pixelColors.buffer),this._width);
 		this._pixelsCalculated = 0;
-		await this._renderPart(64);
-		await this._renderPart(16);
-		await this._renderPart(4);
-		await this._renderPart(1);
+		for (let i=0;i<RENDER_GRID_SIZES.length;i++){
+			await this._renderPart(RENDER_GRID_SIZES[i]);
+		}
 		this._refreshCanvas();
 		if (this._state===STATE_PENDING_CANCEL){
 			this._state = STATE_CANCELLED;
@@ -173,6 +173,25 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		}
 	}
 
+	getPixelIterations(x,y){
+		const w = this._width;
+		const h = this._height;
+		for (let i=RENDER_GRID_SIZES.length-1;i>=0;i--){
+			let pixelSize = RENDER_GRID_SIZES[i];
+			let cx = (Math.round(w*0.5/pixelSize)-1)*pixelSize;
+			let cy = Math.round(h*0.5/pixelSize)*pixelSize;
+			let px = cx+pixelSize*Math.floor((x-cx)/pixelSize);
+			let py = cy+pixelSize*Math.floor((y-cy)/pixelSize);
+			let px2 = Math.max(0,Math.min(w-1,Math.floor(px+pixelSize/2)));
+			let py2 = Math.max(0,Math.min(h-1,Math.floor(py+pixelSize/2)));
+			let iterations = this._pixelIterations[px2+py2*w];
+			if (iterations!=ITERATIONS_NOT_YET_KNOWN){
+				return iterations;
+			}
+		}
+		return ITERATIONS_NOT_YET_KNOWN;
+	}
+
 	async _waitForScreenRefresh(){
 		if (Date.now()-this._lastScreenRefresh>100){
 			this._refreshCanvas();
@@ -238,6 +257,10 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	/** @type {number} */
 	get _progress(){
 		return this.__progress;
+	}
+
+	get iterations(){
+		return this._iterations;
 	}
 
 	set x(x){
@@ -308,6 +331,14 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 
 	mouseYToFractalY(y){
 		return this._y+(y/this.offsetHeight-0.5)*this._height/this._zoom;
+	}
+
+	mouseXToPixelX(x){
+		return x*this._width/this.offsetWidth;
+	}
+
+	mouseYToPixelY(y){
+		return y*this._height/this.offsetHeight;
 	}
 
 	set width(width){

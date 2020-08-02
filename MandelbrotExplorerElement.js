@@ -1,6 +1,6 @@
 import FixedRatioContainer from "../js/customElements/FixedRatioContainer.js";
 
-import MandelbrotCanvasElement, {STATE_RENDERING,STATE_FINISHED,STATE_CANCELLED} from "./MandelbrotCanvasElement.js";
+import MandelbrotCanvasElement, {STATE_RENDERING,STATE_FINISHED,STATE_CANCELLED,ITERATIONS_NOT_YET_KNOWN} from "./MandelbrotCanvasElement.js";
 import MandelbrotExplorerStatusbar from "./MandelbrotExplorerStatusbar.js";
 import ZoomPreviewElement from "./ZoomPreviewElement.js";
 
@@ -50,7 +50,9 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		const outerContainer = this.shadowRoot.getElementById("outer-container");
 		const innerContainer = this.shadowRoot.getElementById("inner-container");
 		/** @type {MandelbrotCanvasElement} */
-		const fractalCanvas = this.shadowRoot.getElementById("canvas")
+		const fractalCanvas = this.shadowRoot.getElementById("canvas");
+		/** @type {MandelbrotExplorerStatusbar} */
+		const statusbar = this.shadowRoot.getElementById("statusbar");
 		/** @type {ZoomPreviewElement} */
 		const zoomPreviewElement = this.shadowRoot.getElementById("zoom-preview");
 		zoomPreviewElement.targetCanvas = fractalCanvas.canvas;
@@ -62,6 +64,10 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 			}
 		});
 		fractalCanvas.addEventListener("mousemove",(e)=>{
+			let pixelX = fractalCanvas.mouseXToPixelX(e.layerX);
+			let pixelY = fractalCanvas.mouseYToPixelY(e.layerY);
+			let iterations = fractalCanvas.getPixelIterations(pixelX,pixelY);
+			statusbar.mouseInfo = `Iterations: ${iterations!=ITERATIONS_NOT_YET_KNOWN?iterations+(iterations<fractalCanvas.iterations?"":"+"):"not yet known"}`;
 			if (!zoomPreviewElement.hidden){
 				zoomPreviewElement.setPosition(e.layerX,e.layerY);
 			}
@@ -86,6 +92,7 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		});
 		fractalCanvas.addEventListener("mouseleave",(e)=>{
 			zoomPreviewElement.hide();
+			statusbar.mouseInfo = "";
 		});
 		this._width = 960;
 		this._height = 720;
@@ -93,8 +100,6 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		this._fractalCanvas = fractalCanvas;
 		this._zoomPreviewElement = zoomPreviewElement;
 		this.zoomFactor = 8;
-		/** @type {MandelbrotExplorerStatusbar} */
-		const statusbar = this.shadowRoot.getElementById("statusbar");
 		fractalCanvas.onStateChange((state)=>{
 			if (state==STATE_RENDERING){
 				statusbar.state = "Rendering";
