@@ -12,27 +12,7 @@ Utils.onPageLoad(()=>{
 	const tools = new ToolsSettingsGroup();
 	sidebar.appendChild(generalSettings);
 	sidebar.appendChild(tools);
-	generalSettings.onResolutionChange((width,height)=>{
-		fractalExplorer.width = width;
-		fractalExplorer.height = height;
-	});
-	generalSettings.onPixelsPerUnitChange((pixelsPerUnit)=>{
-		fractalExplorer.pixelsPerUnit = pixelsPerUnit;
-	});
-	generalSettings.onScreenshotTake(async()=>{
-		let blob = await fractalExplorer.toBlob();
-		let url = URL.createObjectURL(blob);
-        let a = document.createElement("a");
-        a.href = url;
-        a.download = "image.png";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-	});
-	generalSettings.onZoomFactorChange((zoomFactor)=>{
-		fractalExplorer.zoomFactor = zoomFactor;
-	});
+	generalSettings.link(fractalExplorer);
 	const orbitPointsOverlay = new OrbitPointsOverlay();
 	orbitPointsOverlay.slot = "overlay";
 	fractalExplorer.appendChild(orbitPointsOverlay);

@@ -259,6 +259,12 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		return this.__progress;
 	}
 
+	set iterations(iterations){
+		this._iterations = iterations;
+		/** @todo preserve old pixels buffer, update only where necessary */
+		this.render();
+	}
+
 	get iterations(){
 		return this._iterations;
 	}

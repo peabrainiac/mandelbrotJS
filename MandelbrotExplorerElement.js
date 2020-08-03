@@ -186,5 +186,13 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		return this._zoomFactor;
 	}
 
+	set iterations(iterations){
+		this._fractalCanvas.iterations = iterations;
+	}
+
+	get iterations(){
+		return this._fractalCanvas.iterations;
+	}
+
 }
 customElements.define("mandelbrot-explorer-element",MandelbrotExplorerElement);
