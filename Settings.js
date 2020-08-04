@@ -1,6 +1,11 @@
 import SidebarSection from "./SidebarSection.js";
 import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
 
+import FractalFormula from "./MandelMaths.js";
+import MandelbrotFormula from "./formulas/Mandelbrot.js";
+import MandelbarFormula from "./formulas/Mandelbar.js";
+import MoebiusMandelbrotFormula from "./formulas/MoebiusMandelbrot.js";
+
 export class GeneralSettingsGroup extends SidebarSection {
 	constructor(){
 		super();
@@ -9,7 +14,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 			Resolution: <input id="width" class="input-number" type="number" value="1920">x<input id="height" class="input-number" type="number" value="1080"><br>
 			Pixels per unit: <input id="pixels-per-unit" class="input-number" type="number" step="any" value="200">
 			<br><br>
-			Iterations: <input id="iterations" class="input-number" type="number" value="2000">
+			Iterations: <input id="iterations" class="input-number" type="number" value="200">
 			<br><br>
 			Zoom factor: <select id="zoom-factor-select" class="input-select">
 				<option value="2">2</option>
@@ -173,23 +178,67 @@ export class GeneralSettingsGroup extends SidebarSection {
 		return 1*this._iterationsInput.value;
 	}
 }
+export class FormulaSettingsGroup extends SidebarSection {
+	constructor(){
+		super();
+		this.sectionTitle = "Formula";
+		this.innerHTML = `
+			Fractal: <select id="formula-select" class="input-select">
+				<option value="0" selected="">Mandelbrot set</option>
+				<option value="1">Mandelbar set</option>
+				<option value="2">Möbius mandelbrot set</option>
+			</select>
+		`;
+		/** @type {FractalFormula[]} */
+		this._formulas = [new MandelbrotFormula(),new MandelbarFormula(),new MoebiusMandelbrotFormula()];
+		this._formulaSelect = this.querySelector("#formula-select");
+	}
+
+	/**
+	 * @param {MandelbrotExplorerElement} fractalExplorer 
+	 */
+	link(fractalExplorer){
+		this.onFormulaChange((formula)=>{
+			fractalExplorer.formula = formula;
+		});
+	}
+
+	get formulas(){
+		return this._formulas;
+	}
+
+	get formula(){
+		return this._formulas[this._formulaSelect.value];
+	}
+
+	/**
+	 * @param {(formula:FractalFormula)=>{}} callback 
+	 */
+	onFormulaChange(callback){
+		this._formulaSelect.addEventListener("change",()=>{
+			callback(this.formula);
+		});
+		callback(this.formula);
+	}
+}
 export class ToolsSettingsGroup extends SidebarSection {
 	constructor(){
 		super();
 		this.sectionTitle = "Tools";
 		this.innerHTML = `
 			<div style="text-align:center">
-				<span id="find-orbit-button" class="button" style="display:inline-block">Find orbit points</span>
+				<span id="find-cyclic-button" class="button" style="display:inline-block">Find cyclic points</span>
 			</div>
 		`;
-		this._findOrbitButton = this.querySelector("#find-orbit-button");
+		this._findOrbitButton = this.querySelector("#find-cyclic-button");
 	}
 
-	onFindOrbitButtonClick(callback){
+	onFindCyclicButtonClick(callback){
 		this._findOrbitButton.addEventListener("click",()=>{
 			callback();
 		});
 	}
 }
 customElements.define("general-settings-group",GeneralSettingsGroup);
+customElements.define("formula-settings-group",FormulaSettingsGroup);
 customElements.define("tools-settings-group",ToolsSettingsGroup);

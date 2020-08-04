@@ -133,6 +133,14 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		return this._fractalCanvas;
 	}
 
+	set formula(formula){
+		this._fractalCanvas.formula = formula;
+	}
+
+	get formula(){
+		return this._fractalCanvas.formula;
+	}
+
 	set width(width){
 		this.setAttribute("width",width);
 	}

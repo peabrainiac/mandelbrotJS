@@ -1,5 +1,5 @@
 import {FractalViewport} from "./MandelbrotCanvasElement.js";
-import MandelMaths, {Minibrot,Disk} from "./MandelMaths.js";
+import {FractalFormula,Minibrot,Disk} from "./MandelMaths.js";
 
 export default class OrbitPointsOverlay extends HTMLElement {
 	constructor(){
@@ -58,6 +58,7 @@ export default class OrbitPointsOverlay extends HTMLElement {
 			<svg id="svg" preserveAspectRatio="none"></svg>
 			<div id="div"></div>
 		`;
+		this._formula = new FractalFormula();
 		/** @type {SVGSVGElement} */
 		this._svg = this.shadowRoot.getElementById("svg");
 		this._div = this.shadowRoot.getElementById("div");
@@ -71,7 +72,7 @@ export default class OrbitPointsOverlay extends HTMLElement {
 			if (e.button==1){
 				let fractalX = this._viewport.toFractalX(e.offsetX/this.offsetWidth);
 				let fractalY = this._viewport.toFractalY(e.offsetY/this.offsetHeight);
-				console.log(MandelMaths.approxNearbyOrbitPoints(fractalX,fractalY,2000));
+				console.log(this._formula.approxNearbyCyclicPoints(fractalX,fractalY,2000));
 			}else{
 				this.hide();
 			}
@@ -86,9 +87,10 @@ export default class OrbitPointsOverlay extends HTMLElement {
 	/**
 	 * @param {number} cx
 	 * @param {number} cy
+	 * @param {FractalFormula} formula
 	 */
 	showPoints(cx,cy){
-		let points = MandelMaths.approxNearbyOrbitPoints(cx,cy,2000);
+		let points = this._formula.approxNearbyCyclicPoints(cx,cy,2000);
 		let html = "";
 		for (let i=0;i<points.length;i++){
 			let point = points[i];
@@ -130,6 +132,15 @@ export default class OrbitPointsOverlay extends HTMLElement {
 
 	get hidden(){
 		return this.classList.contains("hidden");
+	}
+
+	set formula(formula){
+		this._formula = formula;
+	}
+
+	/** @type {FractalFormula} */
+	get formula(){
+		return this._formula;
 	}
 }
 customElements.define("orbit-points-overlay",OrbitPointsOverlay);

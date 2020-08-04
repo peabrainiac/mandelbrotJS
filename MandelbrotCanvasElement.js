@@ -1,4 +1,5 @@
-import MandelMaths from "./MandelMaths.js";
+import {FractalFormula} from "./MandelMaths.js";
+import MandelbrotFormula from "./formulas/Mandelbrot.js";
 
 export const STATE_LOADING = 0;
 export const STATE_PENDING_RENDER = 1;
@@ -8,6 +9,9 @@ export const STATE_CANCELLED = 4;
 export const STATE_FINISHED = 5;
 export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
 export const RENDER_GRID_SIZES = [64,16,4,1];
+/**
+ * Custom element responsible for rendering an image based on a given formula and location.
+ */
 export default class MandelbrotCanvasElement extends HTMLElement {
 	constructor(){
 		super();
@@ -25,6 +29,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._state = STATE_LOADING;
 		this._progress = 0;
 		this._pixelsCalculated = 0;
+		this._formula = new MandelbrotFormula();
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
 			<style>
@@ -164,7 +169,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 			let cx = this._x+(x-this._width/2)/this._zoom;
 			let cy = this._y+(y-this._height/2)/this._zoom;
 			let maxIterations = this._iterations;
-			let i = MandelMaths.iterate(cx,cy,{maxIterations});
+			let i = this._formula.iterate(cx,cy,{maxIterations});
 			let color = (i==maxIterations?0:Math.floor(255.999*i/maxIterations)+(Math.floor(175.999*i/maxIterations)<<8))+0xff000000;
 			this._pixelIterations[index] = i;
 			this._pixelColors[index] = color;
@@ -257,6 +262,16 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	/** @type {number} */
 	get _progress(){
 		return this.__progress;
+	}
+
+	set formula(formula){
+		this._formula = formula;
+		this.render();
+	}
+
+	/** @type {FractalFormula} */
+	get formula(){
+		return this._formula;
 	}
 
 	set iterations(iterations){
