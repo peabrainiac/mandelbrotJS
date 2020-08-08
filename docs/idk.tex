@@ -10,6 +10,11 @@
 \setlength\parindent{0pt}
 
 \newcommand{\eqar}[1]{\begin{align*} #1 \end{align*}}
+\newcommand{\mat}[1]{\begin{bmatrix} #1 \end{bmatrix}}
+\newcommand{\jmat}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\jmatn}[3]{\frac{\partial^{#1} #2}{\partial #3^{#1}}}
+\DeclareMathOperator{\re}{re}
+\DeclareMathOperator{\im}{im}
 
 % !TeX spellcheck = en_US
 
@@ -107,5 +112,26 @@ Now it should already become apparent why these minibrots even exist; $x_{2n}$ w
 To get rid of the factor $2^{n-1}(z_0z_1...z_{n-2})$ and turn this into an actual mandelbrot set equation, we can just multiply both sides of the equation with it:
 $$2^{n-1}(z_0z_1...z_{n-2})d_{k+1}=(2^{n-1}(z_0z_1...z_{n-2})d_k)^2+2^{n-1}(z_0z_1...z_{n-2})d_0$$
 It is therefore the term $2^{n-1}(z_0z_1...z_{n-2})d_k$ that actually iterates just like the mandelbrot set, and the term $2^{n-1}(z_0z_1...z_{n-2})d_0$ or $2^{n-1}(z_0z_1...z_{n-2})(x_0-z_0)\frac{dz_{n-1}}{dz_0}$ that acts as the starting value for it; as such, a number $a$ indicating the scale and orientation of the minibrot set can be computed as $$a=\frac{1}{2^{n-1}(z_0z_1...z_{n-2})\frac{dz_{n-1}}{dz_0}}.$$
+
+\section{Generalizing for other fractals - WIP}
+
+Applying these same methods to other popular fractals such as the mandelbar set (also commonly referred to as tricorn) or the burning ship fractal is slightly complicated by the fact that these are based on non-conformal mappings (which can even be seen visually; they contain heavily skewed parts), meaning that their derivative can only be expressed as a Jacobian matrix.
+
+Oh, and sorry in advance for all the bad notation coming up in the following part; I'm not a mathematician, and the internet wasn't really helpful for finding out how to denote Jacobian matrices of complex functions either.
+
+To see why we actually need the Jacobian, let's take a look at, for example, the mandelbar set first. It is defined by the sequence $z_{n+1} = \bar{z}_n^2+z_0$, where $\bar{z}$ denotes the complex conjugate of $z$. This is already not differentiable in the usual sense; when looking at any small region of points, it is not only scaled, rotated and translated here, but also flipped, meaning that a complex number representing the scaling factor and rotation alone is no longer enough to describe the applied transformation. Instead, a $2\times2$ matrix is needed that tells us how both the real and imaginary component of $z_n$ change with respect to both the real and imaginary component of $z_0$; This matrix is the Jacobian.
+
+In the following, we'll use $\frac{\partial z_n}{\partial z_0}$ to refer to the Jacobian matrix $\mat{\frac{d\re(z_n)}{d\re(z_0)}&\frac{d\re(z_n)}{d\im(z_0)}\\\frac{d\im(z_n)}{d\re(z_0)}&\frac{d\im(z_n)}{d\im(z_0)}}$, where $\re(z)$ and $\im(z)$ are the real and imaginary components of $z$, and $(\jmat{z_n}{z_0})_{rr}$, $(\jmat{z_n}{z_0})_{ri}$, $(\jmat{z_n}{z_0})_{ir}$ and $(\jmat{z_n}{z_0})_{ii}$ to refer to the individual entries of this matrix. Also, we'll use $M(z)$ to refer to the matrix $\mat{re(z)&-im(z)\\im(z)&re(z)}$; that way, multiplying the derivative with a number $z_n$ as we did earlier can now be done by multiplying $M(z_n)$ with the Jacobian matrix.
+
+With all of that said, let's start by first figuring out how to compute these derivatives again:
+\eqar{
+	z_{n+1} &= \bar{z}_n^2+z_0\\
+	\jmat{z_{n+1}}{z_0} &= \jmat{(\bar{z}_n^2+z_0)}{z_0}\\
+	&= \jmat{\bar{z}_n^2}{z_0}+\jmat{z_0}{z_0}\\
+	&= \mat{1&0\\0&-1}\cdot\jmat{z_n^2}{z_0}+\mat{1&0\\0&1}\\
+	&= \mat{2&0\\0&-2}\cdot M(z_n)\cdot\jmat{z_n}{z_0}+\mat{1&0\\0&1}\\
+	\jmatn{2}{z_{n+1}}{z_0} &= \mat{2&0\\0&-2}\cdot\jmat{(M(z_n)\cdot\jmat{z_n}{z_0})}{z_0}\\
+	&= \mat{2&0\\0&-2}\cdot\left(M(z_n)\cdot\jmatn{2}{z_n}{z_0}+2\cdot(\jmat{z_n}{z_0})^2\right)
+}
 
 \end{document}

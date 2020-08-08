@@ -1,6 +1,4 @@
-import {FractalFormula} from "../MandelMaths.js";
-
-import {CyclicPoint,Minibrot,Disk} from "../MandelMaths.js";
+import {FractalFormula,CyclicPoint,Complex,ComplexWithDerivative} from "../MandelMaths.js";
 
 export default class MandelbrotFormula extends FractalFormula {
 	/**

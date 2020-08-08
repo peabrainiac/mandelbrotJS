@@ -110,8 +110,10 @@ export class Disk extends CyclicPoint {
 		return TYPE_DISK;
 	}
 }
+/**
+ * A complex number `x+iy`.
+ */
 export class Complex {
-	
 	constructor(x=0,y=0){
 		/** @type {number} */
 		this.x = x;
@@ -343,7 +345,10 @@ export class Complex {
 		return z;
 	}
 }
-class ComplexWithDerivative extends Complex {
+/**
+ * A complex number with another complex number representing its derivative.
+ */
+export class ComplexWithDerivative extends Complex {
 	constructor(x=0,y=0,dx=0,dy=0){
 		super(x,y);
 		this.derivative = new Complex(dx,dy);
@@ -400,7 +405,23 @@ class ComplexWithDerivative extends Complex {
 		}
 	}
 }
-// exports so these can be used in the console for debugging; gonna remove these later on
-window.MandelMaths = MandelMaths;
-window.Complex = Complex;
-window.ComplexWithDerivative = ComplexWithDerivative;
+/**
+ * A complex number with a jacobian matrix representing its derivative.
+ */
+export class ComplexWithJacobian extends Complex {
+	constructor(x=0,y=0,xdx=0,ydx=0,xdy=0,ydy=0){
+		super(x,y);
+		this.derivative = new ComplexJacobian(xdx,ydx,xdy,ydy);
+	}
+}
+/**
+ * A jacobian matrix representing the derivative of a complex function.
+ */
+export class ComplexJacobian {
+	constructor(xdx=1,ydx=0,xdy=-ydx,ydy=xdx){
+		this.xdx = xdx;
+		this.ydx = ydx;
+		this.xdy = xdy;
+		this.ydy = ydy;
+	}
+}
