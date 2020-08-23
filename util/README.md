@@ -1,0 +1,1 @@
+Some files that were previously located elsewhere in [my github-pages repository](https://github.com/peabrainiac/peabrainiac.github.io) from which this project originated; for now, I've just copied them here so this works as a standalone repository.

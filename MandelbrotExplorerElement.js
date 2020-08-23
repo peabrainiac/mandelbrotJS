@@ -1,4 +1,4 @@
-import FixedRatioContainer from "../js/customElements/FixedRatioContainer.js";
+import FixedRatioContainer from "./util/FixedRatioContainer.js";
 
 import MandelbrotCanvasElement, {STATE_RENDERING,STATE_FINISHED,STATE_CANCELLED,ITERATIONS_NOT_YET_KNOWN} from "./MandelbrotCanvasElement.js";
 import MandelbrotExplorerStatusbar from "./MandelbrotExplorerStatusbar.js";
