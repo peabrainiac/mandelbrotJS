@@ -1,4 +1,4 @@
-import Utils from "../js/Utils.js";
+import Utils from "./util/Utils.js";
 
 import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
 import {GeneralSettingsGroup,FormulaSettingsGroup,ToolsSettingsGroup} from "./Settings.js";
