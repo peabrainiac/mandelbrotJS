@@ -117,6 +117,9 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 			statusbar.zoom = zoom;
 			console.log(zoom);
 		});
+		fractalCanvas.progressTimer.onChange((time)=>{
+			statusbar.time = time;
+		});
 	}
 
 	/**

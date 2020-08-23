@@ -1,3 +1,5 @@
+import Timer from "./util/Timer.js";
+
 import {FractalFormula} from "./MandelMaths.js";
 import MandelbrotFormula from "./formulas/Mandelbrot.js";
 
@@ -53,6 +55,7 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		this._canvas = this.shadowRoot.getElementById("canvas");
 		this._ctx = this._canvas.getContext("2d");
 		this._lastScreenRefresh = Date.now();
+		this._progressTimer = new Timer();
 		this.render();
 	}
 
@@ -94,7 +97,8 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	async _render(){
 		this._state = STATE_RENDERING;
 		console.log("Started Rendering!");
-		let start = Date.now();
+		this._progressTimer.reset();
+		this._progressTimer.start();
 		this._canvas.width = this._width;
 		this._canvas.height = this._height;
 		this._pixelColors = new Uint32Array(this._width*this._height);
@@ -106,13 +110,14 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 			await this._renderPart(RENDER_GRID_SIZES[i]);
 		}
 		this._refreshCanvas();
+		this._progressTimer.stop();
 		if (this._state===STATE_PENDING_CANCEL){
 			this._state = STATE_CANCELLED;
 			console.log("Cancelled Rendering!");
 		}else{
 			this._state = STATE_FINISHED;
 			this._progress = 1;
-			console.log(`Finished Rendering in ${Math.floor((Date.now()-start)*10)/10}ms!`);
+			console.log(`Finished Rendering in ${Math.floor(this._progressTimer*10000)/10}ms!`);
 		}
 	}
 
@@ -262,6 +267,10 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	/** @type {number} */
 	get _progress(){
 		return this.__progress;
+	}
+
+	get progressTimer(){
+		return this._progressTimer;
 	}
 
 	set formula(formula){
