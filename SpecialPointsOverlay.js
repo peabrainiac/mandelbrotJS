@@ -1,7 +1,7 @@
 import {FractalViewport} from "./MandelbrotCanvasElement.js";
-import {FractalFormula,Minibrot,Disk} from "./MandelMaths.js";
+import {FractalFormula} from "./MandelMaths.js";
 
-export default class OrbitPointsOverlay extends HTMLElement {
+export default class SpecialPointsOverlay extends HTMLElement {
 	constructor(){
 		super();
 		this.attachShadow({mode:"open"});
@@ -15,6 +15,7 @@ export default class OrbitPointsOverlay extends HTMLElement {
 					width: 100%;
 					height: 100%;
 					background: #00000040;
+					overflow: hidden;
 				}
 				:host(.hidden){
 					display: none;
@@ -29,6 +30,13 @@ export default class OrbitPointsOverlay extends HTMLElement {
 					top: 0;
 					width: 100%;
 					height: 100%;
+				}
+				.point-container {
+					position: absolute;
+					width: 100%;
+					height: 100%;
+					left: 0;
+					top: 0;
 				}
 				.point {
 					position: absolute;
@@ -91,20 +99,10 @@ export default class OrbitPointsOverlay extends HTMLElement {
 	 */
 	showPoints(cx,cy){
 		let points = this._formula.approxNearbyCyclicPoints(cx,cy,2000);
-		let html = "";
+		this._div.innerHTML = "";
 		for (let i=0;i<points.length;i++){
-			let point = points[i];
-			let x = this._viewport.toRelativeX(point.x);
-			let y = this._viewport.toRelativeY(point.y);
-			let rx = this._viewport.toRelativeWidth(point.radius);
-			let ry = this._viewport.toRelativeHeight(point.radius);
-			let rx2 = this._viewport.toRelativeWidth(point.approximationRadius);
-			let ry2 = this._viewport.toRelativeHeight(point.approximationRadius);
-			let circleHtml = (rx<2&&ry<2)?`<div class="circle" style="left:${100*x}%;top:${100*y}%;width:${200*rx}%;height:${200*ry}%"></div>`:``;
-			circleHtml += (rx2<2&&ry2<2)?`<div class="circle approximationRadius" style="left:${100*x}%;top:${100*y}%;width:${200*rx2}%;height:${200*ry2}%"></div>`:``;
-			html += `<div class="point" style="left:${100*x}%;top:${100*y}%"><span class="point-label">${point.cycleLength}</span></div>${circleHtml}`;
+			this._div.appendChild(points[i].toElement(this._viewport));
 		}
-		this._div.innerHTML = html;
 	}
 
 	set viewport(viewport){
@@ -143,4 +141,4 @@ export default class OrbitPointsOverlay extends HTMLElement {
 		return this._formula;
 	}
 }
-customElements.define("orbit-points-overlay",OrbitPointsOverlay);
+customElements.define("special-points-overlay",SpecialPointsOverlay);

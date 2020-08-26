@@ -1,5 +1,8 @@
 import {FractalFormula,CyclicPoint,Complex,ComplexWithDerivative} from "../MandelMaths.js";
 
+export const TYPE_DISK = "disk";
+export const TYPE_MINIBROT = "minibrot";
+
 export default class MandelbrotFormula extends FractalFormula {
 	/**
 	 * Returns the iteration count for a specific point in the mandelbrot set.
@@ -171,9 +174,108 @@ export default class MandelbrotFormula extends FractalFormula {
 		a.scale(2**(cycleLength-1));
 		a.multiply(dx,dy);
 		Complex.inverse(a);
-		let point = CyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);
+		let point = MandelbrotCyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);
 		point.steps = steps;
 		point.estimates = estimates;
 		return point;
+	}
+}
+/**
+ * A cyclic point in the mandelbrot set.
+ */
+export class MandelbrotCyclicPoint extends CyclicPoint {
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} cycleLength
+	 * @param {Complex} scale
+	 */
+	constructor(x,y,cycleLength,scale){
+		super(x,y);
+		this.cycleLength = cycleLength;
+		this.scale = scale;
+	}
+
+	/**
+	 * Creates a new Minibrot or Disk object from the given parameters.
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} cycleLength
+	 * @param {Complex} scale
+	 * @param {number} dx
+	 * @param {number} dy
+	 * @param {number} ddx
+	 * @param {number} ddy
+	 */
+	static create(x,y,cycleLength,scale,dx,dy,ddx,ddy){
+		let radius = 0.5*Math.sqrt((dx*dx+dy*dy)/(ddx*ddx+ddy*ddy));
+		let relativeRadius = radius/scale.length;
+		let point = relativeRadius<=1?new Disk(x,y,cycleLength,scale):new Minibrot(x,y,cycleLength,scale);
+		point.dz = new Complex(dx,dy);
+		point.ddz = new Complex(ddx,ddy);
+		point.approximationRadius = radius;
+		point.relativeApproximationRadius = relativeRadius;
+		return point;
+	}
+
+	/**
+	 * @inheritdoc
+	 * @param {FractalViewport} viewport
+	 */
+	toElement(viewport){
+		let element = document.createElement("div");
+		element.className = "point-container";
+		let x = viewport.toRelativeX(this.x);
+		let y = viewport.toRelativeY(this.y);
+		let rx = viewport.toRelativeWidth(this.radius);
+		let ry = viewport.toRelativeHeight(this.radius);
+		let rx2 = viewport.toRelativeWidth(this.approximationRadius);
+		let ry2 = viewport.toRelativeHeight(this.approximationRadius);
+		if (rx<2&&ry<2){
+			let circleDiv = document.createElement("div");
+			circleDiv.className = "circle";
+			circleDiv.style = `left:${100*x}%;top:${100*y}%;width:${200*rx}%;height:${200*ry}%`;
+			element.appendChild(circleDiv);
+		}
+		if (rx2<2&&ry2<2){
+			let circleDiv = document.createElement("div");
+			circleDiv.className = "circle approximationRadius";
+			circleDiv.style = `left:${100*x}%;top:${100*y}%;width:${200*rx2}%;height:${200*ry2}%`;
+			element.appendChild(circleDiv);
+		}
+		element.appendChild(super.toElement(viewport));
+		return element;
+	}
+}
+/**
+ * A cyclic point in the mandelbrot set that belongs to the main cardioid or the cardioid of a minibrot.
+ */
+export class Minibrot extends MandelbrotCyclicPoint {
+	constructor(x,y,cycleLength,scale){
+		super(x,y,cycleLength,scale)
+	}
+
+	get radius(){
+		return this.scale.length*2;
+	}
+
+	get type(){
+		return TYPE_MINIBROT;
+	}
+}
+/**
+ * A cyclic point in the mandelbrot set that belongs to a disk.
+ */
+export class Disk extends MandelbrotCyclicPoint {
+	constructor(x,y,cycleLength,scale,radius){
+		super(x,y,cycleLength,scale);
+	}
+
+	get radius(){
+		return this.scale.length/2;
+	}
+
+	get type(){
+		return TYPE_DISK;
 	}
 }

@@ -194,7 +194,7 @@ export default class MandelbarFormula extends FractalFormula {
 		a.multiply(dx,dy);
 		Complex.inverse(a);
 		let point = CyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);*/
-		let point = CyclicPoint.create(cx,cy,cycleLength,new Complex(NaN,NaN),NaN,NaN,NaN,NaN)
+		let point = new CyclicPoint(cx,cy,cycleLength);
 		point.steps = steps;
 		point.estimates = estimates;
 		return point;

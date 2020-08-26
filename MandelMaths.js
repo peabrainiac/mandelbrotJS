@@ -1,5 +1,4 @@
-export const TYPE_DISK = "disk";
-export const TYPE_MINIBROT = "minibrot";
+import {FractalViewport} from "./MandelbrotCanvasElement.js";
 
 /**
  * Default export, currently empty.
@@ -48,66 +47,52 @@ export class FractalFormula {
 		return null;
 	}
 }
-export class CyclicPoint {
+/**
+ * Base class for special points of interest, like cyclic points; extending this allows them to be displayed in the `OrbitPointOverlay`.
+ */
+export class SpecialPoint {
+	constructor(x=0,y=0){
+		this.x = x;
+		this.y = y;
+	}
+
+	/**
+	 * Creates an element representing this point in the `SpecialPointsOverlay`.
+	 * 
+	 * @param {FractalViewport} viewport
+	 */
+	toElement(viewport){
+		let element = document.createElement("div");
+		element.className = "point";
+		element.style = `left:${100*viewport.toRelativeX(this.x)}%;top:${100*viewport.toRelativeY(this.y)}%`;
+		return element;
+	}
+}
+/**
+ * A point with a cyclic orbit.
+ */
+export class CyclicPoint extends SpecialPoint {
 	/**
 	 * @param {number} x
 	 * @param {number} y
 	 * @param {number} cycleLength
-	 * @param {Complex} scale
 	 */
-	constructor(x,y,cycleLength,scale){
-		this.x = x;
-		this.y = y;
+	constructor(x,y,cycleLength){
+		super(x,y);
 		this.cycleLength = cycleLength;
-		this.scale = scale;
 	}
 
 	/**
-	 * Creates a new Minibrot or Disk object from the given parameters.
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} cycleLength 
-	 * @param {Complex} scale
-	 * @param {number} dx
-	 * @param {number} dy
-	 * @param {number} ddx
-	 * @param {number} ddy
+	 * @inheritdoc
+	 * @param {FractalViewport} viewport
 	 */
-	static create(x,y,cycleLength,scale,dx,dy,ddx,ddy){
-		let radius = 0.5*Math.sqrt((dx*dx+dy*dy)/(ddx*ddx+ddy*ddy));
-		let relativeRadius = radius/scale.length;
-		let point = relativeRadius<=1?new Disk(x,y,cycleLength,scale):new Minibrot(x,y,cycleLength,scale);
-		point.dz = new Complex(dx,dy);
-		point.ddz = new Complex(ddx,ddy);
-		point.approximationRadius = radius;
-		point.relativeApproximationRadius = relativeRadius;
-		return point;
-	}
-}
-export class Minibrot extends CyclicPoint {
-	constructor(x,y,cycleLength,scale){
-		super(x,y,cycleLength,scale)
-	}
-
-	get radius(){
-		return this.scale.length*2;
-	}
-
-	get type(){
-		return TYPE_MINIBROT;
-	}
-}
-export class Disk extends CyclicPoint {
-	constructor(x,y,cycleLength,scale,radius){
-		super(x,y,cycleLength,scale);
-	}
-
-	get radius(){
-		return this.scale.length/2;
-	}
-
-	get type(){
-		return TYPE_DISK;
+	toElement(viewport){
+		let element = super.toElement(viewport);
+		let label = document.createElement("label");
+		label.className = "point-label";
+		label.textContent = this.cycleLength;
+		element.appendChild(label);
+		return element;
 	}
 }
 /**

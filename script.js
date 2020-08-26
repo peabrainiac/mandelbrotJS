@@ -2,7 +2,7 @@ import Utils from "./util/Utils.js";
 
 import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
 import {GeneralSettingsGroup,FormulaSettingsGroup,ToolsSettingsGroup} from "./Settings.js";
-import OrbitPointsOverlay from "./OrbitPointsOverlay.js";
+import SpecialPointsOverlay from "./SpecialPointsOverlay.js";
 
 Utils.onPageLoad(()=>{
 	/** @type {MandelbrotExplorerElement} */
@@ -16,15 +16,15 @@ Utils.onPageLoad(()=>{
 	sidebar.appendChild(tools);
 	generalSettings.link(fractalExplorer);
 	formulaSettings.link(fractalExplorer);
-	const orbitPointsOverlay = new OrbitPointsOverlay();
-	orbitPointsOverlay.slot = "overlay";
-	fractalExplorer.appendChild(orbitPointsOverlay);
+	const specialPointsOverlay = new SpecialPointsOverlay();
+	specialPointsOverlay.slot = "overlay";
+	fractalExplorer.appendChild(specialPointsOverlay);
 	fractalExplorer.fractalCanvas.onViewportChange((viewport)=>{
-		orbitPointsOverlay.viewport = viewport;
+		specialPointsOverlay.viewport = viewport;
 	});
 	tools.onFindCyclicButtonClick(()=>{
-		orbitPointsOverlay.formula = fractalExplorer.formula;
-		orbitPointsOverlay.show();
-		orbitPointsOverlay.showPoints(fractalExplorer.fractalCanvas.x,fractalExplorer.fractalCanvas.y,fractalExplorer.formula);
+		specialPointsOverlay.formula = fractalExplorer.formula;
+		specialPointsOverlay.show();
+		specialPointsOverlay.showPoints(fractalExplorer.fractalCanvas.x,fractalExplorer.fractalCanvas.y,fractalExplorer.formula);
 	});
 });
