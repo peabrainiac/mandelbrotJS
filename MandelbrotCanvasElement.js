@@ -1,6 +1,6 @@
 import Timer from "./util/Timer.js";
 
-import {FractalFormula} from "./MandelMaths.js";
+import {FractalFormula,FractalViewport} from "./MandelMaths.js";
 import MandelbrotFormula from "./formulas/Mandelbrot.js";
 
 export const STATE_LOADING = 0;
@@ -415,67 +415,3 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 	}
 }
 customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);
-
-export class FractalViewport {
-	/**
-	 * @param {number} x1 
-	 * @param {number} y1 
-	 * @param {number} x2 
-	 * @param {number} y2 
-	 */
-	constructor(x1,y1,x2,y2){
-		this.x1 = x1;
-		this.y1 = y1;
-		this.x2 = x2;
-		this.y2 = y2;
-	}
-
-	set width(width){
-		this.x2 = this.x1+width;
-	}
-
-	get width(){
-		return this.x2-this.x1;
-	}
-
-	set height(height){
-		this.y2 = this.y1+height;
-	}
-
-	get height(){
-		return this.y2-this.y1;
-	}
-
-	toFractalX(relativeOffsetX){
-		return this.x1+relativeOffsetX*this.width;
-	}
-
-	toFractalY(relativeOffsetY){
-		return this.y1+relativeOffsetY*this.height;
-	}
-
-	toRelativeX(fractalX){
-		return (fractalX-this.x1)/this.width;
-	}
-
-	toRelativeY(fractalY){
-		return (fractalY-this.y1)/this.height;
-	}
-
-	toFractalWidth(relativeWidth){
-		return relativeWidth*this.width;
-	}
-
-	toFractalHeight(relativeHeight){
-		return relativeHeight*this.height;
-	}
-
-	toRelativeWidth(fractalWidth){
-		return fractalWidth/this.width;
-	}
-
-	toRelativeHeight(fractalHeight){
-		return fractalHeight/this.height;
-	}
-
-}

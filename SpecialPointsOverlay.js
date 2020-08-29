@@ -1,5 +1,4 @@
-import {FractalViewport} from "./MandelbrotCanvasElement.js";
-import {FractalFormula} from "./MandelMaths.js";
+import {FractalFormula,FractalViewport} from "./MandelMaths.js";
 
 export default class SpecialPointsOverlay extends HTMLElement {
 	constructor(){
@@ -52,6 +51,7 @@ export default class SpecialPointsOverlay extends HTMLElement {
 					left: 50%;
 					top: 50%;
 					transform: translate(8px,-50%);
+					background-color: #00000060;
 				}
 				.circle {
 					position: absolute;
@@ -62,7 +62,7 @@ export default class SpecialPointsOverlay extends HTMLElement {
 				.circle.approximationRadius {
 					border-color: #ffffff40;
 				}
-				.svg-ellipse {
+				.svg-ellipse, .svg-ellipse > * {
 					fill: transparent;
 					stroke: #ffffff80;
 					stroke-width: 2px;

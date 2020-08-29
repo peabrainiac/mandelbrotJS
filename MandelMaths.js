@@ -1,5 +1,3 @@
-import {FractalViewport} from "./MandelbrotCanvasElement.js";
-
 /**
  * Default export, currently empty.
  */
@@ -94,6 +92,72 @@ export class CyclicPoint extends SpecialPoint {
 		element.appendChild(label);
 		return element;
 	}
+}
+/**
+ * A viewport object, used to convert between absolute and relative coordinates.
+ */
+export class FractalViewport {
+	/**
+	 * @param {number} x1 
+	 * @param {number} y1 
+	 * @param {number} x2 
+	 * @param {number} y2 
+	 */
+	constructor(x1,y1,x2,y2){
+		this.x1 = x1;
+		this.y1 = y1;
+		this.x2 = x2;
+		this.y2 = y2;
+	}
+
+	set width(width){
+		this.x2 = this.x1+width;
+	}
+
+	get width(){
+		return this.x2-this.x1;
+	}
+
+	set height(height){
+		this.y2 = this.y1+height;
+	}
+
+	get height(){
+		return this.y2-this.y1;
+	}
+
+	toFractalX(relativeOffsetX){
+		return this.x1+relativeOffsetX*this.width;
+	}
+
+	toFractalY(relativeOffsetY){
+		return this.y1+relativeOffsetY*this.height;
+	}
+
+	toRelativeX(fractalX){
+		return (fractalX-this.x1)/this.width;
+	}
+
+	toRelativeY(fractalY){
+		return (fractalY-this.y1)/this.height;
+	}
+
+	toFractalWidth(relativeWidth){
+		return relativeWidth*this.width;
+	}
+
+	toFractalHeight(relativeHeight){
+		return relativeHeight*this.height;
+	}
+
+	toRelativeWidth(fractalWidth){
+		return fractalWidth/this.width;
+	}
+
+	toRelativeHeight(fractalHeight){
+		return fractalHeight/this.height;
+	}
+
 }
 /**
  * A complex number `x+iy`.
@@ -391,23 +455,76 @@ export class ComplexWithDerivative extends Complex {
 	}
 }
 /**
- * A complex number with a jacobian matrix representing its derivative.
+ * A 2x2 matrix.
  */
-export class ComplexWithJacobian extends Complex {
-	constructor(x=0,y=0,xdx=0,ydx=0,xdy=0,ydy=0){
-		super(x,y);
-		this.derivative = new ComplexJacobian(xdx,ydx,xdy,ydy);
-	}
-}
-/**
- * A jacobian matrix representing the derivative of a complex function.
- */
-export class ComplexJacobian {
+export class Matrix2f {
 	constructor(xdx=1,ydx=0,xdy=-ydx,ydy=xdx){
 		this.xdx = xdx;
 		this.ydx = ydx;
 		this.xdy = xdy;
 		this.ydy = ydy;
+	}
+	/**
+	 * Scales the matrix by a certain factor. If two factors are given, scales each row independently.
+	 * @param {number} scale 
+	 * @param {number} scaleY 
+	 */
+	scale(scale,scaleY=scale){
+		this.xdx *= scale;
+		this.ydx *= scaleY;
+		this.xdy *= scale;
+		this.ydy *= scaleY;
+	}
+
+	/**
+	 * Returns a copy of this matrix.
+	 */
+	copy(){
+		return new Matrix2f(this.xdx,this.ydx,this.xdy,this.ydy);
+	}
+
+	/**
+	 * Sets the passed object to its multiplicative inverse `m^-1` and returns it.
+	 * @param {Matrix2f} m
+	 */
+	static inverse(m){
+		let t = m.xdx*m.ydy-m.xdy*m.ydx;
+		let xdx = m.ydy/t;
+		let ydx = -m.ydx/t;
+		let xdy = -m.xdy/t;
+		let ydy = m.xdx/t;
+		m.xdx = xdx;
+		m.ydx = ydx;
+		m.xdy = xdy;
+		m.ydy = ydy;
+		return m;
+	}
+}
+/**
+ * A jacobian matrix representing the derivative of a complex function.
+ */
+export class ComplexJacobian extends Matrix2f {
+	
+	/**
+	 * @inheritdoc
+	 */
+	copy(){
+		return new ComplexJacobian(this.xdx,this.ydx,this.xdy,this.ydy);
+	}
+	
+	/**
+	 * Multiplies both partial derivatives by the given complex number.
+	 * @param {Complex} z 
+	 */
+	multiply(z){
+		let xdx2 = this.xdx*z.x-this.ydx*z.y;
+		let ydx2 = this.xdx*z.y+this.ydx*z.x;
+		let xdy2 = this.xdy*z.x-this.ydy*z.y;
+		let ydy2 = this.xdy*z.y+this.ydy*z.x;
+		this.xdx = xdx2;
+		this.ydx = ydx2;
+		this.xdy = xdy2
+		this.ydy = ydy2;
 	}
 
 	/**
@@ -415,19 +532,6 @@ export class ComplexJacobian {
 	 * @param {ComplexJacobian} j
 	 */
 	static inverse(j){
-		let t = j.xdx*j.ydy-j.xdy*j.ydx;
-		let xdx = j.ydy/t;
-		let ydx = -j.ydx/t;
-		let xdy = -j.xdy/t;
-		let ydy = j.xdx/t;
-		/*let xdx = j.xdx/(j.xdx*j.xdx+j.ydx*j.ydx);
-		let ydx = -j.ydx/(j.xdx*j.xdx+j.ydx*j.ydx);
-		let xdy = j.xdy/(j.xdy*j.xdy+j.ydy*j.ydy);
-		let ydy = -j.ydy/(j.xdy*j.xdy+j.ydy*j.ydy);*/
-		j.xdx = xdx;
-		j.ydx = ydx;
-		j.xdy = xdy;
-		j.ydy = ydy;
-		return j;
+		return Matrix2f.inverse(j);
 	}
 }

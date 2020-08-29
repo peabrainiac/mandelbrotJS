@@ -1,4 +1,4 @@
-import {FractalFormula,CyclicPoint,Complex,ComplexWithDerivative} from "../MandelMaths.js";
+import {FractalFormula,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport} from "../MandelMaths.js";
 
 export const TYPE_DISK = "disk";
 export const TYPE_MINIBROT = "minibrot";

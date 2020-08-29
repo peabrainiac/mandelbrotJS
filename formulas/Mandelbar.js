@@ -1,4 +1,4 @@
-import {FractalFormula,CyclicPoint,Complex,ComplexJacobian} from "../MandelMaths.js";
+import {FractalFormula,CyclicPoint,Complex,ComplexJacobian,FractalViewport} from "../MandelMaths.js";
 
 export default class MandelbarFormula extends FractalFormula {
 	/**
@@ -191,11 +191,11 @@ export default class MandelbarFormula extends FractalFormula {
 		}
 		let a = cycleLength>1?new Complex(ax,ay):new Complex(1,0);
 		a.scale(2**(cycleLength-1));
-		let scale = new ComplexJacobian(xdx,ydx,xdy,ydy);//new ComplexJacobian(xdx*a.x-ydx*a.y,ydx*a.x+xdx*a.y,xdy*a.x-ydy*a.y,ydy*a.x+xdy*a.y);
-		//ComplexJacobian.inverse(scale);
+		let scale = new ComplexJacobian(xdx,ydx,xdy,ydy);
+		scale.multiply(a);
+		ComplexJacobian.inverse(scale);
 		let point = new MandelbarCyclicPoint(cx,cy,cycleLength,scale);
-		point.steps = steps;
-		point.estimates = estimates;
+		point._debugInfo = {steps,estimates,a,jacobian:new ComplexJacobian(xdx,ydx,xdy,ydy),scaleInverse:ComplexJacobian.inverse(scale.copy())};
 		return point;
 	}
 }
@@ -222,13 +222,13 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 	toElement(viewport){
 		let element = document.createElement("div");
 		element.className = "point-container";
-		let x = viewport.toRelativeX(this.x);
-		let y = viewport.toRelativeY(this.y);
-		let rx = viewport.toRelativeWidth(0.5);
-		let ry = viewport.toRelativeHeight(0.5);
+		let r = 0.5;
 		element.innerHTML = `
-			<svg viewBox="0 0 1 1" preserveAspectRatio="none" class="point-container">
-				<ellipse cx="0" cy="0" rx="${rx}" ry="${ry}" class="svg-ellipse" style="transform:matrix(${this.scale.xdx},${this.scale.ydx},${this.scale.xdy},${this.scale.ydy},${x},${y})">
+			<svg viewBox="${viewport.x1} ${viewport.y1} ${viewport.width} ${viewport.height}" preserveAspectRatio="none" class="point-container">
+				<g class="svg-ellipse" style="transform:matrix(${this.scale.xdx},${this.scale.ydx},${this.scale.xdy},${this.scale.ydy},${this.x},${this.y})">
+					<circle cx="0" cy="0" r="${r}"/>
+					<path d="M ${r} 0 L 0 0 L 0 ${r}"/>
+				</g>
 			</svg>
 		`;
 		element.appendChild(super.toElement(viewport));
