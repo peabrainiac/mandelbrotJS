@@ -62,6 +62,12 @@ export default class SpecialPointsOverlay extends HTMLElement {
 				.circle.approximationRadius {
 					border-color: #ffffff40;
 				}
+				.svg-ellipse {
+					fill: transparent;
+					stroke: #ffffff80;
+					stroke-width: 2px;
+					vector-effect: non-scaling-stroke;
+				}
 			</style>
 			<svg id="svg" preserveAspectRatio="none"></svg>
 			<div id="div"></div>

@@ -409,4 +409,25 @@ export class ComplexJacobian {
 		this.xdy = xdy;
 		this.ydy = ydy;
 	}
+
+	/**
+	 * Sets the passed object to its multiplicative inverse `j^-1` and returns it.
+	 * @param {ComplexJacobian} j
+	 */
+	static inverse(j){
+		let t = j.xdx*j.ydy-j.xdy*j.ydx;
+		let xdx = j.ydy/t;
+		let ydx = -j.ydx/t;
+		let xdy = -j.xdy/t;
+		let ydy = j.xdx/t;
+		/*let xdx = j.xdx/(j.xdx*j.xdx+j.ydx*j.ydx);
+		let ydx = -j.ydx/(j.xdx*j.xdx+j.ydx*j.ydx);
+		let xdy = j.xdy/(j.xdy*j.xdy+j.ydy*j.ydy);
+		let ydy = -j.ydy/(j.xdy*j.xdy+j.ydy*j.ydy);*/
+		j.xdx = xdx;
+		j.ydx = ydx;
+		j.xdy = xdy;
+		j.ydy = ydy;
+		return j;
+	}
 }

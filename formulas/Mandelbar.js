@@ -1,4 +1,4 @@
-import {FractalFormula,CyclicPoint,Complex,ComplexWithDerivative,ComplexWithJacobian} from "../MandelMaths.js";
+import {FractalFormula,CyclicPoint,Complex,ComplexJacobian} from "../MandelMaths.js";
 
 export default class MandelbarFormula extends FractalFormula {
 	/**
@@ -161,27 +161,27 @@ export default class MandelbarFormula extends FractalFormula {
 				return null;
 			}
 		}
-		/*let ax = cx;
+		let ax = cx;
 		let ay = cy;
 		let x = cx;
 		let y = cy;
-		let dx = 1;
-		let dy = 0;
-		let ddx = 0;
-		let ddy = 0;
+		let xdx = 1;
+		let ydx = 0;
+		let xdy = 0;
+		let ydy = 1;
 		for (let i=1;i<cycleLength;i++){
 			let x2 = x*x-y*y+cx;
-			let y2 = 2*x*y+cy;
-			let dx2 = 2*(dx*x-dy*y)+1;
-			let dy2 = 2*(dx*y+dy*x);
-			let ddx2 = 2*(dx*dx-dy*dy+ddx*x-ddy*y);
-			let ddy2 = 2*(2*dx*dy+ddx*y+ddy*x);
+			let y2 = -2*x*y+cy;
+			let xdx2 = 2*(xdx*x-ydx*y)+1;
+			let ydx2 = -2*(xdx*y+ydx*x);
+			let xdy2 = 2*(xdy*x-ydy*y);
+			let ydy2 = -2*(xdy*y+ydy*x)+1;
 			x = x2;
 			y = y2;
-			dx = dx2;
-			dy = dy2;
-			ddx = ddx2;
-			ddy = ddy2;
+			xdx = xdx2;
+			ydx = ydx2;
+			xdy = xdy2;
+			ydy = ydy2;
 			if (i<cycleLength-1){
 				let ax2 = ax*x-ay*y;
 				let ay2 = ax*y+ay*x;
@@ -191,12 +191,47 @@ export default class MandelbarFormula extends FractalFormula {
 		}
 		let a = cycleLength>1?new Complex(ax,ay):new Complex(1,0);
 		a.scale(2**(cycleLength-1));
-		a.multiply(dx,dy);
-		Complex.inverse(a);
-		let point = CyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);*/
-		let point = new CyclicPoint(cx,cy,cycleLength);
+		let scale = new ComplexJacobian(xdx,ydx,xdy,ydy);//new ComplexJacobian(xdx*a.x-ydx*a.y,ydx*a.x+xdx*a.y,xdy*a.x-ydy*a.y,ydy*a.x+xdy*a.y);
+		//ComplexJacobian.inverse(scale);
+		let point = new MandelbarCyclicPoint(cx,cy,cycleLength,scale);
 		point.steps = steps;
 		point.estimates = estimates;
 		return point;
+	}
+}
+/**
+ * A cyclic point in the mandelbar set.
+ */
+export class MandelbarCyclicPoint extends CyclicPoint {
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} cycleLength
+	 * @param {ComplexJacobian} scale
+	 */
+	constructor(x,y,cycleLength,scale){
+		super(x,y);
+		this.cycleLength = cycleLength;
+		this.scale = scale;
+	}
+
+	/**
+	 * @inheritdoc
+	 * @param {FractalViewport} viewport
+	 */
+	toElement(viewport){
+		let element = document.createElement("div");
+		element.className = "point-container";
+		let x = viewport.toRelativeX(this.x);
+		let y = viewport.toRelativeY(this.y);
+		let rx = viewport.toRelativeWidth(0.5);
+		let ry = viewport.toRelativeHeight(0.5);
+		element.innerHTML = `
+			<svg viewBox="0 0 1 1" preserveAspectRatio="none" class="point-container">
+				<ellipse cx="0" cy="0" rx="${rx}" ry="${ry}" class="svg-ellipse" style="transform:matrix(${this.scale.xdx},${this.scale.ydx},${this.scale.xdy},${this.scale.ydy},${x},${y})">
+			</svg>
+		`;
+		element.appendChild(super.toElement(viewport));
+		return element;
 	}
 }
