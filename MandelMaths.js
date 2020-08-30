@@ -126,6 +126,10 @@ export class FractalViewport {
 		return this.y2-this.y1;
 	}
 
+	copy(){
+		return new FractalViewport(this.x1,this.y1,this.x2,this.y2);
+	}
+
 	toFractalX(relativeOffsetX){
 		return this.x1+relativeOffsetX*this.width;
 	}
@@ -481,6 +485,22 @@ export class Matrix2f {
 	 */
 	copy(){
 		return new Matrix2f(this.xdx,this.ydx,this.xdy,this.ydy);
+	}
+
+	/**
+	 * Returns this matrix in css `matrix()` notation.
+	 * @param {number} offsetX 
+	 * @param {number} offsetY 
+	 */
+	toCssString(offsetX=0,offsetY=0){
+		return `matrix(${this.xdx},${this.ydx},${this.xdy},${this.ydy},${offsetX},${offsetY})`;
+	}
+
+	/**
+	 * Returns true if all entries are finite and not `NaN`, and false otherwise.
+	 */
+	isFinite(){
+		return isFinite(this.xdx)&&isFinite(this.ydx)&&isFinite(this.xdy)&&isFinite(this.ydy);
 	}
 
 	/**

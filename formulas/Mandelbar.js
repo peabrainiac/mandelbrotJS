@@ -222,15 +222,21 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 	toElement(viewport){
 		let element = document.createElement("div");
 		element.className = "point-container";
-		let r = 0.5;
-		element.innerHTML = `
-			<svg viewBox="${viewport.x1} ${viewport.y1} ${viewport.width} ${viewport.height}" preserveAspectRatio="none" class="point-container">
-				<g class="svg-ellipse" style="transform:matrix(${this.scale.xdx},${this.scale.ydx},${this.scale.xdy},${this.scale.ydy},${this.x},${this.y})">
-					<circle cx="0" cy="0" r="${r}"/>
-					<path d="M ${r} 0 L 0 0 L 0 ${r}"/>
-				</g>
-			</svg>
-		`;
+		if (this.scale.isFinite()){
+			let x = viewport.toRelativeX(this.x);
+			let y = viewport.toRelativeY(this.y)*viewport.height/viewport.width;
+			let r = viewport.toRelativeWidth(0.5);
+			let transform = this.scale.copy();
+			transform.scale(r);
+			element.innerHTML = `
+				<svg viewBox="0 0 1 ${viewport.height/viewport.width}" preserveAspectRatio="none" class="point-container">
+					<g class="svg-ellipse" style="transform:${transform.toCssString(x,y)}">
+						<circle cx="0" cy="0" r="${1}"/>
+						<path d="M ${1} 0 L 0 0 L 0 ${1}"/>
+					</g>
+				</svg>
+			`;
+		}
 		element.appendChild(super.toElement(viewport));
 		return element;
 	}
