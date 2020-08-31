@@ -1,5 +1,5 @@
 import SidebarSection from "./SidebarSection.js";
-import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
+import FractalExplorer from "../explorer/FractalExplorer.js";
 
 import FractalFormula from "./MandelMaths.js";
 import MandelbrotFormula from "./formulas/Mandelbrot.js";

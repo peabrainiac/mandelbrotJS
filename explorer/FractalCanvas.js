@@ -1,7 +1,7 @@
-import Timer from "./util/Timer.js";
+import Timer from "../util/Timer.js";
 
-import {FractalFormula,FractalViewport} from "./MandelMaths.js";
-import MandelbrotFormula from "./formulas/Mandelbrot.js";
+import {FractalFormula,FractalViewport} from "../MandelMaths.js";
+import MandelbrotFormula from "../formulas/Mandelbrot.js";
 
 export const STATE_LOADING = 0;
 export const STATE_PENDING_RENDER = 1;
@@ -14,7 +14,7 @@ export const RENDER_GRID_SIZES = [64,16,4,1];
 /**
  * Custom element responsible for rendering an image based on a given formula and location.
  */
-export default class MandelbrotCanvasElement extends HTMLElement {
+export default class FractalCanvas extends HTMLElement {
 	constructor(){
 		super();
 		this._width = 960;
@@ -414,4 +414,4 @@ export default class MandelbrotCanvasElement extends HTMLElement {
 		}
 	}
 }
-customElements.define("mandelbrot-canvas-element",MandelbrotCanvasElement);
+customElements.define("fractal-canvas",FractalCanvas);

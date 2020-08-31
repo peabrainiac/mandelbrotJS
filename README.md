@@ -1,6 +1,6 @@
 # MandelbrotJS
 
-An experimental mandelbrot set renderer written in javascript.
+An experimental renderer for fractals like the mandelbrot set, written in javascript.
 
 This is currently less of a finished program and more a place for me to test new ideas, tools and rendering algorithms - but I hope some of these will allow me to turn this into an actual high-performance fractal explorer over time.
 

@@ -1,10 +1,15 @@
-import FixedRatioContainer from "./util/FixedRatioContainer.js";
+import FixedRatioContainer from "../util/FixedRatioContainer.js";
 
-import MandelbrotCanvasElement, {STATE_RENDERING,STATE_FINISHED,STATE_CANCELLED,ITERATIONS_NOT_YET_KNOWN} from "./MandelbrotCanvasElement.js";
-import MandelbrotExplorerStatusbar from "./MandelbrotExplorerStatusbar.js";
-import ZoomPreviewElement from "./ZoomPreviewElement.js";
+import FractalCanvas, {STATE_RENDERING,STATE_FINISHED,STATE_CANCELLED,ITERATIONS_NOT_YET_KNOWN} from "./FractalCanvas.js";
+import FractalExplorerStatusbar from "./FractalExplorerStatusbar.js";
+import FractalZoomPreview from "./FractalZoomPreview.js";
 
-export default class MandelbrotExplorerElement extends HTMLElement {
+/**
+ * The custom element responsible for displaying a fractal based on a given formula and settings; responsible for zooming, mouse events and managing the fractal canvas and other sub-elements.
+ * 
+ * This, together with its dependencies, basically contains all the code needed for the actual fractal explorer, but none of the code for the settings user interface.
+ */
+export default class FractalExplorer extends HTMLElement {
 	constructor(){
 		super();
 		this.attachShadow({mode:"open"});
@@ -39,9 +44,9 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 			</style>
 			<fixed-ratio-container id="outer-container" ratio="4:3">
 				<div id="inner-container">
-					<mandelbrot-canvas-element id="canvas"></mandelbrot-canvas-element>
-					<mandelbrot-explorer-statusbar id="statusbar"></mandelbrot-explorer-statusbar>
-					<zoom-preview-element id="zoom-preview"></zoom-preview-element>
+					<fractal-canvas id="canvas"></fractal-canvas>
+					<fractal-explorer-statusbar id="statusbar"></fractal-explorer-statusbar>
+					<fractal-zoom-preview id="zoom-preview"></fractal-zoom-preview>
 					<slot name="overlay"></slot>
 				</div>
 			</fixed-ratio-container>
@@ -49,11 +54,11 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 		/** @type {FixedRatioContainer} */
 		const outerContainer = this.shadowRoot.getElementById("outer-container");
 		const innerContainer = this.shadowRoot.getElementById("inner-container");
-		/** @type {MandelbrotCanvasElement} */
+		/** @type {FractalCanvas} */
 		const fractalCanvas = this.shadowRoot.getElementById("canvas");
-		/** @type {MandelbrotExplorerStatusbar} */
+		/** @type {FractalExplorerStatusbar} */
 		const statusbar = this.shadowRoot.getElementById("statusbar");
-		/** @type {ZoomPreviewElement} */
+		/** @type {FractalZoomPreview} */
 		const zoomPreviewElement = this.shadowRoot.getElementById("zoom-preview");
 		zoomPreviewElement.targetCanvas = fractalCanvas.canvas;
 		fractalCanvas.addEventListener("mousedown",(e)=>{
@@ -206,4 +211,4 @@ export default class MandelbrotExplorerElement extends HTMLElement {
 	}
 
 }
-customElements.define("mandelbrot-explorer-element",MandelbrotExplorerElement);
+customElements.define("fractal-explorer",FractalExplorer);

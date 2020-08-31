@@ -1,12 +1,12 @@
 import Utils from "./util/Utils.js";
 
-import MandelbrotExplorerElement from "./MandelbrotExplorerElement.js";
+import FractalExplorer from "./explorer/FractalExplorer.js";
 import {GeneralSettingsGroup,FormulaSettingsGroup,ToolsSettingsGroup} from "./Settings.js";
 import SpecialPointsOverlay from "./SpecialPointsOverlay.js";
 
 Utils.onPageLoad(()=>{
-	/** @type {MandelbrotExplorerElement} */
-	const fractalExplorer = document.querySelector("mandelbrot-explorer-element");
+	/** @type {FractalExplorer} */
+	const fractalExplorer = document.querySelector("fractal-explorer");
 	const sidebar = document.querySelector("sidebar-element");
 	const generalSettings = new GeneralSettingsGroup();
 	const formulaSettings = new FormulaSettingsGroup();

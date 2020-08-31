@@ -1,4 +1,7 @@
-export default class MandelbrotExplorerStatusbar extends HTMLElement {
+/**
+ * Custom element for the fractal explorer's status bar. Responsible for displaying information such as the current rendering status, progress, zoom depth etc.
+ */
+export default class FractalExplorerStatusbar extends HTMLElement {
 	constructor(){
 		super();
 		this.attachShadow({mode:"open"});
@@ -65,29 +68,44 @@ export default class MandelbrotExplorerStatusbar extends HTMLElement {
 		this.update();
 	}
 
-	/** @type {string} */
+	/**
+	 * A string representing the current state of the renderer.
+	 * @type {string}
+	 */
 	get state(){
 		return this._state;
 	}
 
-	/** @type {number} */
+	/**
+	 * A number between 0 and 1 indicating the current rendering progress.
+	 * @type {number}
+	 */
 	get progress(){
 		return this._progress;
 	}
 
-	/** @type {number} */
+	/**
+	 * The time spend rendering the current image in seconds.
+	 * @type {number}
+	 */
 	get time(){
 		return this._time;
 	}
 
-	/** @type {number} */
+	/**
+	 * The current zoom.
+	 * @type {number}
+	 */
 	get zoom(){
 		return this._zoom;
 	}
 
-	/** @type {string} */
+	/**
+	 * A string containing information about the pixel under the mouse.
+	 * @type {string}
+	 */
 	get mouseInfo(){
 		return this._mouseInfo;
 	}
 }
-customElements.define("mandelbrot-explorer-statusbar",MandelbrotExplorerStatusbar);
+customElements.define("fractal-explorer-statusbar",FractalExplorerStatusbar);

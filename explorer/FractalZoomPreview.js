@@ -1,4 +1,7 @@
-export default class ZoomPreviewElement extends HTMLElement {
+/**
+ * Custom element responsible for displaying a preview of the region around the cursor before zooming in.
+ */
+export default class FractalZoomPreview extends HTMLElement {
 	constructor(canvas=null){
 		super();
 		this.attachShadow({mode:"open"});
@@ -66,7 +69,10 @@ export default class ZoomPreviewElement extends HTMLElement {
 		this._targetCtx = canvas?canvas.getContext("2d"):null;
 	}
 
-	/** @type {HTMLCanvasElement} */
+	/**
+	 * the canvas with image to zoom into.
+	 * @type {HTMLCanvasElement}
+	 */
 	get targetCanvas(){
 		return this._targetCanvas;
 	}
@@ -79,8 +85,12 @@ export default class ZoomPreviewElement extends HTMLElement {
 		}
 	}
 
+	/**
+	 * How much the preview should be zoomed in relative to the original image.
+	 * @type {number}
+	 */
 	get zoom(){
 		return this._zoom;
 	}
 }
-customElements.define("zoom-preview-element",ZoomPreviewElement);
+customElements.define("fractal-zoom-preview",FractalZoomPreview);
