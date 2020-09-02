@@ -161,15 +161,15 @@ export default class MandelbarFormula extends FractalFormula {
 				return null;
 			}
 		}
-		let ax = cx;
-		let ay = cy;
-		let x = cx;
-		let y = cy;
-		let xdx = 1;
+		let ax = 1;
+		let ay = 0;
+		let x = 0;
+		let y = 0;
+		let xdx = 0;
 		let ydx = 0;
 		let xdy = 0;
-		let ydy = 1;
-		for (let i=1;i<cycleLength;i++){
+		let ydy = 0;
+		for (let i=0;i<cycleLength;i++){
 			let x2 = x*x-y*y+cx;
 			let y2 = -2*x*y+cy;
 			let xdx2 = 2*(xdx*x-ydx*y)+1;
@@ -183,14 +183,13 @@ export default class MandelbarFormula extends FractalFormula {
 			xdy = xdy2;
 			ydy = ydy2;
 			if (i<cycleLength-1){
-				let ax2 = ax*x-ay*y;
-				let ay2 = ax*y+ay*x;
+				let ax2 = 2*(ax*x-ay*y);
+				let ay2 = -2*(ax*y+ay*x);
 				ax = ax2;
 				ay = ay2;
 			}
 		}
-		let a = cycleLength>1?new Complex(ax,ay):new Complex(1,0);
-		a.scale(2**(cycleLength-1));
+		let a = new Complex(ax,ay);
 		let scale = new ComplexJacobian(xdx,ydx,xdy,ydy);
 		scale.multiply(a);
 		ComplexJacobian.inverse(scale);
@@ -232,7 +231,7 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 				<svg viewBox="0 0 1 ${viewport.height/viewport.width}" preserveAspectRatio="none" class="point-container">
 					<g class="svg-ellipse" style="transform:${transform.toCssString(x,y)}">
 						<circle cx="0" cy="0" r="${1}"/>
-						<path d="M ${1} 0 L 0 0 L 0 ${1}"/>
+						<path d="M -1 0 L 0 0 L 0 0.5"/>
 					</g>
 				</svg>
 			`;
