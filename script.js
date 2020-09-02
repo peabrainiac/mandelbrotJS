@@ -24,7 +24,8 @@ Utils.onPageLoad(()=>{
 	});
 	tools.onFindCyclicButtonClick(()=>{
 		specialPointsOverlay.formula = fractalExplorer.formula;
+		specialPointsOverlay.iterations = fractalExplorer.iterations;
 		specialPointsOverlay.show();
-		specialPointsOverlay.showPoints(fractalExplorer.fractalCanvas.x,fractalExplorer.fractalCanvas.y,fractalExplorer.formula);
+		specialPointsOverlay.showPoints(fractalExplorer.fractalCanvas.x,fractalExplorer.fractalCanvas.y);
 	});
 });

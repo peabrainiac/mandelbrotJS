@@ -73,6 +73,7 @@ export default class SpecialPointsOverlay extends HTMLElement {
 			<div id="div"></div>
 		`;
 		this._formula = new FractalFormula();
+		this._iterations = 200;
 		/** @type {SVGSVGElement} */
 		this._svg = this.shadowRoot.getElementById("svg");
 		this._div = this.shadowRoot.getElementById("div");
@@ -86,7 +87,7 @@ export default class SpecialPointsOverlay extends HTMLElement {
 			if (e.button==1){
 				let fractalX = this._viewport.toFractalX(e.offsetX/this.offsetWidth);
 				let fractalY = this._viewport.toFractalY(e.offsetY/this.offsetHeight);
-				console.log(this._formula.approxNearbyCyclicPoints(fractalX,fractalY,2000));
+				console.log(this._formula.approxNearbyCyclicPoints(fractalX,fractalY,this._iterations));
 			}else{
 				this.hide();
 			}
@@ -101,10 +102,10 @@ export default class SpecialPointsOverlay extends HTMLElement {
 	/**
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {FractalFormula} formula
+	 * @param {number} iterations
 	 */
 	showPoints(cx,cy){
-		let points = this._formula.approxNearbyCyclicPoints(cx,cy,2000);
+		let points = this._formula.approxNearbyCyclicPoints(cx,cy,this._iterations);
 		this._div.innerHTML = "";
 		for (let i=0;i<points.length;i++){
 			this._div.appendChild(points[i].toElement(this._viewport));
@@ -145,6 +146,15 @@ export default class SpecialPointsOverlay extends HTMLElement {
 	/** @type {FractalFormula} */
 	get formula(){
 		return this._formula;
+	}
+
+	set iterations(iterations){
+		this._iterations = iterations;
+	}
+
+	/** @type {number} */
+	get iterations(){
+		return this._iterations;
 	}
 }
 customElements.define("special-points-overlay",SpecialPointsOverlay);

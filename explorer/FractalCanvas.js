@@ -289,6 +289,7 @@ export default class FractalCanvas extends HTMLElement {
 		this.render();
 	}
 
+	/** @type {number} */
 	get iterations(){
 		return this._iterations;
 	}

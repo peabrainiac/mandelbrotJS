@@ -106,8 +106,6 @@ export default class MandelbrotFormula extends FractalFormula {
 	 * 
 	 * @todo also return `null` if the estimate doesn't converge fast enough for this to be precise.
 	 * 
-	 * @todo scale breaks for cycle length 1025 and larger because `2^1024` overflows to Infinity; multiply twos seperately to fix
-	 * 
 	 * @param {number} startX
 	 * @param {number} startY
 	 * @param {number} cycleLength
@@ -142,15 +140,15 @@ export default class MandelbrotFormula extends FractalFormula {
 				return null;
 			}
 		}
-		let ax = cx;
-		let ay = cy;
-		let x = cx;
-		let y = cy;
-		let dx = 1;
+		let ax = 1;
+		let ay = 0;
+		let x = 0;
+		let y = 0;
+		let dx = 0;
 		let dy = 0;
 		let ddx = 0;
 		let ddy = 0;
-		for (let i=1;i<cycleLength;i++){
+		for (let i=0;i<cycleLength;i++){
 			let x2 = x*x-y*y+cx;
 			let y2 = 2*x*y+cy;
 			let dx2 = 2*(dx*x-dy*y)+1;
@@ -164,14 +162,13 @@ export default class MandelbrotFormula extends FractalFormula {
 			ddx = ddx2;
 			ddy = ddy2;
 			if (i<cycleLength-1){
-				let ax2 = ax*x-ay*y;
-				let ay2 = ax*y+ay*x;
+				let ax2 = 2*(ax*x-ay*y);
+				let ay2 = 2*(ax*y+ay*x);
 				ax = ax2;
 				ay = ay2;
 			}
 		}
-		let a = cycleLength>1?new Complex(ax,ay):new Complex(1,0);
-		a.scale(2**(cycleLength-1));
+		let a = new Complex(ax,ay);
 		a.multiply(dx,dy);
 		Complex.inverse(a);
 		let point = MandelbrotCyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);
