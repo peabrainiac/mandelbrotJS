@@ -1,5 +1,5 @@
 import SidebarSection from "./SidebarSection.js";
-import FractalExplorer from "../explorer/FractalExplorer.js";
+import FractalExplorer from "./explorer/FractalExplorer.js";
 
 import FractalFormula from "./MandelMaths.js";
 import MandelbrotFormula from "./formulas/Mandelbrot.js";
@@ -39,7 +39,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {MandelbrotExplorerElement} fractalExplorer 
+	 * @param {FractalExplorer} fractalExplorer 
 	 */
 	link(fractalExplorer){
 		this.onResolutionChange((width,height)=>{
@@ -195,7 +195,7 @@ export class FormulaSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {MandelbrotExplorerElement} fractalExplorer 
+	 * @param {FractalExplorer} fractalExplorer 
 	 */
 	link(fractalExplorer){
 		this.onFormulaChange((formula)=>{
