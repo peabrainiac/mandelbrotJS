@@ -548,10 +548,73 @@ export class ComplexJacobian extends Matrix2f {
 	}
 
 	/**
+	 * Returns a new `ComplexJacobian` relative to the given matrix.
+	 * @param {Matrix2f} m
+	 */
+	relativeTo(m){
+		let xdmx = this.xdx*m.xdx+this.xdy*m.ydx;
+		let ydmx = this.ydx*m.xdx+this.ydy*m.ydx;
+		let xdmy = this.xdx*m.xdy+this.xdy*m.ydy;
+		let ydmy = this.ydx*m.xdy+this.ydy*m.ydy;
+		let mxdmx = (xdmx*m.xdx+ydmx*m.ydx)/Math.sqrt(m.xdx**2+m.ydx**2);
+		let mydmx = (xdmx*m.xdy+ydmx*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
+		let mxdmy = (xdmy*m.xdx+ydmy*m.ydx)/Math.sqrt(m.xdx**2+m.ydx**2);
+		let mydmy = (xdmy*m.xdy+ydmy*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
+		return new ComplexJacobian(mxdmx,mydmx,mxdmy,mydmy);
+	}
+
+	/**
 	 * Sets the passed object to its multiplicative inverse `j^-1` and returns it.
 	 * @param {ComplexJacobian} j
 	 */
 	static inverse(j){
 		return Matrix2f.inverse(j);
+	}
+}
+/**
+ * The derivative of a `ComplexJacobian`, basically; that is, an object holding all second-order partial derivatives `xdxdx`, `ydxdx`, `xdydx` and so on.
+ */
+export class ComplexJacobianDerivative {
+	constructor(xdxdx,ydxdx,xdydx,ydydx,xdxdy,ydxdy,xdydy,ydydy){
+		this.xdxdx = xdxdx;
+		this.ydxdx = ydxdx;
+		this.xdydx = xdydx;
+		this.ydydx = ydydx;
+		this.xdxdy = xdxdy;
+		this.ydxdy = ydxdy;
+		this.xdydy = xdydy;
+		this.ydydy = ydydy;
+	}
+
+	/**
+	 * Returns a new `ComplexJacobianDerivative` relative to the given matrix.
+	 * @param {Matrix2f} m
+	 */
+	relativeTo(m){
+		let xdxdmx = this.xdxdx*m.xdx+this.xdxdy*m.ydx;
+		let ydxdmx = this.ydxdx*m.xdx+this.ydxdy*m.ydx;
+		let xdydmx = this.xdydx*m.xdx+this.xdydy*m.ydx;
+		let ydydmx = this.ydydx*m.xdx+this.ydydy*m.ydx;
+		let xdxdmy = this.xdxdx*m.xdy+this.xdxdy*m.ydy;
+		let ydxdmy = this.ydxdx*m.xdy+this.ydxdy*m.ydy;
+		let xdydmy = this.xdydx*m.xdy+this.xdydy*m.ydy;
+		let ydydmy = this.ydydx*m.xdy+this.ydydy*m.ydy;
+		let xdmxdmx = xdxdmx*m.xdx+xdydmx*m.ydx;
+		let ydmxdmx = ydxdmx*m.xdx+ydydmx*m.ydx;
+		let xdmydmx = xdxdmx*m.xdy+xdydmx*m.ydy;
+		let ydmydmx = ydxdmx*m.xdy+ydydmx*m.ydy;
+		let xdmxdmy = xdxdmy*m.xdx+xdydmy*m.ydx;
+		let ydmxdmy = ydxdmy*m.xdx+ydydmy*m.ydx;
+		let xdmydmy = xdxdmy*m.xdy+xdydmy*m.ydy;
+		let ydmydmy = ydxdmy*m.xdy+ydydmy*m.ydy;
+		let mxdmxdmx = (xdmxdmx*m.xdx+ydmxdmx*m.ydx)/Math.sqrt(m.xdx**2+m.ydx**2);
+		let mydmxdmx = (xdmxdmx*m.xdy+ydmxdmx*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
+		let mxdmydmx = (xdmydmx*m.xdx+ydmydmx*m.ydx)/Math.sqrt(m.xdx**2+m.ydx**2);
+		let mydmydmx = (xdmydmx*m.xdy+ydmydmx*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
+		let mxdmxdmy = (xdmxdmy*m.xdx+ydmxdmy*m.ydx)/Math.sqrt(m.xdx**2+m.ydx**2);
+		let mydmxdmy = (xdmxdmy*m.xdy+ydmxdmy*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
+		let mxdmydmy = (xdmydmy*m.xdx+ydmydmy*m.ydx)/Math.sqrt(m.xdx**2+m.ydx**2);
+		let mydmydmy = (xdmydmy*m.xdy+ydmydmy*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
+		return new ComplexJacobianDerivative(mxdmxdmx,mydmxdmx,mxdmydmx,mydmydmx,mxdmxdmy,mydmxdmy,mxdmydmy,mydmydmy);
 	}
 }

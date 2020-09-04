@@ -248,9 +248,6 @@ export class MandelbrotCyclicPoint extends CyclicPoint {
  * A cyclic point in the mandelbrot set that belongs to the main cardioid or the cardioid of a minibrot.
  */
 export class Minibrot extends MandelbrotCyclicPoint {
-	constructor(x,y,cycleLength,scale){
-		super(x,y,cycleLength,scale)
-	}
 
 	get radius(){
 		return this.scale.length*2;
@@ -264,10 +261,7 @@ export class Minibrot extends MandelbrotCyclicPoint {
  * A cyclic point in the mandelbrot set that belongs to a disk.
  */
 export class Disk extends MandelbrotCyclicPoint {
-	constructor(x,y,cycleLength,scale,radius){
-		super(x,y,cycleLength,scale);
-	}
-
+	
 	get radius(){
 		return this.scale.length/2;
 	}

@@ -1,5 +1,8 @@
-import {FractalFormula,CyclicPoint,Complex,ComplexJacobian,FractalViewport} from "../MandelMaths.js";
+import {FractalFormula,CyclicPoint,Complex,ComplexJacobian,ComplexJacobianDerivative,FractalViewport} from "../MandelMaths.js";
 
+export const TYPE_ELLIPSE = "ellipse";
+export const TYPE_MINIBAR = "minibar";
+export const TYPE_SKEWED_MINIBROT = "skewed minibrot";
 export default class MandelbarFormula extends FractalFormula {
 	/**
 	 * Returns the iteration count for a specific point in the mandelbrot set.
@@ -125,7 +128,6 @@ export default class MandelbarFormula extends FractalFormula {
 	getNearbyCyclicPoint(startX,startY,cycleLength){
 		let cx = startX;
 		let cy = startY;
-		//return CyclicPoint.create(cx,cy,cycleLength,new Complex(0,0),0,0,0,0);
 		let estimates = [];
 		for (var steps=0;steps<20;steps++){
 			let x = cx;
@@ -169,6 +171,14 @@ export default class MandelbarFormula extends FractalFormula {
 		let ydx = 0;
 		let xdy = 0;
 		let ydy = 0;
+		let xdxdx = 0;
+		let ydxdx = 0;
+		let xdydx = 0;
+		let ydydx = 0;
+		let xdxdy = 0;
+		let ydxdy = 0;
+		let xdydy = 0;
+		let ydydy = 0;
 		for (let i=0;i<cycleLength;i++){
 			let x2 = x*x-y*y+cx;
 			let y2 = -2*x*y+cy;
@@ -176,12 +186,28 @@ export default class MandelbarFormula extends FractalFormula {
 			let ydx2 = -2*(xdx*y+ydx*x);
 			let xdy2 = 2*(xdy*x-ydy*y);
 			let ydy2 = -2*(xdy*y+ydy*x)+1;
+			let xdxdx2 = 2*(xdxdx*x+xdx*xdx-ydxdx*y-ydx*ydx);
+			let ydxdx2 = -2*(xdxdx*y+2*xdx*ydx+ydxdx*x);
+			let xdydx2 = 2*(xdydx*x+xdy*xdx-ydydx*y-ydy*ydx);
+			let ydydx2 = -2*(xdydx*y+xdy*ydx+ydydx*x+ydy*xdx);
+			let xdxdy2 = 2*(xdxdy*x+xdx*xdy-ydxdy*y-ydx*ydy);
+			let ydxdy2 = -2*(xdxdy*y+xdx*ydy+ydxdy*x+ydx*xdy);
+			let xdydy2 = 2*(xdydy*x+xdy*xdy-ydydy*y-ydy*ydy);
+			let ydydy2 = -2*(xdydy*y+2*xdy*ydy+ydydy*x);
 			x = x2;
 			y = y2;
 			xdx = xdx2;
 			ydx = ydx2;
 			xdy = xdy2;
 			ydy = ydy2;
+			xdxdx = xdxdx2;
+			ydxdx = ydxdx2;
+			xdydx = xdydx2;
+			ydydx = ydydx2;
+			xdxdy = xdxdy2;
+			ydxdy = ydxdy2;
+			xdydy = xdydy2;
+			ydydy = ydydy2;
 			if (i<cycleLength-1){
 				let ax2 = 2*(ax*x-ay*y);
 				let ay2 = -2*(ax*y+ay*x);
@@ -190,11 +216,13 @@ export default class MandelbarFormula extends FractalFormula {
 			}
 		}
 		let a = new Complex(ax,ay);
-		let scale = new ComplexJacobian(xdx,ydx,xdy,ydy);
+		let jacobian = new ComplexJacobian(xdx,ydx,xdy,ydy);
+		let jacobianDerivative = new ComplexJacobianDerivative(xdxdx,ydxdx,xdydx,ydydx,xdxdy,ydxdy,xdydy,ydydy);
+		let scale = jacobian.copy();
 		scale.multiply(a);
 		ComplexJacobian.inverse(scale);
-		let point = new MandelbarCyclicPoint(cx,cy,cycleLength,scale);
-		point._debugInfo = {steps,estimates,a,jacobian:new ComplexJacobian(xdx,ydx,xdy,ydy),scaleInverse:ComplexJacobian.inverse(scale.copy())};
+		let point = MandelbarCyclicPoint.create(cx,cy,cycleLength,scale,jacobian,jacobianDerivative);
+		Object.apply(point._debugInfo,{steps,estimates,a,jacobian,jacobianDerivative});
 		return point;
 	}
 }
@@ -207,11 +235,34 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 	 * @param {number} y
 	 * @param {number} cycleLength
 	 * @param {ComplexJacobian} scale
+	 * @param {Complex} relativeApproximationRadius
 	 */
-	constructor(x,y,cycleLength,scale){
+	constructor(x,y,cycleLength,scale,relativeApproximationRadius){
 		super(x,y);
 		this.cycleLength = cycleLength;
 		this.scale = scale;
+		this.relativeApproximationRadius = relativeApproximationRadius;
+	}
+
+	/**
+	 * @param {number} x 
+	 * @param {number} y 
+	 * @param {number} cycleLength 
+	 * @param {ComplexJacobian} scale 
+	 * @param {ComplexJacobian} jacobian 
+	 * @param {ComplexJacobianDerivative} jacobianDerivative
+	 */
+	static create(x,y,cycleLength,scale,jacobian,jacobianDerivative){
+		let j = jacobian.relativeTo(scale);
+		let jd = jacobianDerivative.relativeTo(scale);
+		let rrx = 0.5*Math.sqrt((j.xdx**2+j.ydx**2)/(jd.xdxdx**2+jd.ydxdx**2));
+		let rry = 0.5*Math.sqrt((j.xdy**2+j.ydy**2)/(jd.xdydy**2+jd.ydydy**2));
+		let rx = rrx*Math.sqrt(scale.xdx**2+scale.ydx**2);
+		let ry = rry*Math.sqrt(scale.xdy**2+scale.ydy**2);
+		/** @type {MandelbarCyclicPoint} */
+		let point = new (rrx<1?Ellipse:(cycleLength%2==1?Minibar:SkewedMinibrot))(x,y,cycleLength,scale,new Complex(rrx,rry));
+		point._debugInfo = {rx,ry};
+		return point;
 	}
 
 	/**
@@ -224,19 +275,62 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 		if (this.scale.isFinite()){
 			let x = viewport.toRelativeX(this.x);
 			let y = viewport.toRelativeY(this.y)*viewport.height/viewport.width;
-			let r = viewport.toRelativeWidth(0.5);
+			let r = viewport.toRelativeWidth(1);
 			let transform = this.scale.copy();
-			transform.scale(r);
+			transform.scale(r*this.relativeRadius);
+			let transform2 = this.scale.copy();
+			let rx = r*this.relativeApproximationRadius.x;
+			let ry = r*this.relativeApproximationRadius.y;
+			transform2.xdx *= rx;
+			transform2.ydx *= rx;
+			transform2.xdy *= ry;
+			transform2.ydy *= ry;
 			element.innerHTML = `
 				<svg viewBox="0 0 1 ${viewport.height/viewport.width}" preserveAspectRatio="none" class="point-container">
 					<g class="svg-ellipse" style="transform:${transform.toCssString(x,y)}">
-						<circle cx="0" cy="0" r="${1}"/>
+						<circle cx="0" cy="0" r="1"/>
 						<path d="M -1 0 L 0 0 L 0 0.5"/>
 					</g>
+					${transform2.isFinite()?`<g class="svg-ellipse approximationRadius" style="transform:${transform2.toCssString(x,y)}">
+						<circle cx="0" cy="0" r="1"/>
+					</g>`:``}
 				</svg>
 			`;
 		}
 		element.appendChild(super.toElement(viewport));
 		return element;
+	}
+}
+/** A cyclic point in the mandelbar set that belongs to a skewed, hence elliptical disk. */
+export class Ellipse extends MandelbarCyclicPoint {
+
+	get relativeRadius(){
+		return 0.5;
+	}
+
+	get type(){
+		return TYPE_ELLIPSE;
+	}
+}
+/** A cyclic point in the mandelbar set that belongs to the main deltoid or the deltoid of a mini-mandelbar. */
+export class Minibar extends MandelbarCyclicPoint {
+
+	get relativeRadius(){
+		return 2;
+	}
+
+	get type(){
+		return TYPE_MINIBAR;
+	}
+}
+/** A cyclic point in the mandelbar set that belongs to the cardioid of a minibrot. */
+export class SkewedMinibrot extends MandelbarCyclicPoint {
+
+	get relativeRadius(){
+		return 2;
+	}
+
+	get type(){
+		return TYPE_SKEWED_MINIBROT;
 	}
 }
