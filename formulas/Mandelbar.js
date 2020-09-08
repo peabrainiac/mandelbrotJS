@@ -215,14 +215,20 @@ export default class MandelbarFormula extends FractalFormula {
 				ay = ay2;
 			}
 		}
-		let a = new Complex(ax,ay);
+		let c = new Complex(ax,ay);
 		let jacobian = new ComplexJacobian(xdx,ydx,xdy,ydy);
 		let jacobianDerivative = new ComplexJacobianDerivative(xdxdx,ydxdx,xdydx,ydydx,xdxdy,ydxdy,xdydy,ydydy);
 		let scale = jacobian.copy();
-		scale.multiply(a);
+		if (cycleLength%2==0){
+			scale.multiply(c);
+		}else{
+			let b = c.copy();
+			b.theta *= -1/3;
+			scale.multiply(b);
+		}
 		ComplexJacobian.inverse(scale);
 		let point = MandelbarCyclicPoint.create(cx,cy,cycleLength,scale,jacobian,jacobianDerivative);
-		Object.apply(point._debugInfo,{steps,estimates,a,jacobian,jacobianDerivative});
+		Object.apply(point._debugInfo,{steps,estimates,c,jacobian,jacobianDerivative});
 		return point;
 	}
 }

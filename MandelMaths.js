@@ -187,6 +187,16 @@ export class Complex {
 		return Math.sqrt(this.x*this.x+this.y*this.y);
 	}
 
+	set theta(theta){
+		let l = this.length;
+		this.x = Math.cos(theta)*l;
+		this.y = Math.sin(theta)*l;
+	}
+
+	get theta(){
+		return Math.atan2(this.y,this.x);
+	}
+
 	copy(){
 		return new Complex(this.x,this.y)
 	}

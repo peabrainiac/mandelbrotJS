@@ -115,23 +115,98 @@ It is therefore the term $2^{n-1}(z_0z_1...z_{n-2})d_k$ that actually iterates j
 
 \section{Generalizing for other fractals - WIP}
 
-Applying these same methods to other popular fractals such as the mandelbar set (also commonly referred to as tricorn) or the burning ship fractal is slightly complicated by the fact that these are based on non-conformal mappings (which can even be seen visually; they contain heavily skewed parts), meaning that their derivative can only be expressed as a Jacobian matrix.
+Applying these same methods to other popular fractals such as the mandelbar set (also commonly referred to as tricorn) or the burning ship fractal is slightly complicated by the fact that these are based on non-conformal mappings (which can even be seen visually; they contain heavily skewed parts), meaning that their derivative can't simply be expressed as a single complex number.
 
-Oh, and sorry in advance for all the bad notation coming up in the following part; I'm not a mathematician, and the internet wasn't really helpful for finding out how to denote Jacobian matrices of complex functions either.
+Instead, we'll have to treat the real and imaginary component as separate real numbers, here referred to as $\re(z)$ and $\im(z)$, and use a matrix of partial derivatives:
+$$\frac{\partial z_n}{\partial z_0} = \mat{\frac{d\re(z_n)}{d\re(z_0)}&\frac{d\re(z_n)}{d\im(z_0)}\\\frac{d\im(z_n)}{d\re(z_0)}&\frac{d\im(z_n)}{d\im(z_0)}}.$$
+Similar a normal derivative, this Jacobian matrix tells us how the region of points close to $z_0$ is transformed relative to $z$; however, while a normal derivative can only encode the scale and rotation part of this transformation, the Jacobian encodes precisely how much both components of $z_n$ change with respect to both components of $z_0$.
 
-To see why we actually need the Jacobian, let's take a look at, for example, the mandelbar set first. It is defined by the sequence $z_{n+1} = \bar{z}_n^2+z_0$, where $\bar{z}$ denotes the complex conjugate of $z$. This is already not differentiable in the usual sense; when looking at any small region of points, it is not only scaled, rotated and translated here, but also flipped, meaning that a complex number representing the scaling factor and rotation alone is no longer enough to describe the applied transformation. Instead, a $2\times2$ matrix is needed that tells us how both the real and imaginary component of $z_n$ change with respect to both the real and imaginary component of $z_0$; This matrix is the Jacobian.
+In the case of the mandelbar set for example, this is needed because its formula involves the complex conjugate $\bar{z}$, which flips the sign of the imaginary but not the real component of $z$; similarly, the burning ship fractal makes use of the component-wise $abs$ function, which too flips regions in the second and fourth quadrant in such a way that a single scale and rotation value is no longer enough to fully encode the resulting transformation. Hence, the Jacobian matrix is needed.
 
-In the following, we'll use $\frac{\partial z_n}{\partial z_0}$ to refer to the Jacobian matrix $\mat{\frac{d\re(z_n)}{d\re(z_0)}&\frac{d\re(z_n)}{d\im(z_0)}\\\frac{d\im(z_n)}{d\re(z_0)}&\frac{d\im(z_n)}{d\im(z_0)}}$, where $\re(z)$ and $\im(z)$ are the real and imaginary components of $z$, and $(\jmat{z_n}{z_0})_{rr}$, $(\jmat{z_n}{z_0})_{ri}$, $(\jmat{z_n}{z_0})_{ir}$ and $(\jmat{z_n}{z_0})_{ii}$ to refer to the individual entries of this matrix. Also, we'll use $M(z)$ to refer to the matrix $\mat{re(z)&-im(z)\\im(z)&re(z)}$; that way, multiplying the derivative with a number $z_n$ as we did earlier can now be done by multiplying $M(z_n)$ with the Jacobian matrix.
+Even worse though, there are now 8 second-order partial derivatives required to accurately describe the change rate of the Jacobian - and 16 third-order partial derivatives, 32 fourth-order ones and so on.
+While these can all still be iteratively computed, doing so quite quickly becomes infeasible as the number of required operations per iteration grows exponentially. As such, we are mostly limited to working with the first- and second-order partial derivatives for these fractals.
 
-With all of that said, let's start by first figuring out how to compute these derivatives again:
+Now, before we start actually doing anything with those, a few other quick definitions: I'll from here on use $M(z)$ to refer to the matrix $\mat{re(z)&-im(z)\\im(z)&re(z)}$; that way, multiplying $z$ with another number $a$ now has the effect of multiplying the Jacobian $\jmat{z}{z_0}$ with $M(a)$, similar to how it previously would have had the effect of multiplying the derivative by $a$. Also, I'll from here on use the concept of complex numbers and vectors interchangeably; for example, the product $\mat{a&b\\c&d}\cdot z$ would then be equal to $a\re(z)+b\im(z)+(c\re(z)+d\im(z))i$. I know this is probably a terrible way to write this down, but I sadly couldn't find a better one, so please excuse the mess of equations you're about to see.
+
+\subsection{Finding cyclic points}
+
+With that being said, let's now start by examining how we can use this to apply our previous equations to the mandelbar set. We'll begin with the first derivative - or now, Jacobian - of the sequence once again:
 \eqar{
 	z_{n+1} &= \bar{z}_n^2+z_0\\
 	\jmat{z_{n+1}}{z_0} &= \jmat{(\bar{z}_n^2+z_0)}{z_0}\\
 	&= \jmat{\bar{z}_n^2}{z_0}+\jmat{z_0}{z_0}\\
 	&= \mat{1&0\\0&-1}\cdot\jmat{z_n^2}{z_0}+\mat{1&0\\0&1}\\
-	&= \mat{2&0\\0&-2}\cdot M(z_n)\cdot\jmat{z_n}{z_0}+\mat{1&0\\0&1}\\
-	\jmatn{2}{z_{n+1}}{z_0} &= \mat{2&0\\0&-2}\cdot\jmat{(M(z_n)\cdot\jmat{z_n}{z_0})}{z_0}\\
-	&= \mat{2&0\\0&-2}\cdot\left(M(z_n)\cdot\jmatn{2}{z_n}{z_0}+2\cdot(\jmat{z_n}{z_0})^2\right)
+	&= \mat{2&0\\0&-2}\cdot M(z_n)\cdot\jmat{z_n}{z_0}+\mat{1&0\\0&1}.
 }
+While similar equations could also be found for the second-order partial derivatives, there's at least as far as I know no simple way of representing those using a matrix; so, we'll just ignore those for now and see what we can do using the Jacobian alone.
+
+Similar to what we did with the derivative before, we can use the Jacobian to get a linear approximation of $x_n$ for points $x_0$ close to the point the Jacobian was computed for:
+$$x_n \approx z_n+\jmat{z_n}{z_0}(x_0-z_0).$$
+Based on that, we can again compute the root of this approximation and use that as a new base point; repeating this a number of times, we can again find a $n+1$-cyclic point using Newton's method:
+$$x_0' = z_0-\left(\jmat{z_n}{z_0}\right)^{-1}z_n.$$
+The derivative $\frac{dx_0'}{z_0}$ can then also be computed based on the second-order partial derivatives, so we can use that as a quick check whether Newton's Method might converge or not; however, this also limits us to the linear approximation, as calculating this derivative for an estimate that's based on a quadratic approximation as we did before would require third-order partial derivatives, which are due to their sheer number expensive to compute.
+
+\subsection{Finding Minibrots}
+
+As before, we of course also want to know what structure any given cyclic point belongs to - whether it is a disk, ellipse, minibrot or another miniature fractal, and what the scale and orientation of that structure is.
+
+Again, we start using a perfectly $n$-cyclic starting point $z_0$ and some other point $x_0$ around it; the $n-1$th iteration of this point can then again be approximated as $x_{n-1} \approx z_{n-1}+\jmat{z_{n-1}}{z_0}(x_0-z_0)$, which simplifies down to just $x_{n-1} \approx \jmat{z_{n-1}}{z_0}(x_0-z_0)$ since $z_{n-1}$ is exactly zero. Let's call this value $d_0$ again, as we did before.
+
+The next iteration can then be approximated as $x_n\approx x_0+\bar{d_0^2}$; the iteration after that as
+\eqar{
+	x_{n+1} &\approx (\overline{x_0+\overline{d_0^2}})^2+x_0\\
+	&\approx \overline{x_0^2}+2\overline{x}_0d_0^2+d_0^4+x_0\\
+	&\approx x_1+2\overline{z}_0d_0^2+2(\overline{x}_0-\overline{z}_0)d_0^2+d_0^4.
+}
+And again, the terms $2(\overline{x}_0-\overline{z}_0)d_0^2$ and $d_0^4$ can be simply discarded as they are basically negligible in comparison to the other terms:
+\eqar{
+	x_{n+1} &\approx x_1+2\overline{z}_0d_0^2\\
+	x_{n+2} &\approx (\overline{x_1+2\overline{z}_0d_0^2})^2+x_0\\
+	&\approx \overline{x_1^2}+4z_0\overline{x}_1\overline{d_0^2}+4z_0\overline{d_0^4}+x_0\\
+	&\approx x_2+4z_0\overline{z}_1\overline{d_0^2}\\
+	x_{n+3} &\approx x_3+8\overline{z}_0z_1\overline{z}_2d_0^2\\
+	...\\
+	x_{2n-1} &\approx \begin{cases}
+		x_{n-1}+2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_0^2 & \text{for } n \equiv 0 \mod 2\\
+		x_{n-1}+2^{n-1}z_0\overline{z}_1...\overline{z}_{n-2}\overline{d_0^2} & \text{for } n \equiv 1 \mod 2
+	\end{cases}
+}
+By substituting $d_1$ for $x_{2n-1}$ and repeating this, we can again find a general equation for the sequence of points $d_k$ approximating $x_{(k+1)n-1}$:
+$$d_{k+1} = \begin{cases}
+2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_k^2+d_0 & \text{for } n \equiv 0 \mod 2\\
+2^{n-1}z_0\overline{z}_1...\overline{z}_{n-2}\overline{d_k^2}+d_0 & \text{for } n \equiv 1 \mod 2
+\end{cases}$$
+Notice how the sequence behaves differently this time depending on whether the cycle length $n$ is even or odd; if it is even, all of the conjugates applied to the previous element of the sequence cancel each other out, if it is odd they don't. This is the reason that the mandelbar set contains both smaller copies of itself and of the mandelbrot set; depending on the cycle length, the points close to the cyclic point undergo different transformations that can't even be made equivalent through a shift of reference (for example by multiplying by a certain constant, as we did earlier with the mandelbrot set); as such, they produce different miniature fractals. This is generally one of the biggest challenges when trying to apply these methods to other fractals; most of them contain not just one or two different kinds of miniature fractals, but a whole spectrum of them plus an often infinite number of hard to generalize edge-cases.
+
+In case of the mandelbar set again, the first case just boils down to the classic mandelbrot set equation:
+\eqar{
+	d_{k+1} &= 2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_k^2+d_0\\
+	2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_{k+1} &= (2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_k)^2+2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_0.
+}
+Similar to what we had before, it is the sequence of values $2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}\cdot d_k$ that actually iterates based on the same formula as the mandelbrot set, and the value $2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_0$ that acts as the starting value for; thus, we can again compute the scale and orientation of that minibrot or disk as the ratio between this value and $x_0$:
+\eqar{
+	a &= \jmat{x_0}{(2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_0)}\\
+	&= \left(\jmat{(2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2}d_0)}{x_0}\right)^{-1}\\
+	&= \left(M(2^{n-1}\overline{z}_0z_1...\overline{z}_{n-2})\jmat{x_{n-1}}{x_0}\right)^{-1}.
+}
+One important difference to the original equation though is that this value $a$ is now a $2\times2$ matrix instead of a real number; this comes from the fact that most (if not all) disks and minibrots in the mandelbar set are skewed to at least some degree, therefore requiring an entire matrix to fully encode their scale, rotation and stretch factor and direction.
+
+The second case though is already somewhat more complicated. To show that it is equivalent to the mandelbar set equation for some sequence $b\cdot d_k$, we need to again turn in into an equation of the form $bd_k=(\overline{bd_k})^2+bd_0$; however this time, it's not possible to do that by just multiplying both sides of the equation with the coefficient $c=2^{n-1}z_0\overline{z}_1...\overline{z}_{n-2}$. Instead, we need to actually solve those two forms of the equation for $b$:
+\eqar{
+	d_{k+1} &= c\cdot\overline{d_k^2}+d_0\\
+	bd_{k+1} &= bc\cdot\overline{d_k^2}+bd_0\\
+	bc &= \overline{b^2}\\
+	c &= \frac{\overline{b^2}}{b} = \frac{\overline{b^3}}{\left|b^2\right|}\\
+	b &= \overline{\sqrt[3]{c}}\cdot\left|c\right|^\frac{2}{3}
+}
+Of course the cube root is not uniquely defined for complex numbers, but that doesn't matter for our use case here; any one of the three roots of the polynomial $x^3=c$ will work, since the mandelbar set is rotationally symmetric by exactly 120 degrees.
+
+After choosing one of these possible values for $b$, we can again compute the matrix $a$ as the Jacobian matrix $\jmat{x_0}{(bd_0)}$:
+\eqar{
+	a &= \jmat{x_0}{(bd_0)}\\
+	&= \left(\jmat{(bd_0)}{x_0}\right)^{-1}\\
+	&= \left(M(b)\jmat{x_{n-1}}{x_0}\right)^{-1}.
+}
+These two cases are of course unique to the mandelbar set, but the general process should be the same for all fractals; find an equation for the series $d_k$, find some way to transform it into an already known fractal equation, and then compute $a$ as the Jacobian matrix indicating the ratio between $x_0$ and the starting value for the transformed equation.
 
 \end{document}
