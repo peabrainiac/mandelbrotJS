@@ -64,31 +64,31 @@ export default class FractalExplorer extends HTMLElement {
 		fractalCanvas.addEventListener("mousedown",(e)=>{
 			if (e.button!==2){
 				zoomPreviewElement.show();
-				zoomPreviewElement.setPosition(e.layerX,e.layerY);
+				zoomPreviewElement.setPosition(e.offsetX,e.offsetY);
 				e.preventDefault();
 			}
 		});
 		fractalCanvas.addEventListener("mousemove",(e)=>{
-			let pixelX = fractalCanvas.mouseXToPixelX(e.layerX);
-			let pixelY = fractalCanvas.mouseYToPixelY(e.layerY);
+			let pixelX = fractalCanvas.mouseXToPixelX(e.offsetX);
+			let pixelY = fractalCanvas.mouseYToPixelY(e.offsetY);
 			let iterations = fractalCanvas.getPixelIterations(pixelX,pixelY);
 			statusbar.mouseInfo = `Iterations: ${iterations!=ITERATIONS_NOT_YET_KNOWN?iterations+(iterations<fractalCanvas.iterations?"":"+"):"not yet known"}`;
 			if (!zoomPreviewElement.hidden){
-				zoomPreviewElement.setPosition(e.layerX,e.layerY);
+				zoomPreviewElement.setPosition(e.offsetX,e.offsetY);
 			}
 		});
 		fractalCanvas.addEventListener("mouseup",(e)=>{
 			if (!zoomPreviewElement.hidden){
 				zoomPreviewElement.hide();
 				if (e.button===0){
-					fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
-					fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
+					fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.offsetX);
+					fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.offsetY);
 					fractalCanvas.zoom *= this._zoomFactor;
 				}
 			}
 			if (e.button===2&&!e.shiftKey){
-				fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.layerX);
-				fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.layerY);
+				fractalCanvas.x = fractalCanvas.mouseXToFractalX(e.offsetX);
+				fractalCanvas.y = fractalCanvas.mouseYToFractalY(e.offsetY);
 				fractalCanvas.zoom /= this._zoomFactor;
 			}
 		});
