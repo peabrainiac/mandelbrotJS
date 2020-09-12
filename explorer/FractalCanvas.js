@@ -350,7 +350,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	get viewport(){
-		return new FractalViewport(this._x-(this._width/this._zoom)/2,this._y-(this._height/this._zoom)/2,this._x+(this._width/this._zoom)/2,this._y+(this._height/this._zoom)/2);
+		return new FractalViewport(this._x,this._y,this._zoom,this._width,this._height);
 	}
 
 	/**

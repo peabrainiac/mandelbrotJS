@@ -19,10 +19,6 @@ export default class SpecialPointsOverlay extends HTMLElement {
 				:host(.hidden){
 					display: none;
 				}
-				#svg {
-					width: 100%;
-					height: 100%;
-				}
 				#div {
 					position: absolute;
 					left: 0;
@@ -72,13 +68,10 @@ export default class SpecialPointsOverlay extends HTMLElement {
 					stroke: #ffffff40;
 				}
 			</style>
-			<svg id="svg" preserveAspectRatio="none"></svg>
 			<div id="div"></div>
 		`;
 		this._formula = new FractalFormula();
 		this._iterations = 200;
-		/** @type {SVGSVGElement} */
-		this._svg = this.shadowRoot.getElementById("svg");
 		this._div = this.shadowRoot.getElementById("div");
 		this.hide();
 		this.addEventListener("mousedown",(e)=>{
@@ -117,8 +110,6 @@ export default class SpecialPointsOverlay extends HTMLElement {
 
 	set viewport(viewport){
 		this._viewport = viewport;
-		let viewboxString = `${viewport.x1} ${viewport.y1} ${viewport.width} ${viewport.height}`;
-		this._svg.setAttribute("viewBox",viewboxString);
 	}
 
 	/** @type {FractalViewport} */

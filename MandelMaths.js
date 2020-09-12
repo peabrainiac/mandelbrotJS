@@ -3,6 +3,8 @@
  */
 export default class MandelMaths {}
 
+export {default as FractalViewport} from "./explorer/FractalViewport.js";
+
 /**
  * Base class for fractal formulas.
  */
@@ -92,76 +94,6 @@ export class CyclicPoint extends SpecialPoint {
 		element.appendChild(label);
 		return element;
 	}
-}
-/**
- * A viewport object, used to convert between absolute and relative coordinates.
- */
-export class FractalViewport {
-	/**
-	 * @param {number} x1 
-	 * @param {number} y1 
-	 * @param {number} x2 
-	 * @param {number} y2 
-	 */
-	constructor(x1,y1,x2,y2){
-		this.x1 = x1;
-		this.y1 = y1;
-		this.x2 = x2;
-		this.y2 = y2;
-	}
-
-	set width(width){
-		this.x2 = this.x1+width;
-	}
-
-	get width(){
-		return this.x2-this.x1;
-	}
-
-	set height(height){
-		this.y2 = this.y1+height;
-	}
-
-	get height(){
-		return this.y2-this.y1;
-	}
-
-	copy(){
-		return new FractalViewport(this.x1,this.y1,this.x2,this.y2);
-	}
-
-	toFractalX(relativeOffsetX){
-		return this.x1+relativeOffsetX*this.width;
-	}
-
-	toFractalY(relativeOffsetY){
-		return this.y1+relativeOffsetY*this.height;
-	}
-
-	toRelativeX(fractalX){
-		return (fractalX-this.x1)/this.width;
-	}
-
-	toRelativeY(fractalY){
-		return (fractalY-this.y1)/this.height;
-	}
-
-	toFractalWidth(relativeWidth){
-		return relativeWidth*this.width;
-	}
-
-	toFractalHeight(relativeHeight){
-		return relativeHeight*this.height;
-	}
-
-	toRelativeWidth(fractalWidth){
-		return fractalWidth/this.width;
-	}
-
-	toRelativeHeight(fractalHeight){
-		return fractalHeight/this.height;
-	}
-
 }
 /**
  * A complex number `x+iy`.
