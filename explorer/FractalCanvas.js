@@ -2,15 +2,10 @@ import Timer from "../util/Timer.js";
 
 import {FractalFormula,FractalViewport} from "../MandelMaths.js";
 import MandelbrotFormula from "../formulas/Mandelbrot.js";
+import FractalRenderer, {STATE_LOADING,STATE_PENDING_RENDER,STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./renderer/FractalRenderer.js";
 
-export const STATE_LOADING = 0;
-export const STATE_PENDING_RENDER = 1;
-export const STATE_RENDERING = 2;
-export const STATE_PENDING_CANCEL = 3;
-export const STATE_CANCELLED = 4;
-export const STATE_FINISHED = 5;
-export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
-export const RENDER_GRID_SIZES = [64,16,4,1];
+export {STATE_LOADING,STATE_PENDING_RENDER,STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
+
 /**
  * Custom element responsible for rendering an image based on a given formula and location.
  */
@@ -30,7 +25,6 @@ export default class FractalCanvas extends HTMLElement {
 		this._onZoomChangeCallbacks = [];
 		this._state = STATE_LOADING;
 		this._progress = 0;
-		this._pixelsCalculated = 0;
 		this._formula = new MandelbrotFormula();
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
@@ -54,7 +48,6 @@ export default class FractalCanvas extends HTMLElement {
 		/** @type {HTMLCanvasElement} */
 		this._canvas = this.shadowRoot.getElementById("canvas");
 		this._ctx = this._canvas.getContext("2d");
-		this._lastScreenRefresh = Date.now();
 		this._progressTimer = new Timer();
 		this.render();
 	}
@@ -70,6 +63,7 @@ export default class FractalCanvas extends HTMLElement {
 		}else{
 			if (this._state===STATE_RENDERING||this._state===STATE_PENDING_CANCEL){
 				this._state = STATE_PENDING_CANCEL;
+				await this._renderer.stop();
 				await this._finishRenderCallPromise;
 				await this.render();
 			}else{
@@ -92,7 +86,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * The actual rendering method. Immediately starts rendering regardless of current state.
+	 * The internal rendering method. Immediately starts rendering regardless of current state.
 	 */
 	async _render(){
 		this._state = STATE_RENDERING;
@@ -105,11 +99,11 @@ export default class FractalCanvas extends HTMLElement {
 		this._pixelIterations = new Float64Array(this._width*this._height);
 		this._pixelIterations.fill(ITERATIONS_NOT_YET_KNOWN);
 		this._imageData = new ImageData(new Uint8ClampedArray(this._pixelColors.buffer),this._width);
-		this._pixelsCalculated = 0;
-		for (let i=0;i<RENDER_GRID_SIZES.length;i++){
-			await this._renderPart(RENDER_GRID_SIZES[i]);
-		}
-		this._refreshCanvas();
+		this._renderer = new FractalRenderer(this._pixelIterations,this._pixelColors,this._formula,this.viewport,this._iterations);
+		this._renderer.onBeforeScreenRefresh(()=>{
+			this._refreshCanvas();
+		});
+		await this._renderer.render();
 		this._progressTimer.stop();
 		if (this._state===STATE_PENDING_CANCEL){
 			this._state = STATE_CANCELLED;
@@ -121,100 +115,17 @@ export default class FractalCanvas extends HTMLElement {
 		}
 	}
 
-	async _renderPart(pixelSize){
-		let x = (Math.round(this._width*0.5/pixelSize)-1)*pixelSize;
-		let y = Math.round(this._height*0.5/pixelSize)*pixelSize;
-		for (let i=0,r=Math.ceil(Math.max(this._width,this._height)*0.5/pixelSize);i<r*2&this._state===STATE_RENDERING;i+=2){
-			for (let i2=0;i2<i;i2++){
-				this._renderPixel(x,y,pixelSize);
-				x -= pixelSize;
-			}
-			await this._waitForScreenRefresh();
-			for (let i2=0;i2<i+1;i2++){
-				this._renderPixel(x,y,pixelSize);
-				y -= pixelSize;
-			}
-			await this._waitForScreenRefresh();
-			for (let i2=0;i2<i+1;i2++){
-				this._renderPixel(x,y,pixelSize);
-				x += pixelSize;
-			}
-			await this._waitForScreenRefresh();
-			for (let i2=0;i2<i+2;i2++){
-				this._renderPixel(x,y,pixelSize);
-				y += pixelSize;
-			}
-			await this._waitForScreenRefresh();
-		}
-	}
-
-	_renderPixel(x,y,pixelSize){
-		const w = this._width;
-		const h = this._height;
-		if (x+pixelSize>0&&y+pixelSize>0&&x<w&&y<h){
-			let px = Math.max(0,Math.min(w-1,Math.floor(x+pixelSize/2)));
-			let py = Math.max(0,Math.min(h-1,Math.floor(y+pixelSize/2)));
-			let color = this.getPixelColor(px,py);
-			if (pixelSize>1){
-				for (let x2=Math.max(0,x),x3=Math.min(w,x+pixelSize);x2<x3;x2++){
-					for (let y2=Math.max(0,y),y3=Math.min(h,y+pixelSize);y2<y3;y2++){
-						this._pixelColors[x2+y2*w] = color;
-					}
-				}
-			}
-		}
-	}
-
-	getPixelColor(x,y){
-		let index = x+y*this._width;
-		let cachedValue = this._pixelIterations[index];
-		if (cachedValue!=ITERATIONS_NOT_YET_KNOWN){
-			return this._pixelColors[index];
-		}else{
-			let cx = this._x+(x-this._width/2)/this._zoom;
-			let cy = this._y+(y-this._height/2)/this._zoom;
-			let maxIterations = this._iterations;
-			let i = this._formula.iterate(cx,cy,{maxIterations});
-			let color = (i==maxIterations?0:Math.floor(255.999*i/maxIterations)+(Math.floor(175.999*i/maxIterations)<<8))+0xff000000;
-			this._pixelIterations[index] = i;
-			this._pixelColors[index] = color;
-			this._pixelsCalculated++;
-			return color;
-		}
-	}
-
 	getPixelIterations(x,y){
-		const w = this._width;
-		const h = this._height;
-		for (let i=RENDER_GRID_SIZES.length-1;i>=0;i--){
-			let pixelSize = RENDER_GRID_SIZES[i];
-			let cx = (Math.round(w*0.5/pixelSize)-1)*pixelSize;
-			let cy = Math.round(h*0.5/pixelSize)*pixelSize;
-			let px = cx+pixelSize*Math.floor((x-cx)/pixelSize);
-			let py = cy+pixelSize*Math.floor((y-cy)/pixelSize);
-			let px2 = Math.max(0,Math.min(w-1,Math.floor(px+pixelSize/2)));
-			let py2 = Math.max(0,Math.min(h-1,Math.floor(py+pixelSize/2)));
-			let iterations = this._pixelIterations[px2+py2*w];
-			if (iterations!=ITERATIONS_NOT_YET_KNOWN){
-				return iterations;
-			}
-		}
-		return ITERATIONS_NOT_YET_KNOWN;
-	}
-
-	async _waitForScreenRefresh(){
-		if (Date.now()-this._lastScreenRefresh>100){
-			this._refreshCanvas();
-			await new Promise((resolve)=>{
-				requestAnimationFrame(resolve);
-			});
-			this._lastScreenRefresh = Date.now();
-		}
+		return this._renderer?this._renderer.getPixelIterations(x,y):ITERATIONS_NOT_YET_KNOWN;
 	}
 
 	_refreshCanvas(){
 		this._ctx.putImageData(this._imageData,0,0);
 		this._progress = this._pixelsCalculated/(this._width*this._height);
+	}
+
+	get _pixelsCalculated(){
+		return this._renderer?this._renderer.pixelsCalculated:0;
 	}
 	
 	get canvas(){
