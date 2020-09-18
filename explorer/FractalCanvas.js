@@ -7,7 +7,7 @@ import FractalRenderer, {STATE_LOADING,STATE_PENDING_RENDER,STATE_RENDERING,STAT
 export {STATE_LOADING,STATE_PENDING_RENDER,STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
 
 /**
- * Custom element responsible for rendering an image based on a given formula and location.
+ * Custom element responsible for rendering and displaying an image based on a given formula and location.
  */
 export default class FractalCanvas extends HTMLElement {
 	constructor(){
@@ -95,11 +95,7 @@ export default class FractalCanvas extends HTMLElement {
 		this._progressTimer.start();
 		this._canvas.width = this._width;
 		this._canvas.height = this._height;
-		this._pixelColors = new Uint32Array(this._width*this._height);
-		this._pixelIterations = new Float64Array(this._width*this._height);
-		this._pixelIterations.fill(ITERATIONS_NOT_YET_KNOWN);
-		this._imageData = new ImageData(new Uint8ClampedArray(this._pixelColors.buffer),this._width);
-		this._renderer = new FractalRenderer(this._pixelIterations,this._pixelColors,this._formula,this.viewport,this._iterations);
+		this._renderer = new FractalRenderer(this._formula,this.viewport,this._iterations);
 		this._renderer.onBeforeScreenRefresh(()=>{
 			this._refreshCanvas();
 		});
@@ -116,11 +112,11 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	getPixelIterations(x,y){
-		return this._renderer?this._renderer.getPixelIterations(x,y):ITERATIONS_NOT_YET_KNOWN;
+		return this._renderer?this._renderer.memory.getIterations(x,y):ITERATIONS_NOT_YET_KNOWN;
 	}
 
 	_refreshCanvas(){
-		this._ctx.putImageData(this._imageData,0,0);
+		this._ctx.putImageData(this._renderer.memory.imageData,0,0);
 		this._progress = this._pixelsCalculated/(this._width*this._height);
 	}
 

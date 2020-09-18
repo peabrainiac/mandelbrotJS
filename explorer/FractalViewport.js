@@ -62,7 +62,7 @@ export default class FractalViewport {
 	}
 
 	pixelYToFractalY(pixelY){
-		return this._y+(pixelY/this.pixelWidth-0.5)*this.width;
+		return this._y+(pixelY/this.pixelHeight-0.5)*this.height;
 	}
 
 	toFractalX(relativeOffsetX){

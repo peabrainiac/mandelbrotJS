@@ -1,28 +1,26 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
 
+import FractalRendererMemory, {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
+
+export {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
 export const STATE_LOADING = 0;
 export const STATE_PENDING_RENDER = 1;
 export const STATE_RENDERING = 2;
 export const STATE_PENDING_CANCEL = 3;
 export const STATE_CANCELLED = 4;
 export const STATE_FINISHED = 5;
-export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
-export const RENDER_GRID_SIZES = [64,16,4,1];
 
 /**
  * The base class for all types of renderers.
  */
 export default class FractalRenderer {
 	/**
-	 * @param {Float64Array} iterationsArray
-	 * @param {Uint32Array} colorsArray
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
 	 * @param {number} maxIterations
 	 */
-	constructor(iterationsArray,colorsArray,formula,viewport,maxIterations){
-		this._iterationsArray = iterationsArray;
-		this._colorsArray = colorsArray;
+	constructor(formula,viewport,maxIterations){
+		this._memory = new FractalRendererMemory(viewport.pixelWidth,viewport.pixelHeight);
 		this._formula = formula;
 		this._viewport = viewport;
 		this._maxIterations = maxIterations;
@@ -32,6 +30,14 @@ export default class FractalRenderer {
 		this._shouldDoScreenRefreshs = true;
 		/** @type {(()=>{})[]} */
 		this._onBeforeScreenRefreshCallbacks = [];
+	}
+
+	/**
+	 * the memory that the renderer operates on.
+	 * @readonly
+	 */
+	get memory(){
+		return this._memory;
 	}
 	
 	async render(){
@@ -126,67 +132,15 @@ export default class FractalRenderer {
 	 * @param {number} pixelSize
 	 */
 	renderPixel(x,y,pixelSize){
-		const w = this._viewport.pixelWidth;
-		const h = this._viewport.pixelHeight;
-		if (x+pixelSize>0&&y+pixelSize>0&&x<w&&y<h){
-			let px = Math.max(0,Math.min(w-1,Math.floor(x+pixelSize/2)));
-			let py = Math.max(0,Math.min(h-1,Math.floor(y+pixelSize/2)));
-			let color = this.getPixelColor(px,py);
-			if (pixelSize>1){
-				for (let x2=Math.max(0,x),x3=Math.min(w,x+pixelSize);x2<x3;x2++){
-					for (let y2=Math.max(0,y),y3=Math.min(h,y+pixelSize);y2<y3;y2++){
-						this._colorsArray[x2+y2*w] = color;
-					}
-				}
-			}
-		}
-	}
-
-	/**
-	 * Returns the color of a specific pixel as a 32-bit abgr integer. If the color hasn't been computed yet, it is computed, stored in the buffer, and then returned.
-	 * @param {number} x
-	 * @param {number} y
-	 */
-	getPixelColor(x,y){
-		let index = x+y*this._viewport.pixelWidth;
-		let cachedValue = this._iterationsArray[index];
-		if (cachedValue!=ITERATIONS_NOT_YET_KNOWN){
-			return this._colorsArray[index];
-		}else{
-			let cx = this._viewport._x+(x-this._viewport.pixelWidth/2)/this._viewport._zoom;
-			let cy = this._viewport._y+(y-this._viewport.pixelHeight/2)/this._viewport._zoom;
-			let maxIterations = this._maxIterations;
-			let i = this._formula.iterate(cx,cy,{maxIterations});
-			let color = (i==maxIterations?0:Math.floor(255.999*i/maxIterations)+(Math.floor(175.999*i/maxIterations)<<8))+0xff000000;
-			this._iterationsArray[index] = i;
-			this._colorsArray[index] = color;
+		const maxIterations = this._maxIterations;
+		this._memory.renderPixel(x,y,pixelSize,(x,y)=>{
+			let cx = this._viewport.pixelXToFractalX(x);
+			let cy = this._viewport.pixelYToFractalY(y);
 			this._pixelsCalculated++;
-			return color;
-		}
-	}
-
-	/**
-	 * Returns the computed iteration count for a pixel, or, if that specific pixel hasn't been computed yet, the iteration count for the nearest already computed pixel in one of the larger grid sizes.
-	 * @param {number} x
-	 * @param {number} y
-	 */
-	getPixelIterations(x,y){
-		const w = this._viewport.pixelWidth;
-		const h = this._viewport.pixelHeight;
-		for (let i=RENDER_GRID_SIZES.length-1;i>=0;i--){
-			let pixelSize = RENDER_GRID_SIZES[i];
-			let cx = (Math.round(w*0.5/pixelSize)-1)*pixelSize;
-			let cy = Math.round(h*0.5/pixelSize)*pixelSize;
-			let px = cx+pixelSize*Math.floor((x-cx)/pixelSize);
-			let py = cy+pixelSize*Math.floor((y-cy)/pixelSize);
-			let px2 = Math.max(0,Math.min(w-1,Math.floor(px+pixelSize/2)));
-			let py2 = Math.max(0,Math.min(h-1,Math.floor(py+pixelSize/2)));
-			let iterations = this._iterationsArray[px2+py2*w];
-			if (iterations!=ITERATIONS_NOT_YET_KNOWN){
-				return iterations;
-			}
-		}
-		return ITERATIONS_NOT_YET_KNOWN;
+			return this._formula.iterate(cx,cy,{maxIterations});
+		},(iterations)=>{
+			return (iterations==maxIterations?0:Math.floor(255.999*iterations/maxIterations)+(Math.floor(175.999*iterations/maxIterations)<<8))+0xff000000;
+		});
 	}
 
 	get pixelsCalculated(){
