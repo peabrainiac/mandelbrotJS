@@ -15,10 +15,6 @@ export default class FractalViewport {
 		this._zoom = zoom;
 		this._width = width;
 		this._height = height;
-		this._x1 = x-(width/zoom)/2;
-		this._y1 = y-(height/zoom)/2;
-		this._x2 = x+(width/zoom)/2;
-		this._y2 = y+(height/zoom)/2;
 	}
 
 	/**
@@ -95,5 +91,12 @@ export default class FractalViewport {
 
 	toRelativeHeight(fractalHeight){
 		return fractalHeight/this.height;
+	}
+
+	/**
+	 * Reconstructs a `FractalViewport` that has been serialized and deserialized using the structured cloning algorithm, used by, for example, `postMessage`.
+	 */
+	static fromStructuredClone(clone){
+		return new FractalViewport(clone._x,clone._y,clone._zoom,clone._width,clone._height);
 	}
 }

@@ -4,16 +4,36 @@
 export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
 export const RENDER_GRID_SIZES = [64,16,4,1];
 
+export const sharedArrayBuffersSupported = (()=>{
+	if (self.crossOriginIsolated===false){
+		console.warn("SharedArrayBuffers are supported by this browser, but inaccessible as this page is currently not cross-origin-isolated.");
+		return false;
+	}else if (self.SharedArrayBuffer===undefined){
+		console.warn("SharedArrayBuffers are not supported by this browser.");
+		return false;
+	}else{
+		return true;
+	}
+})();
+
 /**
  * A class representing the memory needed to render a fractal image.
  */
 export default class FractalRendererMemory {
-	constructor(width,height,colorsArray=new Uint32Array(width*height),iterationsArray=FractalRendererMemory.createIterationsArray(width,height)){
+	/**
+	 * 
+	 * @param {number} width 
+	 * @param {number} height 
+	 * @param {Uint32Array} colorsArray 
+	 * @param {Float64Array} iterationsArray 
+	 * @param {ImageData} imageData 
+	 */
+	constructor(width,height,colorsArray=new Uint32Array(width*height),iterationsArray=FractalRendererMemory.createIterationsArray(width,height),imageData=new ImageData(new Uint8ClampedArray(colorsArray.buffer),width)){
 		this._imageWidth = width;
 		this._imageHeight = height;
 		this._colorsArray = colorsArray;
 		this._iterationsArray = iterationsArray;
-		this._imageData = new ImageData(new Uint8ClampedArray(colorsArray.buffer),width);
+		this._imageData = imageData;
 		this._pixelsCalculated = 0;
 	}
 
@@ -61,11 +81,13 @@ export default class FractalRendererMemory {
 				let color = colorCallback(iterations);
 				this._iterationsArray[index] = iterations;
 				this._colorsArray[index] = color;
-				this._pixelsCalculated++;
+				this.incrementPixelsCalculated();
 				if (pixelSize>1){
 					for (let x2=Math.max(0,x),x3=Math.min(w,x+pixelSize);x2<x3;x2++){
 						for (let y2=Math.max(0,y),y3=Math.min(h,y+pixelSize);y2<y3;y2++){
-							this._colorsArray[x2+y2*w] = color;
+							if (this._iterationsArray[x2+y2*w]==ITERATIONS_NOT_YET_KNOWN){
+								this._colorsArray[x2+y2*w] = color;
+							}
 						}
 					}
 				}
@@ -88,6 +110,17 @@ export default class FractalRendererMemory {
 		return this._imageData;
 	}
 
+	get pixelsCalculated(){
+		return this._pixelsCalculated;
+	}
+
+	/**
+	 * Increases the value of `pixelsCalculated` by one.
+	 */
+	incrementPixelsCalculated(){
+		this._pixelsCalculated = 0;
+	}
+
 	/**
 	 * Creates and returns a new iterations array of a given size.
 	 * @param {number} width 
@@ -97,5 +130,86 @@ export default class FractalRendererMemory {
 		const array = new Float64Array(width*height);
 		array.fill(ITERATIONS_NOT_YET_KNOWN);
 		return array;
+	}
+}
+/**
+ * A `FractalRendererMemory` that can be shared across threads/workers.
+ */
+export class FractalRendererSharedMemory extends FractalRendererMemory {
+	/**
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	constructor(width,height,sharedArrayBuffer=FractalRendererSharedMemory.createBuffer(width,height)){
+		super(width,height,FractalRendererSharedMemory.getColorsArray(width,height,sharedArrayBuffer),FractalRendererSharedMemory.getIterationsArray(width,height,sharedArrayBuffer),new ImageData(width,height));
+		this._variablesArray = FractalRendererSharedMemory.getVariablesArray(width,height,sharedArrayBuffer);
+		/** temporary workaround because `ImageData.data` color arrays can't be shared */
+		this._secondaryColorsArray = new Uint8ClampedArray(this._colorsArray.buffer,0,width*height*4);
+		this._sharedArrayBuffer = sharedArrayBuffer;
+	}
+
+	get imageData(){
+		this._imageData.data.set(this._secondaryColorsArray,0);
+		return this._imageData;
+	}
+
+	/** @inheritdoc */
+	get pixelsCalculated(){
+		return this._variablesArray[0];
+	}
+
+	/** @inheritdoc */
+	incrementPixelsCalculated(){
+		Atomics.add(this._variablesArray,0,1);
+	}
+
+	/**
+	 * Reconstructs a `FractalRendererSharedMemory` that has been serialized and deserialized using the structured cloning algorithm used by, for example, `postMessage()`.
+	 */
+	static fromStructuredClone(clone){
+		return new FractalRendererSharedMemory(clone._imageWidth,clone._imageHeight,clone._sharedArrayBuffer);
+	}
+
+	/**
+	 * Creates a new SharedArrayBuffer.
+	 * @param {number} width
+	 * @param {number} height
+	 */
+	static createBuffer(width,height){
+		let buffer = new SharedArrayBuffer(width*height*12+4);
+		let iterationsArray = FractalRendererSharedMemory.getIterationsArray(width,height,buffer);
+		iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
+		return buffer;
+	}
+
+	/**
+	 * Returns the `colorsArray` slice of a `SharedArrayBuffer`.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	static getColorsArray(width,height,sharedArrayBuffer){
+		return new Uint32Array(sharedArrayBuffer,0,width*height);
+	}
+
+	/**
+	 * Returns the `iterationsArray` slice of a `SharedArrayBuffer`.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	static getIterationsArray(width,height,sharedArrayBuffer){
+		return new Float64Array(sharedArrayBuffer,width*height*4,width*height);
+	}
+
+	/**
+	 * Returns the `variablesArray` part of a `SharedArrayBuffer`.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	static getVariablesArray(width,height,sharedArrayBuffer){
+		return new Uint32Array(sharedArrayBuffer,width*height*12,1);
 	}
 }

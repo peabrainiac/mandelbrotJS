@@ -3,6 +3,7 @@ import Timer from "../util/Timer.js";
 import {FractalFormula,FractalViewport} from "../MandelMaths.js";
 import MandelbrotFormula from "../formulas/Mandelbrot.js";
 import FractalRenderer, {STATE_LOADING,STATE_PENDING_RENDER,STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./renderer/FractalRenderer.js";
+import MultithreadedFractalRenderer, {moduleWorkersSupported} from "./renderer/MultithreadedFractalRenderer.js";
 
 export {STATE_LOADING,STATE_PENDING_RENDER,STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
 
@@ -95,7 +96,7 @@ export default class FractalCanvas extends HTMLElement {
 		this._progressTimer.start();
 		this._canvas.width = this._width;
 		this._canvas.height = this._height;
-		this._renderer = new FractalRenderer(this._formula,this.viewport,this._iterations);
+		this._renderer = moduleWorkersSupported?new MultithreadedFractalRenderer(this._formula,this.viewport,this._iterations):new FractalRenderer(null,this._formula,this.viewport,this._iterations);
 		this._renderer.onBeforeScreenRefresh(()=>{
 			this._refreshCanvas();
 		});

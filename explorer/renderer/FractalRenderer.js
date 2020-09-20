@@ -15,12 +15,13 @@ export const STATE_FINISHED = 5;
  */
 export default class FractalRenderer {
 	/**
+	 * @param {FractalRendererMemory} memory
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
 	 * @param {number} maxIterations
 	 */
-	constructor(formula,viewport,maxIterations){
-		this._memory = new FractalRendererMemory(viewport.pixelWidth,viewport.pixelHeight);
+	constructor(memory,formula,viewport,maxIterations){
+		this._memory = memory||new FractalRendererMemory(viewport.pixelWidth,viewport.pixelHeight);
 		this._formula = formula;
 		this._viewport = viewport;
 		this._maxIterations = maxIterations;
@@ -143,7 +144,43 @@ export default class FractalRenderer {
 		});
 	}
 
+	/**
+	 * the number of pixels that this renderer has calculated so far.
+	 */
 	get pixelsCalculated(){
 		return this._pixelsCalculated;
+	}
+}
+/**
+ * A renderer that renders only part of the image; that way, the work can be split up between multiple threads.
+ * 
+ * More specifically, this renders only every nth pixel a normal renderer would, starting at any given offset.
+ */
+export class FractalPartRenderer extends FractalRenderer {
+	/**
+	 * @param {FractalRendererMemory} memory
+	 * @param {FractalFormula} formula
+	 * @param {FractalViewport} viewport
+	 * @param {number} maxIterations
+	 * @param {number} n
+	 * @param {number} offset
+	 */
+	constructor(memory,formula,viewport,maxIterations,n,offset){
+		super(memory,formula,viewport,maxIterations);
+		this._n = n;
+		this._offset = offset;
+		this._i = 0;
+	}
+
+	/**
+	 * @inheritdoc
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} pixelSize
+	 */
+	renderPixel(x,y,pixelSize){
+		if (this._i++%this._n==this._offset){
+			super.renderPixel(x,y,pixelSize);
+		}
 	}
 }
