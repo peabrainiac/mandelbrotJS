@@ -50,6 +50,10 @@ export default class FractalCanvas extends HTMLElement {
 		this._canvas = this.shadowRoot.getElementById("canvas");
 		this._ctx = this._canvas.getContext("2d");
 		this._progressTimer = new Timer();
+		this._renderer = new (moduleWorkersSupported?MultithreadedFractalRenderer:FractalRenderer)(null);
+		this._renderer.onBeforeScreenRefresh(()=>{
+			this._refreshCanvas();
+		});
 		this.render();
 	}
 
@@ -96,11 +100,7 @@ export default class FractalCanvas extends HTMLElement {
 		this._progressTimer.start();
 		this._canvas.width = this._width;
 		this._canvas.height = this._height;
-		this._renderer = moduleWorkersSupported?new MultithreadedFractalRenderer(this._formula,this.viewport,this._iterations):new FractalRenderer(null,this._formula,this.viewport,this._iterations);
-		this._renderer.onBeforeScreenRefresh(()=>{
-			this._refreshCanvas();
-		});
-		await this._renderer.render();
+		await this._renderer.render(this._formula,this.viewport,this._iterations);
 		this._progressTimer.stop();
 		if (this._state===STATE_PENDING_CANCEL){
 			this._state = STATE_CANCELLED;
@@ -122,7 +122,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	get _pixelsCalculated(){
-		return this._renderer?this._renderer.pixelsCalculated:0;
+		return this._renderer?this._renderer.memory.pixelsCalculated:0;
 	}
 	
 	get canvas(){

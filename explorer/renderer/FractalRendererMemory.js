@@ -21,19 +21,31 @@ export const sharedArrayBuffersSupported = (()=>{
  */
 export default class FractalRendererMemory {
 	/**
-	 * 
 	 * @param {number} width 
 	 * @param {number} height 
 	 * @param {Uint32Array} colorsArray 
 	 * @param {Float64Array} iterationsArray 
 	 * @param {ImageData} imageData 
 	 */
-	constructor(width,height,colorsArray=new Uint32Array(width*height),iterationsArray=FractalRendererMemory.createIterationsArray(width,height),imageData=new ImageData(new Uint8ClampedArray(colorsArray.buffer),width)){
-		this._imageWidth = width;
-		this._imageHeight = height;
-		this._colorsArray = colorsArray;
-		this._iterationsArray = iterationsArray;
-		this._imageData = imageData;
+	constructor(width=8,height=8){
+		this.reset(width,height);
+	}
+
+	/**
+	 * @param {number} width
+	 * @param {number} height
+	 */
+	reset(width,height){
+		if (this._imageWidth!==width||this._imageHeight!==height){
+			this._imageWidth = width;
+			this._imageHeight = height;
+			this._colorsArray = new Uint32Array(width*height);
+			this._iterationsArray = FractalRendererMemory.createIterationsArray(width,height);
+			this._imageData = new ImageData(new Uint8ClampedArray(this._colorsArray.buffer),width);
+		}else{
+			this._colorsArray.fill(0xff000000);
+			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
+		}
 		this._pixelsCalculated = 0;
 	}
 
@@ -118,13 +130,13 @@ export default class FractalRendererMemory {
 	 * Increases the value of `pixelsCalculated` by one.
 	 */
 	incrementPixelsCalculated(){
-		this._pixelsCalculated = 0;
+		this._pixelsCalculated++;
 	}
 
 	/**
 	 * Creates and returns a new iterations array of a given size.
-	 * @param {number} width 
-	 * @param {number} height 
+	 * @param {number} widt
+	 * @param {number} height
 	 */
 	static createIterationsArray(width,height){
 		const array = new Float64Array(width*height);
@@ -141,17 +153,38 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {number} height
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
-	constructor(width,height,sharedArrayBuffer=FractalRendererSharedMemory.createBuffer(width,height)){
-		super(width,height,FractalRendererSharedMemory.getColorsArray(width,height,sharedArrayBuffer),FractalRendererSharedMemory.getIterationsArray(width,height,sharedArrayBuffer),new ImageData(width,height));
-		this._variablesArray = FractalRendererSharedMemory.getVariablesArray(width,height,sharedArrayBuffer);
-		/** temporary workaround because `ImageData.data` color arrays can't be shared */
-		this._secondaryColorsArray = new Uint8ClampedArray(this._colorsArray.buffer,0,width*height*4);
-		this._sharedArrayBuffer = sharedArrayBuffer;
+	constructor(width=8,height=8,sharedArrayBuffer){
+		super(width,height);
+		this.reset(width,height,sharedArrayBuffer);
 	}
 
+	reset(width,height,buffer=FractalRendererSharedMemory.createBuffer(width,height)){
+		if (this._imageWidth!==width||this._imageHeight!==height||this.buffer!==buffer){
+			this._imageWidth = width;
+			this._imageHeight = height;
+			this._sharedArrayBuffer = buffer;
+			this._colorsArray = FractalRendererSharedMemory.getColorsArray(width,height,this._sharedArrayBuffer);
+			this._iterationsArray = FractalRendererSharedMemory.getIterationsArray(width,height,this._sharedArrayBuffer);
+			this._imageData = new ImageData(width,height);
+			this._variablesArray = FractalRendererSharedMemory.getVariablesArray(width,height,this._sharedArrayBuffer);
+			/** temporary workaround because `ImageData.data` color arrays can't be shared */
+			this._secondaryColorsArray = new Uint8ClampedArray(this._sharedArrayBuffer,0,width*height*4);
+		}else{
+			this._colorsArray.fill(0xff000000);
+			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
+			this._variablesArray[0] = 0;
+		}
+	}
+
+	/** @readonly */
 	get imageData(){
 		this._imageData.data.set(this._secondaryColorsArray,0);
 		return this._imageData;
+	}
+
+	/** @readonly */
+	get buffer(){
+		return this._sharedArrayBuffer;
 	}
 
 	/** @inheritdoc */

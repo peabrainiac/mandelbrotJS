@@ -1,6 +1,6 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
 
-import FractalRendererMemory, {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
+import FractalRendererMemory, {FractalRendererSharedMemory,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
 
 export {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
 export const STATE_LOADING = 0;
@@ -16,16 +16,9 @@ export const STATE_FINISHED = 5;
 export default class FractalRenderer {
 	/**
 	 * @param {FractalRendererMemory} memory
-	 * @param {FractalFormula} formula
-	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
 	 */
-	constructor(memory,formula,viewport,maxIterations){
-		this._memory = memory||new FractalRendererMemory(viewport.pixelWidth,viewport.pixelHeight);
-		this._formula = formula;
-		this._viewport = viewport;
-		this._maxIterations = maxIterations;
-		this._pixelsCalculated = 0;
+	constructor(memory){
+		this._memory = memory||new FractalRendererMemory();
 		this._state = STATE_LOADING;
 		this._lastScreenRefresh = Date.now();
 		this._shouldDoScreenRefreshs = true;
@@ -41,7 +34,18 @@ export default class FractalRenderer {
 		return this._memory;
 	}
 	
-	async render(){
+	/**
+	 * @param {FractalFormula} formula
+	 * @param {FractalViewport} viewport
+	 * @param {number} maxIterations
+	 */
+	async render(formula,viewport,maxIterations){
+		this._formula = formula;
+		this._viewport = viewport;
+		this._maxIterations = maxIterations;
+		if (!(this._memory instanceof FractalRendererSharedMemory)){
+			this._memory.reset(viewport.pixelWidth,viewport.pixelHeight);
+		}
 		this._finishRenderCallPromise = new Promise(async(resolve)=>{
 			this._state = STATE_RENDERING;
 			for (let i=0;i<RENDER_GRID_SIZES.length;i++){
@@ -143,13 +147,6 @@ export default class FractalRenderer {
 			return (iterations==maxIterations?0:Math.floor(255.999*iterations/maxIterations)+(Math.floor(175.999*iterations/maxIterations)<<8))+0xff000000;
 		});
 	}
-
-	/**
-	 * the number of pixels that this renderer has calculated so far.
-	 */
-	get pixelsCalculated(){
-		return this._pixelsCalculated;
-	}
 }
 /**
  * A renderer that renders only part of the image; that way, the work can be split up between multiple threads.
@@ -165,11 +162,23 @@ export class FractalPartRenderer extends FractalRenderer {
 	 * @param {number} n
 	 * @param {number} offset
 	 */
-	constructor(memory,formula,viewport,maxIterations,n,offset){
-		super(memory,formula,viewport,maxIterations);
+	constructor(memory,n,offset){
+		super(memory);
 		this._n = n;
 		this._offset = offset;
 		this._i = 0;
+	}
+
+	/**
+	 * @param {FractalFormula} formula
+	 * @param {FractalViewport} viewport
+	 * @param {number} maxIterations
+	 * @param {SharedArrayBuffer} buffer
+	 */
+	async render(formula,viewport,maxIterations,buffer){
+		this._i = 0;
+		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
+		await super.render(formula,viewport,maxIterations);
 	}
 
 	/**

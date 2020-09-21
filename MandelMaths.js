@@ -67,7 +67,7 @@ export class FractalFormula {
 	/**
 	 * Reconstructs the formula from its structured clone.
 	 * @param {object} clone
-	 * @returns {FractalFormula}
+	 * @returns {Promise<FractalFormula>}
 	 */
 	static async fromStructuredClone(clone){
 		let module = await import(clone.moduleURL);
