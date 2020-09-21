@@ -1,9 +1,9 @@
+export {default as FractalViewport} from "./explorer/FractalViewport.js";
+
 /**
  * Default export, currently empty.
  */
 export default class MandelMaths {}
-
-export {default as FractalViewport} from "./explorer/FractalViewport.js";
 
 /**
  * Base class for fractal formulas.
@@ -45,6 +45,33 @@ export class FractalFormula {
 	 */
 	getNearbyCyclicPoint(startX,startY,cycleLength){
 		return null;
+	}
+
+	/**
+	 * the url of the formula module.
+	 * @readonly
+	 */
+	get moduleURL(){
+		let className = this.constructor.name;
+		return `./formulas/${className.endsWith("Formula")?className.slice(0,-7):className}.js`;
+	}
+
+	/**
+	 * Converts the given formula into an object that can be passed through the structured cloning algorithm used by `postMessage()` without losing information.
+	 * @param {FractalFormula} formula
+	 */
+	static prepareStructuredClone(formula){
+		return {moduleURL:formula.moduleURL}
+	}
+
+	/**
+	 * Reconstructs the formula from its structured clone.
+	 * @param {object} clone
+	 * @returns {FractalFormula}
+	 */
+	static async fromStructuredClone(clone){
+		let module = await import(clone.moduleURL);
+		return new (module.default)();
 	}
 }
 /**
