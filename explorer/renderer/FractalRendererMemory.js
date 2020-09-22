@@ -4,6 +4,9 @@
 export const ITERATIONS_NOT_YET_KNOWN = -Infinity;
 export const RENDER_GRID_SIZES = [64,16,4,1];
 
+/**
+ * Whether SharedArrayBuffer objects can be used in the current context.
+ */
 export const sharedArrayBuffersSupported = (()=>{
 	if (self.crossOriginIsolated===false){
 		console.warn("SharedArrayBuffers are supported by this browser, but inaccessible as this page is currently not cross-origin-isolated.");
@@ -32,6 +35,7 @@ export default class FractalRendererMemory {
 	}
 
 	/**
+	 * Prepares the memory to compute a new image. Resets all buffers, resizes them if necessary and resets the pixel counter.
 	 * @param {number} width
 	 * @param {number} height
 	 */
@@ -128,6 +132,9 @@ export default class FractalRendererMemory {
 		return this._imageData;
 	}
 
+	/**
+	 * The number of pixels calculated so far.
+	 */
 	get pixelsCalculated(){
 		return this._pixelsCalculated;
 	}
@@ -166,10 +173,12 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	}
 
 	/**
-	 * Resets all memory and sets the width, height and underlying buffer if necessary.
+	 * Prepares the memory to compute a new image. Resets the buffer, resizes them if necessary and resets the pixel counter.
+	 * 
+	 * If a buffer object is passed as an argument, it is then used as the new underlying buffer instead of being reset. This remains true even if the buffer passed is already the underlying buffer.
 	 * @param {number} width
 	 * @param {number} height
-	 * @param {buffer} buffer
+	 * @param {SharedArrayBuffer} buffer
 	 */
 	reset(width,height,buffer=null){
 		if (this._imageWidth!==width||this._imageHeight!==height||(buffer!==null&&this.buffer!==buffer)){
@@ -191,7 +200,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 				this._variablesArray = null;
 				this._secondaryColorsArray = null;
 			}
-		}else{
+		}else if(buffer===null){
 			this._colorsArray.fill(0xff000000);
 			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 			this._variablesArray[0] = 0;

@@ -1,6 +1,6 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
 
-import FractalRendererMemory, {FractalRendererSharedMemory,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
+import FractalRendererMemory, {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
 
 export {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
 export const STATE_LOADING = 0;
@@ -33,8 +33,17 @@ export default class FractalRenderer {
 	get memory(){
 		return this._memory;
 	}
+
+	/**
+	 * the current state of the renderer.
+	 * @readonly
+	 */
+	get state(){
+		return this._state;
+	}
 	
 	/**
+	 * Renders a new image. Returns a promise that resolves once it finishes rendering or is cancelled using `stop()` or another call to `render()`.
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
 	 * @param {number} maxIterations
@@ -43,11 +52,83 @@ export default class FractalRenderer {
 		this._formula = formula;
 		this._viewport = viewport;
 		this._maxIterations = maxIterations;
-		if (!(this._memory instanceof FractalRendererSharedMemory)){
-			this._memory.reset(viewport.pixelWidth,viewport.pixelHeight);
-		}
+		this._state = STATE_RENDERING;
+	}
+
+	/**
+	 * Stops rendering. Returns a promise that resolves once rendering has been completely stopped.
+	 */
+	async stop(){
+		this._state = STATE_CANCELLED;
+	}
+
+	/**
+	 * Internal method. Calls all screen refresh callbacks, waits for the next animation frame, and resets the corresponding timer.
+	 */
+	async _refreshScreen(){
+		this._onBeforeScreenRefreshCallbacks.forEach((callback)=>{
+			callback();
+		});
+		await new Promise((resolve)=>{
+			requestAnimationFrame(resolve);
+		});
+		this._lastScreenRefresh = Date.now();
+	}
+
+	/**
+	 * Registers a callback function to be executed before every screen refresh while rendering,
+	 * and before the first screen refresh after rendering is finished.
+	 * @param {()=>{}} callback
+	 */
+	onBeforeScreenRefresh(callback){
+		this._onBeforeScreenRefreshCallbacks.push(callback);
+	}
+
+	/**
+	 * Renders one pixel of a given size and position.
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} pixelSize
+	 */
+	renderPixel(x,y,pixelSize){
+		const maxIterations = this._maxIterations;
+		this._memory.renderPixel(x,y,pixelSize,(x,y)=>{
+			let cx = this._viewport.pixelXToFractalX(x);
+			let cy = this._viewport.pixelYToFractalY(y);
+			return this._formula.iterate(cx,cy,{maxIterations});
+		},(iterations)=>{
+			return (iterations==maxIterations?0:Math.floor(255.999*iterations/maxIterations)+(Math.floor(175.999*iterations/maxIterations)<<8))+0xff000000;
+		});
+	}
+}
+/**
+ * A simple, single-threaded fractal renderer.
+ * 
+ * Can be configured to render only part of the image to a `FractalRendererSharedMemory`, so that multiple of these can render one image together across multiple threads.
+ */
+export class SimpleFractalRenderer extends FractalRenderer {
+	/**
+	 * @param {FractalRendererMemory} memory
+	 * @param {number} n the number of total renderers working together to render the image; defaults to 1.
+	 * @param {number} offset the index of this renderer among those renderers; determines what part of the image it should render.
+	 */
+	constructor(memory,n=1,offset=0){
+		super(memory);
+		this._n = n;
+		this._offset = offset;
+		this._i = 0;
+	}
+	/**
+	 * @param {FractalFormula} formula
+	 * @param {FractalViewport} viewport
+	 * @param {number} maxIterations
+	 * @param {SharedArrayBuffer} buffer
+	 */
+	async render(formula,viewport,maxIterations,buffer=null){
+		super.render(formula,viewport,maxIterations);
+		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
+		this._i = 0;
 		this._finishRenderCallPromise = new Promise(async(resolve)=>{
-			this._state = STATE_RENDERING;
 			for (let i=0;i<RENDER_GRID_SIZES.length;i++){
 				await this._renderPart(RENDER_GRID_SIZES[i]);
 			}
@@ -58,8 +139,11 @@ export default class FractalRenderer {
 		return this._finishRenderCallPromise;
 	}
 
+	/**
+	 * @inheritdoc
+	 */
 	async stop(){
-		if (this._state = STATE_RENDERING){
+		if (this._state===STATE_RENDERING){
 			this._state = STATE_PENDING_CANCEL;
 			await this._finishRenderCallPromise;
 		}
@@ -106,79 +190,6 @@ export default class FractalRenderer {
 				await this._refreshScreen();
 			}
 		}
-	}
-
-	/**
-	 * Internal method. Calls all screen refresh callbacks, waits for the next animation frame, and resets the corresponding timer.
-	 */
-	async _refreshScreen(){
-		this._onBeforeScreenRefreshCallbacks.forEach((callback)=>{
-			callback();
-		});
-		await new Promise((resolve)=>{
-			requestAnimationFrame(resolve);
-		});
-		this._lastScreenRefresh = Date.now();
-	}
-
-	/**
-	 * Registers a callback function to be executed before every screen refresh while rendering,
-	 * and before the first screen refresh after rendering is finished.
-	 * @param {()=>{}} callback
-	 */
-	onBeforeScreenRefresh(callback){
-		this._onBeforeScreenRefreshCallbacks.push(callback);
-	}
-
-	/**
-	 * Renders one pixel of a given size and position.
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} pixelSize
-	 */
-	renderPixel(x,y,pixelSize){
-		const maxIterations = this._maxIterations;
-		this._memory.renderPixel(x,y,pixelSize,(x,y)=>{
-			let cx = this._viewport.pixelXToFractalX(x);
-			let cy = this._viewport.pixelYToFractalY(y);
-			this._pixelsCalculated++;
-			return this._formula.iterate(cx,cy,{maxIterations});
-		},(iterations)=>{
-			return (iterations==maxIterations?0:Math.floor(255.999*iterations/maxIterations)+(Math.floor(175.999*iterations/maxIterations)<<8))+0xff000000;
-		});
-	}
-}
-/**
- * A renderer that renders only part of the image; that way, the work can be split up between multiple threads.
- * 
- * More specifically, this renders only every nth pixel a normal renderer would, starting at any given offset.
- */
-export class FractalPartRenderer extends FractalRenderer {
-	/**
-	 * @param {FractalRendererMemory} memory
-	 * @param {FractalFormula} formula
-	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
-	 * @param {number} n
-	 * @param {number} offset
-	 */
-	constructor(memory,n,offset){
-		super(memory);
-		this._n = n;
-		this._offset = offset;
-		this._i = 0;
-	}
-
-	/**
-	 * @param {FractalFormula} formula
-	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
-	 * @param {SharedArrayBuffer} buffer
-	 */
-	async render(formula,viewport,maxIterations,buffer){
-		this._i = 0;
-		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
-		await super.render(formula,viewport,maxIterations);
 	}
 
 	/**

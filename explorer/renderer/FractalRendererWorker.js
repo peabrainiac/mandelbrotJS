@@ -1,6 +1,6 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
-import FractalRenderer, {FractalPartRenderer,STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED} from "./FractalRenderer.js";
-import FractalRendererMemory, {FractalRendererSharedMemory,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
+import FractalRenderer, {STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED} from "./FractalRenderer.js";
+import {FractalRendererSharedMemory} from "./FractalRendererMemory.js";
 
 /**
  * Whether the browser supports module workers or not; these are required for this class to work.
@@ -42,13 +42,12 @@ export default class FractalRendererWorker extends FractalRenderer {
 	 * @param {number} maxIterations
 	 */
 	async render(formula,viewport,maxIterations){
-		this._formula = formula;
-		this._viewport = viewport;
-		this._maxIterations = maxIterations;
+		super.render(formula,viewport,maxIterations);
 		this._worker.postMessage({action:"render",data:{formula:FractalFormula.prepareStructuredClone(formula),viewport,maxIterations,buffer:this._memory.buffer}});
 		return new Promise((resolve)=>{
 			let listener = (e)=>{
 				if (e.data.message==="finished"){
+					this._state = this._state===STATE_PENDING_CANCEL?STATE_CANCELLED:STATE_FINISHED;
 					resolve();
 					this._worker.removeEventListener("message",listener);
 				}
@@ -58,6 +57,7 @@ export default class FractalRendererWorker extends FractalRenderer {
 	}
 
 	async stop(){
+		this._state = STATE_PENDING_CANCEL;
 		this._worker.postMessage({action:"stop"});
 		return new Promise((resolve)=>{
 			let listener = (e)=>{
