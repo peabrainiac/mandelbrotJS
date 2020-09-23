@@ -119,6 +119,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 		this._i = 0;
 	}
 	/**
+	 * @inheritdoc
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
 	 * @param {number} maxIterations
@@ -129,9 +130,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
 		this._i = 0;
 		this._finishRenderCallPromise = new Promise(async(resolve)=>{
-			for (let i=0;i<RENDER_GRID_SIZES.length;i++){
-				await this._renderPart(RENDER_GRID_SIZES[i]);
-			}
+			await this._render();
 			await this._refreshScreen();
 			this._state = this._state===STATE_PENDING_CANCEL?STATE_CANCELLED:STATE_FINISHED;
 			resolve();
@@ -150,57 +149,26 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	}
 
 	/**
-	 * Internal method. Renders a single resolution level.
-	 * @param {number} pixelSize 
+	 * Internal method. Does the actual rendering.
+	 * @todo: rewrite this with promises instead of async-await, so that firefox can JIT-compile it too.
 	 */
-	async _renderPart(pixelSize){
+	async _render(){
+		const indices = this.memory.indicesArray;
+		const pixelSizes = this.memory.pixelSizeArray;
 		const w = this._viewport.pixelWidth;
-		const h = this._viewport.pixelHeight;
-		let x = (Math.round(w*0.5/pixelSize)-1)*pixelSize;
-		let y = Math.round(h*0.5/pixelSize)*pixelSize;
-		for (let i=0,r=Math.ceil(Math.max(w,h)*0.5/pixelSize);i<r*2&this._state===STATE_RENDERING;i+=2){
-			for (let i2=0;i2<i;i2++){
-				this.renderPixel(x,y,pixelSize);
-				x -= pixelSize;
+		let index = 0;
+		for (let i=this._offset,l=indices.length;i<l;i+=this._n){
+			let pixelIndex = indices[i];
+			let x = pixelIndex%w;
+			this.renderPixel(x,(pixelIndex-x)/w,pixelSizes[pixelIndex]);
+			if (index++%1000==0){
+				if (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
+					await this._refreshScreen();
+				}
+				if (this._state!==STATE_RENDERING){
+					break;
+				}
 			}
-			// inlined if to avoid frequent rescheduling; for some reason, awaiting an async function pauses execution even if
-			// the function immediately returns, so moving the if inside the function would be noticeably slower.
-			if (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
-				await this._refreshScreen();
-			}
-			for (let i2=0;i2<i+1;i2++){
-				this.renderPixel(x,y,pixelSize);
-				y -= pixelSize;
-			}
-			if (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
-				await this._refreshScreen();
-			}
-			for (let i2=0;i2<i+1;i2++){
-				this.renderPixel(x,y,pixelSize);
-				x += pixelSize;
-			}
-			if (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
-				await this._refreshScreen();
-			}
-			for (let i2=0;i2<i+2;i2++){
-				this.renderPixel(x,y,pixelSize);
-				y += pixelSize;
-			}
-			if (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
-				await this._refreshScreen();
-			}
-		}
-	}
-
-	/**
-	 * @inheritdoc
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} pixelSize
-	 */
-	renderPixel(x,y,pixelSize){
-		if (this._i++%this._n==this._offset){
-			super.renderPixel(x,y,pixelSize);
 		}
 	}
 }

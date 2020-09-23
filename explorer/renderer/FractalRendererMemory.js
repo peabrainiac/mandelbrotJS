@@ -47,6 +47,9 @@ export default class FractalRendererMemory {
 				this._colorsArray = new Uint32Array(width*height);
 				this._iterationsArray = FractalRendererMemory.createIterationsArray(width,height);
 				this._imageData = new ImageData(new Uint8ClampedArray(this._colorsArray.buffer),width);
+				let temp = FractalRendererMemory.createIndicesAndPixelSizeArray(width,height);
+				this._indicesArray = temp.indicesArray;
+				this._pixelSizeArray = temp.pixelSizeArray;
 			}else{
 				this._colorsArray = null;
 				this._iterationsArray = null;
@@ -132,6 +135,16 @@ export default class FractalRendererMemory {
 		return this._imageData;
 	}
 
+	/** @readonly */
+	get indicesArray(){
+		return this._indicesArray;
+	}
+
+	/** @readonly */
+	get pixelSizeArray(){
+		return this._pixelSizeArray;
+	}
+
 	/**
 	 * The number of pixels calculated so far.
 	 */
@@ -156,6 +169,55 @@ export default class FractalRendererMemory {
 		array.fill(ITERATIONS_NOT_YET_KNOWN);
 		console.log("Created new Float64Array.");
 		return array;
+	}
+
+	/**
+	 * Creates (or modifies if given) and returns two arrays, an `indicesArray` and a `pixelSizeArray`.
+	 * The `indicesArray` contains all pixel indices in the order that they should be rendered in;
+	 * the `pixelSizeArray` contains the size for the pixel at each index.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {Uint32Array} indicesArray
+	 * @param {Uint8Array} pixelSizeArray
+	 */
+	static createIndicesAndPixelSizeArray(width,height,indicesArray=new Uint32Array(width*height),pixelSizeArray=new Uint8Array(width*height)){
+		const w = width;
+		const h = height;
+		let index = 0;
+		let writePixel = (x,y,pixelSize)=>{
+			if (x+pixelSize>0&&y+pixelSize>0&&x<w&&y<h){
+				let px = Math.max(0,Math.min(width-1,Math.floor(x+pixelSize/2)));
+				let py = Math.max(0,Math.min(height-1,Math.floor(y+pixelSize/2)));
+				if (pixelSizeArray[px+py*width]===0){
+					indicesArray[index++] = px+py*width;
+					pixelSizeArray[px+py*width] = pixelSize;
+				}
+			}
+		};
+		for (let pixelSizeIndex=0;pixelSizeIndex<RENDER_GRID_SIZES.length;pixelSizeIndex++){
+			let pixelSize = RENDER_GRID_SIZES[pixelSizeIndex];
+			let x = (Math.round(width*0.5/pixelSize)-1)*pixelSize;
+			let y = Math.round(height*0.5/pixelSize)*pixelSize;
+			for (let i=0,r=Math.ceil(Math.max(width,height)*0.5/pixelSize);i<r*2;i+=2){
+				for (let i2=0;i2<i;i2++){
+					writePixel(x,y,pixelSize);
+					x -= pixelSize;
+				}
+				for (let i2=0;i2<i+1;i2++){
+					writePixel(x,y,pixelSize);
+					y -= pixelSize;
+				}
+				for (let i2=0;i2<i+1;i2++){
+					writePixel(x,y,pixelSize);
+					x += pixelSize;
+				}
+				for (let i2=0;i2<i+2;i2++){
+					writePixel(x,y,pixelSize);
+					y += pixelSize;
+				}
+			}
+		}
+		return {indicesArray,pixelSizeArray};
 	}
 }
 /**
@@ -192,6 +254,8 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 				this._variablesArray = FractalRendererSharedMemory.getVariablesArray(width,height,this._sharedArrayBuffer);
 				/** temporary workaround because `ImageData.data` color arrays can't be shared */
 				this._secondaryColorsArray = new Uint8ClampedArray(this._sharedArrayBuffer,0,width*height*4);
+				this._indicesArray = FractalRendererSharedMemory.getIndicesArray(width,height,this._sharedArrayBuffer);
+				this._pixelSizeArray = FractalRendererSharedMemory.getPixelSizeArray(width,height,this._sharedArrayBuffer);
 			}else{
 				this._sharedArrayBuffer = null;
 				this._colorsArray = null;
@@ -241,10 +305,13 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {number} height
 	 */
 	static createBuffer(width,height){
-		let buffer = new SharedArrayBuffer(width*height*12+4);
+		let buffer = new SharedArrayBuffer(width*height*17+4);
 		let iterationsArray = FractalRendererSharedMemory.getIterationsArray(width,height,buffer);
 		iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 		console.log("Created new SharedArrayBuffer.");
+		let indicesArray = FractalRendererSharedMemory.getIndicesArray(width,height,buffer);
+		let pixelSizeArray = FractalRendererSharedMemory.getPixelSizeArray(width,height,buffer);
+		FractalRendererMemory.createIndicesAndPixelSizeArray(width,height,indicesArray,pixelSizeArray);
 		return buffer;
 	}
 
@@ -269,12 +336,33 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	}
 
 	/**
+	 * Returns the `indicesArray` slice of a `SharedArrayBuffer`.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	static getIndicesArray(width,height,sharedArrayBuffer){
+		return new Uint32Array(sharedArrayBuffer,width*height*12,width*height);
+	}
+
+	/**
+	 * Returns the `pixelSizeArray` slice of a `SharedArrayBuffer`.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	static getPixelSizeArray(width,height,sharedArrayBuffer){
+		return new Uint8Array(sharedArrayBuffer,width*height*16,width*height);
+	}
+
+
+	/**
 	 * Returns the `variablesArray` part of a `SharedArrayBuffer`.
 	 * @param {number} width
 	 * @param {number} height
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
 	static getVariablesArray(width,height,sharedArrayBuffer){
-		return new Uint32Array(sharedArrayBuffer,width*height*12,1);
+		return new Uint32Array(sharedArrayBuffer,width*height*17,1);
 	}
 }
