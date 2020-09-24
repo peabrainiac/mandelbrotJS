@@ -150,25 +150,32 @@ export class SimpleFractalRenderer extends FractalRenderer {
 
 	/**
 	 * Internal method. Does the actual rendering.
-	 * @todo: rewrite this with promises instead of async-await, so that firefox can JIT-compile it too.
+	 * 
+	 * Note: this is written using `promise.then()` instead of async-await syntax because Firefox does not yet JIT-compile async functions.
 	 */
 	async _render(){
-		const indices = this.memory.indicesArray;
-		const pixelSizes = this.memory.pixelSizeArray;
-		const w = this._viewport.pixelWidth;
-		let index = 0;
-		for (let i=this._offset,l=indices.length;i<l;i+=this._n){
-			let pixelIndex = indices[i];
-			let x = pixelIndex%w;
-			this.renderPixel(x,(pixelIndex-x)/w,pixelSizes[pixelIndex]);
-			if (index++%1000==0){
-				if (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
-					await this._refreshScreen();
+		return new Promise((resolve)=>{
+			const indices = this.memory.indicesArray;
+			const pixelSizes = this.memory.pixelSizeArray;
+			const w = this._viewport.pixelWidth;
+			const n = this._n;
+			/** @param {number} startIndex */
+			let renderPart = (startIndex)=>{
+				for (var i=startIndex,l=Math.min(indices.length,i+1000*n);i<l;i+=n){
+					let pixelIndex = indices[i];
+					let x = pixelIndex%w;
+					this.renderPixel(x,(pixelIndex-x)/w,pixelSizes[pixelIndex]);
 				}
-				if (this._state!==STATE_RENDERING){
-					break;
+				if (i==startIndex||this._state!==STATE_RENDERING){
+					resolve();
+				}else{
+					let promise = (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100)?this._refreshScreen():Promise.resolve();
+					promise.then(()=>{
+						renderPart(i);
+					});
 				}
 			}
-		}
+			renderPart(this._offset);
+		});
 	}
 }
