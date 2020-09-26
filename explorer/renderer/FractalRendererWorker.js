@@ -1,24 +1,8 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
 import FractalRenderer, {STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED} from "./FractalRenderer.js";
 import {FractalRendererSharedMemory} from "./FractalRendererMemory.js";
-
-/**
- * Whether the browser supports module workers or not; these are required for this class to work.
- */
-export const moduleWorkersSupported = (()=>{
-    let supportsModules = false;
-    let url = URL.createObjectURL(new Blob([""]))
-    let w = new Worker(url,{get type(){
-        supportsModules = true;
-        return "module";
-    }});
-    w.terminate();
-	URL.revokeObjectURL(url);
-	if (!supportsModules){
-		console.warn("Module workers don't seem to be supported by this browser; multithreading probably won't work here.");
-	}
-    return supportsModules;
-})();
+import ModuleWorkerWorkaround, {moduleWorkersSupported} from "./moduleWorkerWorkaround/ModuleWorkerWorkaround.js";
+export {moduleWorkersSupported};
 
 /**
  * A Fractal Renderer that renders part of an image by executing a `FractalPartRenderer` in a WebWorker.
