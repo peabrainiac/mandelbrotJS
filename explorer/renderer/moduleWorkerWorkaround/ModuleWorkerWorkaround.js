@@ -17,6 +17,12 @@ export const moduleWorkersSupported = (()=>{
 })();
 
 /**
+ * All modules that have been loaded so far, or are currently being loaded.
+ * @type {ModuleData[]}
+ */
+const moduleCache = [];
+
+/**
  * A class that helps to run module scripts in workers even when module workers are not supported by the browser.
  */
 export default class ModuleWorkerWorkaround {
@@ -35,8 +41,9 @@ export default class ModuleWorkerWorkaround {
 		if (moduleWorkersSupported){
 			return new Worker(path,{type:"module"});
 		}else{
-			let module = await ModuleWorkerWorkaround.fetchModuleWithImports(path);
-			let code = ModuleWorkerWorkaround.transpileModule(module);
+			let module = ModuleData.get(path);
+			await module.waitUntilImportsLoaded();
+			let code = ModuleWorkerWorkaround.transpileModuleWithImports(module);
 			let url = URL.createObjectURL(new Blob([code],{type:"text/javascript"}));
 			return new Worker(url);
 		}
@@ -52,77 +59,142 @@ export default class ModuleWorkerWorkaround {
 		`;
 	}
 
+}
+
+/**
+ * Information about a javascript module file.
+ */
+class ModuleData {
 	/**
-	 * Recursively fetches and analyzes a module and all of its imports.
-	 * @param {string} path
+	 * Loads, analyzes and constructs a new `ModuleData` for the module at the given URL.
+	 * @param {string} path 
 	 */
-	static async fetchModuleWithImports(path){
-		/** @type {ModuleData[]} */
-		const fetchedModules = [];
-		/** @type {string[]} */
-		const modulePaths = [];
-		await new Promise((resolve,reject)=>{
-			/** @param {string} path */
-			let fetch = (path)=>{
-				if (!modulePaths.includes(path)){
-					modulePaths.push(path);
-					ModuleWorkerWorkaround.fetchModule(path).then((module)=>{
-						fetchedModules.push(module);
-						module.imports.forEach(importData=>{
-							fetch(importData.absolutePath);
-						})
-						if (modulePaths.length==fetchedModules.length){
-							resolve();
-						}
-					},reject);
-				}
-			}
-			fetch(path);
-		});
-		fetchedModules.forEach(module=>{
-			module.imports.forEach(importData=>{
-				importData.module = fetchedModules.find(module=>(module.path===importData.absolutePath));
+	constructor(path){
+		this._path = path;
+		this._fullyLoaded = false;
+		this._fullyLoadedImports = false;
+		moduleCache.push(this);
+		this._fullyLoadedPromise = (async()=>{
+			const source = (await (await fetch(path)).text()).replace(/[\n\r]+/g,"\n");
+			const topLevelStatementsRegex = /(?:^|\n)(?:(\/\*\*[^]*?\*\/)\n)?([^\n\t/].*(?:(?:\n\t.*)+\n[^\n\t].*)?)/g;
+			const importStatementRegex = /^(?:import|export) ([a-zA-Z]\w*)?,? ?{([^}]+)} from "(.*)";?$/
+			/** @type {{comment:string,code:string}[]} */
+			const topLevelStatements = Array.from(source.matchAll(topLevelStatementsRegex),matchGroups=>({comment:matchGroups[1],code:matchGroups[2]}));
+			const importStatements = topLevelStatements.filter(statement=>(importStatementRegex.test(statement.code)));
+			const imports = importStatements.map(statement=>{
+				const matchArray = statement.code.match(importStatementRegex);
+				const relativePath = matchArray[3];
+				const absolutePath = ModuleData.joinRelativePaths(path,relativePath);
+				const imports = [...matchArray[1]?[{import:"default",alias:matchArray[1]}]:[],...matchArray[2]?matchArray[2].split(",").map(member=>{
+					const matchArray = member.match(/^ ?([a-zA-Z]\w*)(?: as ([a-zA-Z]\w*))?$/);
+					return {import:matchArray[1],alias:matchArray[2]};
+				}):[]];
+				const module = ModuleData.get(absolutePath);
+				return {relativePath,absolutePath,imports,statement,module,export:statement.code.startsWith("export")};
 			});
-		});
-		fetchedModules.forEach(module=>{
+			this._source = source;
+			this._imports = imports;
+			this._topLevelStatements = topLevelStatements;
+			this._fullyLoaded = true;
+			return this;
+		})();
+		this._fullyLoadedImportsPromise = (async()=>{
 			const indirectImports = [];
 			/** @param {ModuleData} module */
-			let addImports = (module)=>{
-				module.imports.forEach(importData=>{
-					if (!indirectImports.includes(importData.absolutePath)){
-						indirectImports.push(importData.absolutePath);
-						addImports(importData.module);
+			let addImports = async(module)=>{
+				console.log(`Adding imports of module "${module.path}".`);
+				await module.waitUntilLoaded();
+				await Promise.all(module.imports.map(importData=>{
+					let module = importData.module;
+					if (!indirectImports.includes(module)){
+						indirectImports.push(module);
+						return addImports(module);
+					}else{
+						return Promise.resolve();
 					}
-				})
+				}));
 			};
-			addImports(module);
-			module.indirectImports = indirectImports;
-		});
-		return fetchedModules[0];
+			await addImports(this);
+			this._indirectImports = indirectImports;
+			this._fullyLoadedImports = true;
+			return this;
+		})();
 	}
 
 	/**
-	 * Fetches and analyzes a single module, without any of its imports.
+	 * Returns a module from the cache, or constructs a new one if it hasn't been loaded yet.
 	 * @param {string} path
 	 */
-	static async fetchModule(path){
-		const source = (await (await fetch(path)).text()).replace(/[\n\r]+/g,"\n");
-		const topLevelStatementsRegex = /(?:^|\n)(?:(\/\*\*[^]*?\*\/)\n)?([^\n\t/].*(?:(?:\n\t.*)+\n[^\n\t].*)?)/g;
-		const importStatementRegex = /^(?:import|export) ([a-zA-Z]\w*)?,? ?{([^}]+)} from "(.*)";?$/
-		/** @type {{comment:string,code:string}[]} */
-		const topLevelStatements = Array.from(source.matchAll(topLevelStatementsRegex),matchGroups=>({comment:matchGroups[1],code:matchGroups[2]}));
-		const importStatements = topLevelStatements.filter(statement=>(importStatementRegex.test(statement.code)));
-		const imports = importStatements.map(statement=>{
-			const matchArray = statement.code.match(importStatementRegex);
-			const relativePath = matchArray[3];
-			const absolutePath = ModuleWorkerWorkaround.joinRelativePaths(path,relativePath);
-			const imports = [...matchArray[1]?[{import:"default",alias:matchArray[1]}]:[],...matchArray[2]?matchArray[2].split(",").map(member=>{
-				const matchArray = member.match(/^ ?([a-zA-Z]\w*)(?: as ([a-zA-Z]\w*))?$/);
-				return {import:matchArray[1],alias:matchArray[2]};
-			}):[]];
-			return {relativePath,absolutePath,imports,statement,module:null,export:statement.code.startsWith("export")};
-		});
-		return {path,source,imports,topLevelStatements,indirectImports:null};
+	static get(path){
+		return moduleCache.find(module=>(module.path===path))||new ModuleData(path);
+	}
+
+	/** @readonly */
+	get path(){
+		return this._path;
+	}
+
+	/**
+	 * Whether this module has been loaded and analyzed yet.
+	 * 
+	 * Does NOT imply whether or not the modules imported by this module have been loaded yet.
+	 * @readonly
+	 */
+	get fullyLoaded(){
+		return this._fullyLoaded
+	}
+
+	/**
+	 * Returns a promise that resolves with the module once it itself has been loaded and analyzed.
+	 */
+	async waitUntilLoaded(){
+		return this._fullyLoadedPromise;
+	}
+
+	/**
+	 * Whether this module and all of its imports have been loaded yet.
+	 * @readonly
+	 */
+	get fullyLoadedImports(){
+		return this._fullyLoadedImports;
+	}
+
+	/**
+	 * Returns a promise that resolves with the module once it and all of its imports have been loaded
+	 */
+	async waitUntilImportsLoaded(){
+		return this._fullyLoadedImportsPromise;
+	}
+
+	/** @readonly */
+	get source(){
+		return this._source;
+	}
+
+	/**
+	 * Information about the import statements in this module. For the actual imported modules, see `ModuleData.imports[].module`.
+	 * @readonly
+	 */
+	get imports(){
+		return this._imports;
+	}
+
+	/**
+	 * The top-level statements in this module.
+	 * @readonly
+	 */
+	get topLevelStatements(){
+		return this._topLevelStatements;
+	}
+
+	/**
+	 * A list of modules imported by this module, either directly or indirectly.
+	 * 
+	 * @type {ModuleData}
+	 * @readonly
+	 */
+	get indirectImports(){
+		return this._indirectImports;
 	}
 
 	/**
@@ -138,6 +210,7 @@ export default class ModuleWorkerWorkaround {
 		}
 		return path.replace(/^\.\/\.\.\//,"/");
 	}
-
 }
+window.moduleCache = moduleCache;
 window.ModuleWorkerWorkaround = ModuleWorkerWorkaround;
+window.ModuleData = ModuleData;
