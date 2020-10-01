@@ -70,7 +70,7 @@ export default class FractalRenderer {
 			callback();
 		});
 		await new Promise((resolve)=>{
-			requestAnimationFrame(resolve);
+			(self.requestAnimationFrame||setTimeout)(resolve);
 		});
 		this._lastScreenRefresh = Date.now();
 	}

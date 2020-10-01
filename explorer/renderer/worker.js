@@ -6,6 +6,7 @@ import {FractalRendererSharedMemory} from "./FractalRendererMemory.js";
 let renderer = null;
 
 self.addEventListener("message",async(e)=>{
+	console.log("Retrieved message in worker.js!",e.data);
 	let message = e.data;
 	if (message.action==="init"){
 		let memory = FractalRendererSharedMemory.fromStructuredClone(message.data.memory);

@@ -15,7 +15,8 @@ export default class FractalRendererWorker extends FractalRenderer {
 	 */
 	constructor(memory,n,offset){
 		super(memory);
-		this._worker = new Worker("explorer/renderer/worker.js",{type:"module"});
+		//this._worker = new Worker("explorer/renderer/worker.js",{type:"module"});
+		this._worker = new ModuleWorkerWorkaround("explorer/renderer/worker.js");
 		this._worker.postMessage({action:"init",data:{memory:this.memory,n,offset}});
 	}
 
