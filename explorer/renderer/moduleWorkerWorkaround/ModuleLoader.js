@@ -157,7 +157,7 @@ export class ModuleData {
 	 */
 	get transpiledCode(){
 		if (this._transpiledCode===undefined&&this.fullyLoaded){
-			this._transpiledCode = `console.log("Loading module ${this.path}! arguments:",[...arguments]);const EXPORTS = {};\nconst IMPORT = arguments[${this.imports.length}];\n\n`+this.topLevelStatements.map((statement)=>{
+			this._transpiledCode = `const EXPORTS = {};\nconst IMPORT = arguments[${this.imports.length}];\n\n`+this.topLevelStatements.map((statement)=>{
 				const importData = this.imports.find(importData=>(importData.statement===statement));
 				if (importData){
 					let index = this.imports.indexOf(importData);
@@ -202,7 +202,11 @@ export class ModuleData {
 		while(/\/[^/]*[^/.]\/\.\.\//.test(path)){
 			path = path.replace(/\/[^/]*[^/.]\/\.\.\//,"/");
 		}
-		return path.replace(/^\.\/\.\.\//,"/").replace(/^[^/]*[^/.]\/\.\.\//,"");
+		path = path.replace(/^\.\/\.\.\//,"/").replace(/^[^/]*[^/.]\/\.\.\//,"");
+		if (path.startsWith(".")&&!path1.startsWith(".")){
+			path = path.replace(/^\.\.?\//,"");
+		}
+		return path;
 	}
 }
 /**

@@ -1,9 +1,10 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
 import FractalRenderer, {STATE_RENDERING,STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED} from "./FractalRenderer.js";
-import {FractalRendererSharedMemory} from "./FractalRendererMemory.js";
+import {FractalRendererSharedMemory,sharedArrayBuffersSupported} from "./FractalRendererMemory.js";
 import FractalRendererWorker from "./FractalRendererWorker.js";
 
-export const multithreadingSupported = true;
+/** Whether multithreading as currently implemented works in this browser. */
+export const multithreadingSupported = sharedArrayBuffersSupported;
 
 /**
  * A renderer that makes use of Web Workers and FractalPartRenderers to render the image more quickly.

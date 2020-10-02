@@ -13,7 +13,7 @@ export const moduleWorkersSupported = (()=>{
     w.terminate();
 	URL.revokeObjectURL(url);
 	if (!supportsModules){
-		console.warn("Module workers don't seem to be supported by this browser; multithreading probably won't work here.");
+		console.warn("Module workers don't seem to be supported by this browser. Multithreading can still be done using a build-in transpiler, but might not work correctly.");
 	}
     return supportsModules;
 })();
@@ -30,28 +30,29 @@ const messageTypeString = "ModuleWorkerWorkaround_internal";
 export default class ModuleWorkerWorkaround {
 	/**
 	 * Constructs a worker running a module script.
-	 * @param {string} path 
+	 * @param {string} path
+	 * @param {WorkerOptions} options
 	 */
-	constructor(path){
+	constructor(path,options={}){
 		this._ready = false;
 		this._readyPromise = (async()=>{
 			if (moduleWorkersSupported){
-				this._worker = new Worker(path,{type:"module"});
+				this._worker = new Worker(path,{type:"module",name:options.name});
 			}else{
 				await new Promise(async(resolve)=>{
 					const source = (await workerSource).replace(/\(\);$/,`("${path}","${messageTypeString}");`);
 					let url = URL.createObjectURL(new Blob([source]));
-					this._worker = new Worker(url);
+					this._worker = new Worker(url,{name:options.name});
 					URL.revokeObjectURL(url);
 					/** @type {ModuleData[]} */
 					this._modulesLoaded = [];
 					this._worker.addEventListener("message",async(e)=>{
 						if (e.data.type===messageTypeString){
-							/** @type {{action:"loadModule",data:{path:string,origin:string}}} */
+							/** @type {{action:"loadModule",data:{path:string}}} */
 							const message = e.data;
 							e.stopImmediatePropagation();
 							if (message.action==="loadModule"){
-								let path = message.data.origin?ModuleData.joinRelativePaths(message.data.origin,message.data.path):message.data.path;
+								let path = message.data.path;
 								let module = ModuleData.get(path);
 								await module.waitUntilImportsLoaded();
 								/** @type {ModuleData[]} */
@@ -93,9 +94,7 @@ export default class ModuleWorkerWorkaround {
 	}
 
 	async postMessage(message){
-		console.log("Posting message to worker:",message);
 		await this._readyPromise;
-		console.log("Posting message to worker, stage 2:",message);
 		this._worker.postMessage(message);
 	}
 
