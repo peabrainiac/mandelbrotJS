@@ -62,7 +62,7 @@ export default class FractalRenderer {
 	}
 
 	/**
-	 * Internal method. Calls all screen refresh callbacks, waits for the next animation frame, and resets the corresponding timer.
+	 * Internal method. Calls all screen refresh callbacks, then waits for the next animation frame and resets the corresponding timer.
 	 */
 	async _refreshScreen(){
 		this._onBeforeScreenRefreshCallbacks.forEach((callback)=>{
@@ -84,14 +84,12 @@ export default class FractalRenderer {
 	}
 
 	/**
-	 * Renders one pixel of a given size and position.
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} pixelSize
+	 * Renders the pixel at the given index in the grid. The index is calculated as `x+y*width`.
+	 * @param {number} index
 	 */
-	renderPixel(x,y,pixelSize){
+	renderPixel(index){
 		const maxIterations = this._maxIterations;
-		this._memory.renderPixel(x,y,pixelSize,(x,y)=>{
+		this._memory.renderPixel(index,(x,y)=>{
 			let cx = this._viewport.pixelXToFractalX(x);
 			let cy = this._viewport.pixelYToFractalY(y);
 			return this._formula.iterate(cx,cy,{maxIterations});
@@ -163,9 +161,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 			/** @param {number} startIndex */
 			let renderPart = (startIndex)=>{
 				for (var i=startIndex,l=Math.min(indices.length,i+1000*n);i<l;i+=n){
-					let pixelIndex = indices[i];
-					let x = pixelIndex%w;
-					this.renderPixel(x,(pixelIndex-x)/w,pixelSizes[pixelIndex]);
+					this.renderPixel(indices[i]);
 				}
 				if (i==startIndex||this._controlArray.pendingCancel){
 					this._state = (i==startIndex?STATE_FINISHED:STATE_CANCELLED);

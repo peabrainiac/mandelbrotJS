@@ -88,31 +88,28 @@ export default class FractalRendererMemory {
 	
 	/**
 	 * Renders a single pixel in the given grid size (unless already has been rendered as part of one of the larger grid sizes; in that case, rendering it isn't necessary anymore).
-	 * @param {number} x
-	 * @param {number} y
-	 * @param {number} pixelSize
+	 * @param {number} index
 	 * @param {(x:number,y:number)=>number} iterationsCallback function to compute the iteration count given the coordinates of the pixel's center.
 	 * @param {(iterations:number)=>number} colorCallback function to compute the color as a 32-bit abgr integer based on the iteration count.
 	 */
-	renderPixel(x,y,pixelSize,iterationsCallback,colorCallback){
+	renderPixel(index,iterationsCallback,colorCallback){
 		const w = this._imageWidth;
 		const h = this._imageHeight;
-		if (x+pixelSize>0&&y+pixelSize>0&&x<w&&y<h){
-			let px = Math.max(0,Math.min(w-1,Math.floor(x+pixelSize/2)));
-			let py = Math.max(0,Math.min(h-1,Math.floor(y+pixelSize/2)));
-			let index = px+py*w;
-			if (this._iterationsArray[index]==ITERATIONS_NOT_YET_KNOWN){
-				let iterations = iterationsCallback(px,py);
-				let color = colorCallback(iterations);
-				this._iterationsArray[index] = iterations;
-				this._colorsArray[index] = color;
-				this.incrementPixelsCalculated();
-				if (pixelSize>1){
-					for (let x2=Math.max(0,x),x3=Math.min(w,x+pixelSize);x2<x3;x2++){
-						for (let y2=Math.max(0,y),y3=Math.min(h,y+pixelSize);y2<y3;y2++){
-							if (this._iterationsArray[x2+y2*w]==ITERATIONS_NOT_YET_KNOWN){
-								this._colorsArray[x2+y2*w] = color;
-							}
+		let px = index%w;
+		let py = (index-px)/w;
+		let pixelSize = this._pixelSizeArray[index];
+		if (this._iterationsArray[index]==ITERATIONS_NOT_YET_KNOWN){
+			let iterations = iterationsCallback(px,py);
+			let color = colorCallback(iterations);
+			this._iterationsArray[index] = iterations;
+			this._colorsArray[index] = color;
+			this.incrementPixelsCalculated();
+			if (pixelSize>1){
+				let offset = Math.floor(pixelSize/2);
+				for (let x2=Math.max(0,px-offset),x3=Math.min(w,px-offset+pixelSize);x2<x3;x2++){
+					for (let y2=Math.max(0,py-offset),y3=Math.min(h,py-offset+pixelSize);y2<y3;y2++){
+						if (this._iterationsArray[x2+y2*w]==ITERATIONS_NOT_YET_KNOWN){
+							this._colorsArray[x2+y2*w] = color;
 						}
 					}
 				}
@@ -217,6 +214,7 @@ export default class FractalRendererMemory {
 				}
 			}
 		}
+		console.assert(index===w*h,`Something went wrong filling the index array; filled ${index}/${w*h} pixels`);
 		return {indicesArray,pixelSizeArray};
 	}
 }

@@ -108,8 +108,8 @@ export default class FractalCanvas extends HTMLElement {
 			console.log("Cancelled Rendering!");
 		}else{
 			this._state = STATE_FINISHED;
-			this._progress = 1;
 			console.log(`Finished Rendering in ${Math.floor(this._progressTimer*10000)/10}ms!`);
+			console.assert(this.progress===1,`Somehow finished at ${this.progress*100}%, not 100.`);
 		}
 	}
 

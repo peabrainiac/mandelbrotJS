@@ -41,6 +41,7 @@ export default class MultithreadedFractalRenderer extends FractalRenderer {
 			this._state = this._renderers.find(renderer=>(renderer.state!=STATE_FINISHED))?STATE_CANCELLED:STATE_FINISHED;
 			isStillRunning = false;
 			console.log("Computed pixels:",this.memory.pixelsCalculated);
+			await this._refreshScreen();
 			resolve();
 		});
 		(async()=>{
