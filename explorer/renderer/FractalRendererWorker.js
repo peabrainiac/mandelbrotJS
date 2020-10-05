@@ -1,5 +1,5 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
-import FractalRenderer, {STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED} from "./FractalRenderer.js";
+import FractalRenderer, {STATE_PENDING_CANCEL,STATE_CANCELLED,STATE_FINISHED, SimpleFractalRendererControlArray} from "./FractalRenderer.js";
 import {FractalRendererSharedMemory} from "./FractalRendererMemory.js";
 import ModuleWorkerWorkaround, {moduleWorkersSupported} from "./moduleWorkerWorkaround/ModuleWorkerWorkaround.js";
 export {moduleWorkersSupported};
@@ -15,9 +15,9 @@ export default class FractalRendererWorker extends FractalRenderer {
 	 */
 	constructor(memory,n,offset){
 		super(memory);
-		//this._worker = new Worker("explorer/renderer/worker.js",{type:"module"});
+		this._controlArray = SimpleFractalRendererControlArray.createShared();
 		this._worker = new ModuleWorkerWorkaround("explorer/renderer/worker.js",{name:"Worker_"+offset});
-		this._worker.postMessage({action:"init",data:{memory:this.memory,n,offset}});
+		this._worker.postMessage({action:"init",data:{memory:this.memory,n,offset,controlArray:this._controlArray}});
 	}
 
 	/**
@@ -43,7 +43,7 @@ export default class FractalRendererWorker extends FractalRenderer {
 
 	async stop(){
 		this._state = STATE_PENDING_CANCEL;
-		this._worker.postMessage({action:"stop"});
+		this._controlArray.pendingCancel = true;
 		return new Promise((resolve)=>{
 			let listener = (e)=>{
 				if (e.data.message==="finished"){

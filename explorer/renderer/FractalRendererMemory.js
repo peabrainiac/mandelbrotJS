@@ -294,6 +294,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 
 	/**
 	 * Reconstructs a `FractalRendererSharedMemory` that has been serialized and deserialized using the structured cloning algorithm used by, for example, `postMessage()`.
+	 * @param {{_imageWidth:number,_imageHeight:number,_sharedArrayBuffer:SharedArrayBuffer}} clone
 	 */
 	static fromStructuredClone(clone){
 		return new FractalRendererSharedMemory(clone._imageWidth,clone._imageHeight,clone._sharedArrayBuffer);

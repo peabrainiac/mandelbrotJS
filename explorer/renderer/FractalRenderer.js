@@ -21,7 +21,6 @@ export default class FractalRenderer {
 		this._memory = memory||new FractalRendererMemory();
 		this._state = STATE_LOADING;
 		this._lastScreenRefresh = Date.now();
-		this._shouldDoScreenRefreshs = true;
 		/** @type {(()=>{})[]} */
 		this._onBeforeScreenRefreshCallbacks = [];
 	}
@@ -112,11 +111,13 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	 * @param {number} n the number of total renderers working together to render the image; defaults to 1.
 	 * @param {number} offset the index of this renderer among those renderers; determines what part of the image it should render.
 	 */
-	constructor(memory,n=1,offset=0){
+	constructor(memory,n=1,offset=0,{shouldDoScreenRefreshs=true,controlArray=new SimpleFractalRendererControlArray()}={}){
 		super(memory);
 		this._n = n;
 		this._offset = offset;
 		this._i = 0;
+		this._shouldDoScreenRefreshs = shouldDoScreenRefreshs;
+		this._controlArray = controlArray;
 	}
 	/**
 	 * @inheritdoc
@@ -128,11 +129,11 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	async render(formula,viewport,maxIterations,buffer=null){
 		super.render(formula,viewport,maxIterations);
 		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
+		this._controlArray.pendingCancel = false;
 		this._i = 0;
 		this._finishRenderCallPromise = new Promise(async(resolve)=>{
 			await this._render();
 			await this._refreshScreen();
-			this._state = this._state===STATE_PENDING_CANCEL?STATE_CANCELLED:STATE_FINISHED;
 			resolve();
 		});
 		return this._finishRenderCallPromise;
@@ -143,7 +144,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	 */
 	async stop(){
 		if (this._state===STATE_RENDERING){
-			this._state = STATE_PENDING_CANCEL;
+			this._controlArray.pendingCancel = true;
 			await this._finishRenderCallPromise;
 		}
 	}
@@ -166,16 +167,65 @@ export class SimpleFractalRenderer extends FractalRenderer {
 					let x = pixelIndex%w;
 					this.renderPixel(x,(pixelIndex-x)/w,pixelSizes[pixelIndex]);
 				}
-				if (i==startIndex||this._state!==STATE_RENDERING){
+				if (i==startIndex||this._controlArray.pendingCancel){
+					this._state = (i==startIndex?STATE_FINISHED:STATE_CANCELLED);
 					resolve();
-				}else{
-					let promise = (this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100)?this._refreshScreen():Promise.resolve();
-					promise.then(()=>{
+				}else if(this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
+					this._refreshScreen().then(()=>{
 						renderPart(i);
 					});
+				}else{
+					renderPart(i);
 				}
 			}
 			renderPart(this._offset);
 		});
+	}
+}
+/**
+ * Class used to communicate with a `SimpleFractalRenderer` in a different thread/worker using a shared array buffer,
+ * or to do so with one in the same thread using a normal one.
+ * 
+ * Similar to the `variablesArray` part of a `SharedFractalRendererMemory`, but used once per thread instead of once per image.
+ */
+export class SimpleFractalRendererControlArray {
+	/**
+	 * Creates a new `SimpleFractalRendererControlArray` based on the given buffer, or, if no buffer is given, a new non-shared `ArrayBuffer`.
+	 * @param {ArrayBuffer|SharedArrayBuffer} buffer
+	 */
+	constructor(buffer=new ArrayBuffer(4)){
+		this._buffer = buffer;
+		this._array = new Uint32Array(buffer);
+	}
+
+	/** @readonly */
+	get array(){
+		return this._array;
+	}
+
+	set pendingCancel(pendingCancel){
+		this._array[0] = pendingCancel*1;
+	}
+
+	/**
+	 * Whether the renderer should stop rendering.
+	 */
+	get pendingCancel(){
+		return !!this._array[0];
+	}
+
+	/**
+	 * Creates a new `SimpleFractalRendererControlArray` based on a new `SharedArrayBuffer`.
+	 */
+	static createShared(){
+		return new SimpleFractalRendererControlArray(new SharedArrayBuffer(4));
+	}
+
+	/**
+	 * Reconstructs a `SimpleFractalRendererControlArray` that has been serialized and deserialized using the structured cloning algorithm used by, for example, `postMessage()`.
+	 * @param {{_buffer:SharedArrayBuffer}} clone
+	 */
+	static fromStructuredClone(clone){
+		return new SimpleFractalRendererControlArray(clone._buffer);
 	}
 }
