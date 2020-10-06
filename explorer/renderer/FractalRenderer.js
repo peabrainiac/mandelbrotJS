@@ -1,4 +1,5 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
+import FractalColorizer from "./FractalColorizer.js";
 
 import FractalRendererMemory, {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
 
@@ -33,6 +34,17 @@ export default class FractalRenderer {
 		return this._memory;
 	}
 
+	/** An ImageData with the current image. Gets updated every time this getter is called. */
+	get imageData(){
+		if (!this._colorizer){
+			this._colorizer = new FractalColorizer(this._memory);
+			this._memory.onReset(()=>{
+				this._colorizer.reset();
+			});
+		}
+		return this._colorizer.imageData;
+	}
+
 	/**
 	 * the current state of the renderer.
 	 * @readonly
@@ -51,6 +63,9 @@ export default class FractalRenderer {
 		this._formula = formula;
 		this._viewport = viewport;
 		this._maxIterations = maxIterations;
+		if (this._colorizer){
+			this._colorizer.maxIterations = maxIterations;
+		}
 		this._state = STATE_RENDERING;
 	}
 
@@ -93,8 +108,6 @@ export default class FractalRenderer {
 			let cx = this._viewport.pixelXToFractalX(x);
 			let cy = this._viewport.pixelYToFractalY(y);
 			return this._formula.iterate(cx,cy,{maxIterations});
-		},(iterations)=>{
-			return (iterations==maxIterations?0:Math.floor(255.999*iterations/maxIterations)+(Math.floor(175.999*iterations/maxIterations)<<8))+0xff000000;
 		});
 	}
 }

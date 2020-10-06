@@ -24,13 +24,12 @@ export const sharedArrayBuffersSupported = (()=>{
  */
 export default class FractalRendererMemory {
 	/**
-	 * @param {number} width 
-	 * @param {number} height 
-	 * @param {Uint32Array} colorsArray 
-	 * @param {Float64Array} iterationsArray 
-	 * @param {ImageData} imageData 
+	 * @param {number} width
+	 * @param {number} height
 	 */
 	constructor(width=0,height=0){
+		/** @type {()=>{}[]} */
+		this._onResetCallbacks = [];
 		this.reset(width,height);
 	}
 
@@ -41,25 +40,43 @@ export default class FractalRendererMemory {
 	 */
 	reset(width,height){
 		if (this._imageWidth!==width||this._imageHeight!==height){
+			/** @type {number} */
 			this._imageWidth = width;
 			this._imageHeight = height;
 			if (width>0&&height>0){
-				this._colorsArray = new Uint32Array(width*height);
 				this._iterationsArray = FractalRendererMemory.createIterationsArray(width,height);
-				this._imageData = new ImageData(new Uint8ClampedArray(this._colorsArray.buffer),width);
 				let temp = FractalRendererMemory.createIndicesAndPixelSizeArray(width,height);
 				this._indicesArray = temp.indicesArray;
 				this._pixelSizeArray = temp.pixelSizeArray;
+				this._finishedIndicesArray = new Uint32Array(width*height);
 			}else{
-				this._colorsArray = null;
 				this._iterationsArray = null;
-				this._imageData = null;
+				this._indicesArray = null;
+				this._pixelSizeArray = null;
+				this._finishedIndicesArray = null;
 			}
 		}else{
-			this._colorsArray.fill(0xff000000);
 			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 		}
 		this._pixelsCalculated = 0;
+		this._callOnResetCallbacks();
+	}
+
+	/**
+	 * Registers a callback to be executed after every memory reset.
+	 * @param {()=>{}} callback
+	 */
+	onReset(callback){
+		this._onResetCallbacks.push(callback);
+	}
+
+	/**
+	 * Internal method. Executes all callback functions registered using `onReset()`.
+	 */
+	_callOnResetCallbacks(){
+		this._onResetCallbacks.forEach(callback=>{
+			callback();
+		});
 	}
 
 	/**
@@ -90,46 +107,20 @@ export default class FractalRendererMemory {
 	 * Renders a single pixel in the given grid size (unless already has been rendered as part of one of the larger grid sizes; in that case, rendering it isn't necessary anymore).
 	 * @param {number} index
 	 * @param {(x:number,y:number)=>number} iterationsCallback function to compute the iteration count given the coordinates of the pixel's center.
-	 * @param {(iterations:number)=>number} colorCallback function to compute the color as a 32-bit abgr integer based on the iteration count.
 	 */
-	renderPixel(index,iterationsCallback,colorCallback){
-		const w = this._imageWidth;
-		const h = this._imageHeight;
-		let px = index%w;
-		let py = (index-px)/w;
-		let pixelSize = this._pixelSizeArray[index];
+	renderPixel(index,iterationsCallback){
+		let px = index%this._imageWidth;
+		let py = (index-px)/this._imageWidth;
 		if (this._iterationsArray[index]==ITERATIONS_NOT_YET_KNOWN){
 			let iterations = iterationsCallback(px,py);
-			let color = colorCallback(iterations);
 			this._iterationsArray[index] = iterations;
-			this._colorsArray[index] = color;
-			this.incrementPixelsCalculated();
-			if (pixelSize>1){
-				let offset = Math.floor(pixelSize/2);
-				for (let x2=Math.max(0,px-offset),x3=Math.min(w,px-offset+pixelSize);x2<x3;x2++){
-					for (let y2=Math.max(0,py-offset),y3=Math.min(h,py-offset+pixelSize);y2<y3;y2++){
-						if (this._iterationsArray[x2+y2*w]==ITERATIONS_NOT_YET_KNOWN){
-							this._colorsArray[x2+y2*w] = color;
-						}
-					}
-				}
-			}
+			this._finishedIndicesArray[this.incrementPixelsCalculated()] = index;
 		}
-	}
-
-	/** @readonly */
-	get colorsArray(){
-		return this._colorsArray;
 	}
 
 	/** @readonly */
 	get iterationsArray(){
 		return this._iterationsArray;
-	}
-
-	/** @readonly */
-	get imageData(){
-		return this._imageData;
 	}
 
 	/** @readonly */
@@ -142,6 +133,19 @@ export default class FractalRendererMemory {
 		return this._pixelSizeArray;
 	}
 
+	/** @readonly */
+	get finishedIndicesArray(){
+		return this._finishedIndicesArray;
+	}
+
+	get width(){
+		return this._imageWidth;
+	}
+
+	get height(){
+		return this._imageHeight;
+	}
+
 	/**
 	 * The number of pixels calculated so far.
 	 */
@@ -150,10 +154,10 @@ export default class FractalRendererMemory {
 	}
 
 	/**
-	 * Increases the value of `pixelsCalculated` by one.
+	 * Increases the value of `pixelsCalculated` by one and returns the old value.
 	 */
 	incrementPixelsCalculated(){
-		this._pixelsCalculated++;
+		return this._pixelsCalculated++;
 	}
 
 	/**
@@ -246,33 +250,24 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 			this._imageHeight = height;
 			if (width>0&&height>0){
 				this._sharedArrayBuffer = buffer||FractalRendererSharedMemory.createBuffer(width,height);
-				this._colorsArray = FractalRendererSharedMemory.getColorsArray(width,height,this._sharedArrayBuffer);
 				this._iterationsArray = FractalRendererSharedMemory.getIterationsArray(width,height,this._sharedArrayBuffer);
-				this._imageData = new ImageData(width,height);
-				this._variablesArray = FractalRendererSharedMemory.getVariablesArray(width,height,this._sharedArrayBuffer);
-				/** temporary workaround because `ImageData.data` color arrays can't be shared */
-				this._secondaryColorsArray = new Uint8ClampedArray(this._sharedArrayBuffer,0,width*height*4);
 				this._indicesArray = FractalRendererSharedMemory.getIndicesArray(width,height,this._sharedArrayBuffer);
 				this._pixelSizeArray = FractalRendererSharedMemory.getPixelSizeArray(width,height,this._sharedArrayBuffer);
+				this._finishedIndicesArray = FractalRendererSharedMemory.getFinishedIndicesArray(width,height,this._sharedArrayBuffer);
+				this._variablesArray = FractalRendererSharedMemory.getVariablesArray(width,height,this._sharedArrayBuffer);
 			}else{
 				this._sharedArrayBuffer = null;
-				this._colorsArray = null;
 				this._iterationsArray = null;
-				this._imageData = null;
+				this._indicesArray = null;
+				this._pixelSizeArray = null;
+				this._finishedIndicesArray = null;
 				this._variablesArray = null;
-				this._secondaryColorsArray = null;
 			}
 		}else if(buffer===null){
-			this._colorsArray.fill(0xff000000);
 			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 			this._variablesArray[0] = 0;
 		}
-	}
-
-	/** @readonly */
-	get imageData(){
-		this._imageData.data.set(this._secondaryColorsArray,0);
-		return this._imageData;
+		this._callOnResetCallbacks();
 	}
 
 	/** @readonly */
@@ -287,7 +282,15 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 
 	/** @inheritdoc */
 	incrementPixelsCalculated(){
-		Atomics.add(this._variablesArray,0,1);
+		return Atomics.add(this._variablesArray,0,1);
+	}
+
+
+	/**
+	 * Returns an object that can be passed through the structured cloning algorithm used by `postMessage()` and then reconstructed without losing information or passing unneeded data.
+	 */
+	prepareStructuredClone(){
+		return {_imageWidth:this._imageWidth,_imageHeight:this._imageHeight,_sharedArrayBuffer:this._sharedArrayBuffer};
 	}
 
 	/**
@@ -315,23 +318,13 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	}
 
 	/**
-	 * Returns the `colorsArray` slice of a `SharedArrayBuffer`.
-	 * @param {number} width
-	 * @param {number} height
-	 * @param {SharedArrayBuffer} sharedArrayBuffer
-	 */
-	static getColorsArray(width,height,sharedArrayBuffer){
-		return new Uint32Array(sharedArrayBuffer,0,width*height);
-	}
-
-	/**
 	 * Returns the `iterationsArray` slice of a `SharedArrayBuffer`.
 	 * @param {number} width
 	 * @param {number} height
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
 	static getIterationsArray(width,height,sharedArrayBuffer){
-		return new Float64Array(sharedArrayBuffer,width*height*4,width*height);
+		return new Float64Array(sharedArrayBuffer,0,width*height);
 	}
 
 	/**
@@ -341,7 +334,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
 	static getIndicesArray(width,height,sharedArrayBuffer){
-		return new Uint32Array(sharedArrayBuffer,width*height*12,width*height);
+		return new Uint32Array(sharedArrayBuffer,width*height*8,width*height);
 	}
 
 	/**
@@ -351,9 +344,18 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
 	static getPixelSizeArray(width,height,sharedArrayBuffer){
-		return new Uint8Array(sharedArrayBuffer,width*height*16,width*height);
+		return new Uint8Array(sharedArrayBuffer,width*height*12,width*height);
 	}
 
+	/**
+	 * Returns the `finishedIndicesArray` slice of a `SharedArrayBuffer`.
+	 * @param {number} width
+	 * @param {number} height
+	 * @param {SharedArrayBuffer} sharedArrayBuffer
+	 */
+	static getFinishedIndicesArray(width,height,sharedArrayBuffer){
+		return new Uint32Array(sharedArrayBuffer,width*height*13,width*height);
+	}
 
 	/**
 	 * Returns the `variablesArray` part of a `SharedArrayBuffer`.

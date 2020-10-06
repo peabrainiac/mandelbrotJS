@@ -17,7 +17,7 @@ export default class FractalRendererWorker extends FractalRenderer {
 		super(memory);
 		this._controlArray = SimpleFractalRendererControlArray.createShared();
 		this._worker = new ModuleWorkerWorkaround("explorer/renderer/worker.js",{name:"Worker_"+offset});
-		this._worker.postMessage({action:"init",data:{memory:this.memory,n,offset,controlArray:this._controlArray}});
+		this._worker.postMessage({action:"init",data:{memory:memory.prepareStructuredClone(),n,offset,controlArray:this._controlArray}});
 	}
 
 	/**

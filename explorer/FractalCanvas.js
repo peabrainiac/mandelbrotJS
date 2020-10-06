@@ -118,7 +118,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	_refreshCanvas(){
-		this._ctx.putImageData(this._renderer.memory.imageData,0,0);
+		this._ctx.putImageData(this._renderer.imageData,0,0);
 		this._progress = this._pixelsCalculated/(this._width*this._height);
 	}
 

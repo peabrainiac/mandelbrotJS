@@ -31,7 +31,7 @@ export class ModuleData {
 		this._fullyLoadedPromise = (async()=>{
 			const source = (await (await fetch(path)).text()).replace(/[\n\r]+/g,"\n");
 			const topLevelStatementsRegex = /(?:^|\n)(?:(\/\*\*[^]*?\*\/)\n)?([^\n\t/].*(?:(?:\n\t.*)+\n[^\n\t].*)?)/g;
-			const importStatementRegex = /^(?:import|export) ([a-zA-Z]\w*)?,? ?{([^}]+)} from "(.*)";?$/
+			const importStatementRegex = /^(?:import|export) ([a-zA-Z]\w*)?,? ?(?:{([^}]+)})? from "(.*)";?$/
 			const topLevelStatements = Array.from(source.matchAll(topLevelStatementsRegex),matchGroups=>new StatementData(matchGroups[2],matchGroups[1]));
 			const importStatements = topLevelStatements.filter(statement=>(importStatementRegex.test(statement.code)));
 			const imports = importStatements.map(statement=>{
