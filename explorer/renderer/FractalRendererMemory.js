@@ -59,7 +59,7 @@ export default class FractalRendererMemory {
 			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 		}
 		this._pixelsCalculated = 0;
-		this._callOnResetCallbacks();
+		this._callResetCallbacks();
 	}
 
 	/**
@@ -73,7 +73,7 @@ export default class FractalRendererMemory {
 	/**
 	 * Internal method. Executes all callback functions registered using `onReset()`.
 	 */
-	_callOnResetCallbacks(){
+	_callResetCallbacks(){
 		this._onResetCallbacks.forEach(callback=>{
 			callback();
 		});
@@ -85,19 +85,21 @@ export default class FractalRendererMemory {
 	 * @param {number} y
 	 */
 	getIterations(x,y){
-		const w = this._imageWidth;
-		const h = this._imageHeight;
-		for (let i=RENDER_GRID_SIZES.length-1;i>=0;i--){
-			let pixelSize = RENDER_GRID_SIZES[i];
-			let cx = (Math.round(w*0.5/pixelSize)-1)*pixelSize;
-			let cy = Math.round(h*0.5/pixelSize)*pixelSize;
-			let px = cx+pixelSize*Math.floor((x-cx)/pixelSize);
-			let py = cy+pixelSize*Math.floor((y-cy)/pixelSize);
-			let px2 = Math.max(0,Math.min(w-1,Math.floor(px+pixelSize/2)));
-			let py2 = Math.max(0,Math.min(h-1,Math.floor(py+pixelSize/2)));
-			let iterations = this._iterationsArray[px2+py2*w];
-			if (iterations!=ITERATIONS_NOT_YET_KNOWN){
-				return iterations;
+		if (this._iterationsArray){
+			const w = this._imageWidth;
+			const h = this._imageHeight;
+			for (let i=RENDER_GRID_SIZES.length-1;i>=0;i--){
+				let pixelSize = RENDER_GRID_SIZES[i];
+				let cx = (Math.round(w*0.5/pixelSize)-1)*pixelSize;
+				let cy = Math.round(h*0.5/pixelSize)*pixelSize;
+				let px = cx+pixelSize*Math.floor((x-cx)/pixelSize);
+				let py = cy+pixelSize*Math.floor((y-cy)/pixelSize);
+				let px2 = Math.max(0,Math.min(w-1,Math.floor(px+pixelSize/2)));
+				let py2 = Math.max(0,Math.min(h-1,Math.floor(py+pixelSize/2)));
+				let iterations = this._iterationsArray[px2+py2*w];
+				if (iterations!=ITERATIONS_NOT_YET_KNOWN){
+					return iterations;
+				}
 			}
 		}
 		return ITERATIONS_NOT_YET_KNOWN;
@@ -267,7 +269,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 			this._iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 			this._variablesArray[0] = 0;
 		}
-		this._callOnResetCallbacks();
+		this._callResetCallbacks();
 	}
 
 	/** @readonly */
@@ -307,7 +309,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {number} height
 	 */
 	static createBuffer(width,height){
-		let buffer = new SharedArrayBuffer(width*height*17+4);
+		let buffer = new SharedArrayBuffer(Math.ceil(width*height*17/4)*4+4);
 		let iterationsArray = FractalRendererSharedMemory.getIterationsArray(width,height,buffer);
 		iterationsArray.fill(ITERATIONS_NOT_YET_KNOWN);
 		console.log("Created new SharedArrayBuffer.");
@@ -354,7 +356,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
 	static getFinishedIndicesArray(width,height,sharedArrayBuffer){
-		return new Uint32Array(sharedArrayBuffer,width*height*13,width*height);
+		return new Uint32Array(sharedArrayBuffer,Math.ceil(width*height*13/4)*4,width*height);
 	}
 
 	/**
@@ -364,6 +366,6 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 * @param {SharedArrayBuffer} sharedArrayBuffer
 	 */
 	static getVariablesArray(width,height,sharedArrayBuffer){
-		return new Uint32Array(sharedArrayBuffer,width*height*17,1);
+		return new Uint32Array(sharedArrayBuffer,Math.ceil(width*height*17/4)*4,1);
 	}
 }
