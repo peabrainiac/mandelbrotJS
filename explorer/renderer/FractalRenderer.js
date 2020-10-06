@@ -160,18 +160,21 @@ export class SimpleFractalRenderer extends FractalRenderer {
 			const n = this._n;
 			/** @param {number} startIndex */
 			let renderPart = (startIndex)=>{
-				for (var i=startIndex,l=Math.min(indices.length,i+1000*n);i<l;i+=n){
-					this.renderPixel(indices[i]);
-				}
-				if (i==startIndex||this._controlArray.pendingCancel){
-					this._state = (i==startIndex?STATE_FINISHED:STATE_CANCELLED);
-					resolve();
-				}else if(this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
-					this._refreshScreen().then(()=>{
-						renderPart(i);
-					});
-				}else{
-					renderPart(i);
+				let i = startIndex;
+				while(true){
+					for (let l=Math.min(indices.length,i+1000*n);i<l;i+=n){
+						this.renderPixel(indices[i]);
+					}
+					if (i>=indices.length||this._controlArray.pendingCancel){
+						this._state = (i>=indices.length?STATE_FINISHED:STATE_CANCELLED);
+						resolve();
+						break;
+					}else if(this._shouldDoScreenRefreshs&&Date.now()-this._lastScreenRefresh>100){
+						this._refreshScreen().then(()=>{
+							renderPart(i);
+						});
+						break;
+					}
 				}
 			}
 			renderPart(this._offset);
