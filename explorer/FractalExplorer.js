@@ -61,6 +61,9 @@ export default class FractalExplorer extends HTMLElement {
 		/** @type {FractalZoomPreview} */
 		const zoomPreviewElement = this.shadowRoot.getElementById("zoom-preview");
 		zoomPreviewElement.targetCanvas = fractalCanvas.canvas;
+		let mouseX = 0;
+		let mouseY = 0;
+		let mouseOn = false;
 		fractalCanvas.addEventListener("mousedown",(e)=>{
 			if (e.button!==2){
 				zoomPreviewElement.show();
@@ -69,12 +72,26 @@ export default class FractalExplorer extends HTMLElement {
 			}
 		});
 		fractalCanvas.addEventListener("mousemove",(e)=>{
+			mouseX = e.offsetX;
+			mouseY = e.offsetY;
+			mouseOn = true;
 			let pixelX = fractalCanvas.mouseXToPixelX(e.offsetX);
 			let pixelY = fractalCanvas.mouseYToPixelY(e.offsetY);
 			let iterations = fractalCanvas.getPixelIterations(pixelX,pixelY);
 			statusbar.mouseInfo = `Iterations: ${iterations!=ITERATIONS_NOT_YET_KNOWN?iterations+(iterations<fractalCanvas.iterations?"":"+"):"not yet known"}`;
 			if (!zoomPreviewElement.hidden){
 				zoomPreviewElement.setPosition(e.offsetX,e.offsetY);
+			}
+		});
+		fractalCanvas.onCanvasUpdate(()=>{
+			if (mouseOn){
+				let pixelX = fractalCanvas.mouseXToPixelX(mouseX);
+				let pixelY = fractalCanvas.mouseYToPixelY(mouseY);
+				let iterations = fractalCanvas.getPixelIterations(pixelX,pixelY);
+				statusbar.mouseInfo = `Iterations: ${iterations!=ITERATIONS_NOT_YET_KNOWN?iterations+(iterations<fractalCanvas.iterations?"":"+"):"not yet known"}`;	
+			}
+			if (!zoomPreviewElement.hidden){
+				zoomPreviewElement.update();
 			}
 		});
 		fractalCanvas.addEventListener("mouseup",(e)=>{
@@ -93,11 +110,14 @@ export default class FractalExplorer extends HTMLElement {
 			}
 		});
 		fractalCanvas.addEventListener("contextmenu",(e)=>{
-			e.preventDefault();
+			if (!e.shiftKey){
+				e.preventDefault();
+			}
 		});
 		fractalCanvas.addEventListener("mouseleave",(e)=>{
 			zoomPreviewElement.hide();
 			statusbar.mouseInfo = "";
+			mouseOn = false;
 		});
 		this._width = 960;
 		this._height = 720;

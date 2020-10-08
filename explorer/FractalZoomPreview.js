@@ -24,6 +24,8 @@ export default class FractalZoomPreview extends HTMLElement {
 				canvas {
 					width: 100%;
 					height: 100%;
+					image-rendering: pixelated;
+					image-rendering: crisp-edges;
 				}
 			</style>
 			<canvas></canvas>
@@ -36,15 +38,21 @@ export default class FractalZoomPreview extends HTMLElement {
 	}
 
 	setPosition(x,y,zoom=this._zoom){
+		this._x = x;
+		this._y = y;
 		this.zoom = zoom;
 		this.style.left = x+"px";
 		this.style.top = y+"px";
-		let width = this._targetCanvas.width/zoom;
-		let height = this._targetCanvas.height/zoom;
+		this.update();
+	}
+
+	update(){
+		let width = this._targetCanvas.width/this._zoom;
+		let height = this._targetCanvas.height/this._zoom;
 		this._previewCanvas.width = width;
 		this._previewCanvas.height = height;
-		let pixelOffsetX = Math.round(x*this._targetCanvas.width/this.parentElement.offsetWidth-width/2);
-		let pixelOffsetY = Math.round(y*this._targetCanvas.height/this.parentElement.offsetHeight-height/2);
+		let pixelOffsetX = Math.round(this._x*this._targetCanvas.width/this.parentElement.offsetWidth-width/2);
+		let pixelOffsetY = Math.round(this._y*this._targetCanvas.height/this.parentElement.offsetHeight-height/2);
 		this._previewCtx.putImageData(this._targetCtx.getImageData(pixelOffsetX,pixelOffsetY,width,height),0,0);
 	}
 
