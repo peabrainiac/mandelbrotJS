@@ -1,9 +1,9 @@
-import {FractalFormula} from "../MandelMaths.js";
+import {FractalFormula, FractalFormulaSettings} from "../MandelMaths.js";
 
 export default class MoebiusMandelbrotFormula extends FractalFormula {
-	constructor(a=1){
+	constructor({offset=1}={}){
 		super();
-		this._a = 1;
+		this._a = offset;
 	}
 
 	/**
@@ -32,4 +32,37 @@ export default class MoebiusMandelbrotFormula extends FractalFormula {
 		}
 		return i;
 	}
+
+	createSettingsElement(){
+		return new MoebiusMandelbrotFormulaSettings(this);
+	}
+
+	set offset(offset){
+		this._a = offset*1;
+		this.callChangeCallbacks();
+	}
+
+	get offset(){
+		return this._a;
+	}
+
+	getParameters(){
+		return {offset:this._a};
+	}
+}
+export class MoebiusMandelbrotFormulaSettings extends FractalFormulaSettings {
+	/** @param {MoebiusMandelbrotFormula} formula */
+	constructor(formula){
+		super(formula);
+		this.innerHTML = `
+			Offset: <input type="number" class="input-number" value="${formula.offset}" step="any">
+		`;
+		this._offsetInput = this.querySelectorAll("input")[0];
+		this._offsetInput.addEventListener("change",()=>{
+			formula.offset = this._offsetInput.value;
+		});
+	}
+}
+if (self.constructor.name==="Window"){
+	customElements.define("moebius-mandelbrot-formula-settings",MoebiusMandelbrotFormulaSettings);
 }

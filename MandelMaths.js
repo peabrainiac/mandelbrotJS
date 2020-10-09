@@ -57,11 +57,23 @@ export class FractalFormula {
 	}
 
 	/**
+	 * Returns an object representing the formula parameters that can then later be passed to the formula constructur to construct a new formula with the same parameters.
+	 * Used to pass formula objects between threads.
+	 * 
+	 * Derived classes with parameters need to implement this and a constructor that takes in the returned object as the first parameter;
+	 * otherwise, their parameters won't work properly when multithreading.
+	 * @return {object}
+	 */
+	getParameters(){
+		return {};
+	}
+
+	/**
 	 * Converts the given formula into an object that can be passed through the structured cloning algorithm used by `postMessage()` without losing information.
 	 * @param {FractalFormula} formula
 	 */
 	static prepareStructuredClone(formula){
-		return {moduleURL:formula.moduleURL}
+		return {moduleURL:formula.moduleURL,parameters:formula.getParameters()};
 	}
 
 	/**
@@ -71,7 +83,91 @@ export class FractalFormula {
 	 */
 	static async fromStructuredClone(clone){
 		let module = await import(clone.moduleURL);
-		return new (module.default)();
+		return new (module.default)(clone.parameters);
+	}
+
+	/**
+	 * Creates a new settings element for this formula and links it, so that any changes to those settings also change this formula.
+	 * 
+	 * This is an internal method, only intended to be called by the `settingsElement` getter method; external code should just call that instead.
+	 * 
+	 * By default, just returns `null`; however, derived classes can override this method to implement their own formula settings element.
+	 * @return {FractalFormulaSettings}
+	 */
+	createSettingsElement(){
+		return null;
+	}
+
+	/**
+	 * Returns (or creates and then returns, if necessary) a `FractalFormulaSettings`-element bound to this formula,
+	 * or `null` if this formula doesn't have any settings or if called from a worker.
+	 * 
+	 * Internally calls `createSettingsElement` to create the element the first time it is called;
+	 * as such, derived classed should override that method to implement their own settings element.
+	 * @type {FractalFormulaSettings}
+	 * @readonly
+	 */
+	get settingsElement(){
+		if (this._settingsElement===undefined){
+			this._settingsElement = self instanceof Window?this.createSettingsElement():null;
+		}
+		return this._settingsElement;
+	}
+
+	/**
+	 * Registers a callback to be called whenever this formula gets modified in some way, and once when it is registered.
+	 * @param {()=>void} callback
+	 */
+	onChange(callback){
+		if (this._onChangeCallbacks===undefined){
+			/** @type {(()=>void)[]} */
+			this._onChangeCallbacks = [];
+		}
+		this._onChangeCallbacks.push(callback);
+		callback();
+	}
+
+	/**
+	 * Calls all callbacks registered using `onChange()`. Derived classes should call this whenever a parameter of the formula changes.
+	 */
+	callChangeCallbacks(){
+		(this._onChangeCallbacks||[]).forEach(callback=>{
+			callback();
+		});
+	}
+
+	/**
+	 * Removes a callback registered using `onChange()`.
+	 * @param {()=>void} callback
+	 */
+	removeChangeCallback(callback){
+		let index = (this._onChangeCallbacks||[]).indexOf(callback);
+		if (index>-1){
+			this._onChangeCallbacks.splice(index,1);
+		}
+	}
+}
+/**
+ * Workaround so the following class declaration doesn't immediately throw in a worker; only attempting to instantiate it does.
+ * @type {typeof HTMLElement}
+ */
+let element = (self.HTMLElement||function(){throw new Error("Can't use this constructor in a worker!")});
+/**
+ * Base class for fractal formula settings.
+ */
+export class FractalFormulaSettings extends element {
+	/**
+	 * @param {FractalFormula} formula
+	 * @extends HTMLElement
+	 */
+	constructor(formula){
+		super();
+		this._formula = formula;
+	}
+
+	/** @readonly */
+	get formula(){
+		return this._formula;
 	}
 }
 /**

@@ -25,6 +25,9 @@ export default class FractalCanvas extends HTMLElement {
 		this._onProgressChangeCallbacks = [];
 		this._onCanvasUpdateCallbacks = [];
 		this._onZoomChangeCallbacks = [];
+		this._formulaChangeCallback = ()=>{
+			this.render();
+		};
 		this._state = STATE_LOADING;
 		this._progress = 0;
 		this._formula = new MandelbrotFormula();
@@ -196,8 +199,11 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	set formula(formula){
+		if (this._formula){
+			this._formula.removeChangeCallback(this._formulaChangeCallback);
+		}
 		this._formula = formula;
-		this.render();
+		formula.onChange(this._formulaChangeCallback);
 	}
 
 	/** @type {FractalFormula} */

@@ -1,7 +1,7 @@
 import SidebarSection from "./SidebarSection.js";
 import FractalExplorer from "./explorer/FractalExplorer.js";
 
-import FractalFormula from "./MandelMaths.js";
+import {FractalFormula} from "./MandelMaths.js";
 import MandelbrotFormula from "./formulas/Mandelbrot.js";
 import MandelbarFormula from "./formulas/Mandelbar.js";
 import MoebiusMandelbrotFormula from "./formulas/MoebiusMandelbrot.js";
@@ -188,10 +188,21 @@ export class FormulaSettingsGroup extends SidebarSection {
 				<option value="1">Mandelbar set</option>
 				<option value="2">Möbius mandelbrot set</option>
 			</select>
+			<br><br>
+			<div id="formula-settings-container"></div>
 		`;
 		/** @type {FractalFormula[]} */
 		this._formulas = [new MandelbrotFormula(),new MandelbarFormula(),new MoebiusMandelbrotFormula()];
 		this._formulaSelect = this.querySelector("#formula-select");
+		this._formulaSettingsContainer = this.querySelector("#formula-settings-container");
+		this.onFormulaChange(formula=>{
+			while(this._formulaSettingsContainer.firstChild){
+				this._formulaSettingsContainer.firstChild.remove();
+			}
+			if (formula.settingsElement){
+				this._formulaSettingsContainer.appendChild(formula.settingsElement);
+			}
+		});
 	}
 
 	/**
