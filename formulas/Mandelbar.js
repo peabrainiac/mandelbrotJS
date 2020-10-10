@@ -5,11 +5,9 @@ export const TYPE_MINIBAR = "minibar";
 export const TYPE_SKEWED_MINIBROT = "skewed minibrot";
 export default class MandelbarFormula extends FractalFormula {
 	/**
-	 * Returns the iteration count for a specific point in the mandelbrot set.
+	 * @inheritdoc
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {Object} options
-	 * @param {number} options.maxIterations maximum number of iterations
 	 */
 	iterate(cx,cy,{maxIterations=100}){
 		let x = cx;
