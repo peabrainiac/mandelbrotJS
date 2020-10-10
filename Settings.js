@@ -6,6 +6,8 @@ import MandelbrotFormula from "./formulas/Mandelbrot.js";
 import MandelbarFormula from "./formulas/Mandelbar.js";
 import MoebiusMandelbrotFormula from "./formulas/MoebiusMandelbrot.js";
 import BurningShipFormula from "./formulas/BurningShip.js";
+import BuffaloFormula from "./formulas/Buffalo.js";
+import PerpendicularBurningShipFormula from "./formulas/PerpendicularBurningShip.js";
 
 export class GeneralSettingsGroup extends SidebarSection {
 	constructor(){
@@ -189,12 +191,14 @@ export class FormulaSettingsGroup extends SidebarSection {
 				<option value="1">Mandelbar set</option>
 				<option value="2">Möbius mandelbrot set</option>
 				<option value="3">Burning ship</option>
+				<option value="4">Perpendicular burning ship</option>
+				<option value="5">Buffalo</option>
 			</select>
 			<br><br>
 			<div id="formula-settings-container"></div>
 		`;
 		/** @type {FractalFormula[]} */
-		this._formulas = [new MandelbrotFormula(),new MandelbarFormula(),new MoebiusMandelbrotFormula(),new BurningShipFormula()];
+		this._formulas = [new MandelbrotFormula(),new MandelbarFormula(),new MoebiusMandelbrotFormula(),new BurningShipFormula(),new PerpendicularBurningShipFormula(),new BuffaloFormula()];
 		this._formulaSelect = this.querySelector("#formula-select");
 		this._formulaSettingsContainer = this.querySelector("#formula-settings-container");
 		this.onFormulaChange(formula=>{
