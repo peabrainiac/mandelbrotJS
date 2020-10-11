@@ -24,11 +24,13 @@ export default class FractalRendererWorker extends FractalRenderer {
 	 * @inheritdoc
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
+	 * @param {object} options
+	 * @param {number} options.maxIterations
+	 * @param {number} options.samplesPerPixel
 	 */
-	async render(formula,viewport,maxIterations){
-		super.render(formula,viewport,maxIterations);
-		this._worker.postMessage({action:"render",data:{formula:FractalFormula.prepareStructuredClone(formula),viewport,maxIterations,buffer:this._memory.buffer}});
+	async render(formula,viewport,{maxIterations,samplesPerPixel}){
+		super.render(formula,viewport,{maxIterations,samplesPerPixel});
+		this._worker.postMessage({action:"render",data:{formula:FractalFormula.prepareStructuredClone(formula),viewport,maxIterations,samplesPerPixel,buffer:this._memory.buffer}});
 		return new Promise((resolve)=>{
 			let listener = (e)=>{
 				if (e.data.message==="finished"){

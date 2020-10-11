@@ -29,6 +29,16 @@ export class GeneralSettingsGroup extends SidebarSection {
 				<option value="128">128</option>
 			</select>
 			<br><br>
+			Multisampling: <select id="samples-per-pixel-select" class="input-select">
+				<option value="1" selected="">off</option>
+				<option value="2">x2</option>
+				<option value="4">x4</option>
+				<option value="8">x8</option>
+				<option value="16">x16</option>
+				<option value="32">x32</option>
+				<option value="64">x64</option>
+			</select>
+			<br><br>
 			<div style="text-align:center">
 				<span id="screenshot-button" class="button" style="display:inline-block">Save image</span>
 			</div>
@@ -39,6 +49,8 @@ export class GeneralSettingsGroup extends SidebarSection {
 		this._iterationsInput = this.querySelector("#iterations");
 		this._screenshotButton = this.querySelector("#screenshot-button");
 		this._zoomFactorSelect = this.querySelector("#zoom-factor-select");
+		/** @type {HTMLSelectElement} */
+		this._samplesPerPixelSelect = this.querySelector("#samples-per-pixel-select");
 	}
 
 	/**
@@ -68,6 +80,9 @@ export class GeneralSettingsGroup extends SidebarSection {
 		});
 		this.onZoomFactorChange((zoomFactor)=>{
 			fractalExplorer.zoomFactor = zoomFactor;
+		});
+		this.onSamplesPerPixelChange((samplesPerPixel)=>{
+			fractalExplorer.samplesPerPixel = samplesPerPixel;
 		});
 	}
 
@@ -147,6 +162,17 @@ export class GeneralSettingsGroup extends SidebarSection {
 			callback(this._zoomFactorSelect.value);
 		});
 		callback(this._zoomFactorSelect.value);
+	}
+
+	/**
+	 * Registers a callback to be executed whenever the samplesPerPixel-value gets changed, and once when it is registered.
+	 * @param {(samplesPerPixel:number)=>void} callback
+	 */
+	onSamplesPerPixelChange(callback){
+		this._samplesPerPixelSelect.addEventListener("change",()=>{
+			callback(this._samplesPerPixelSelect.value*1);
+		});
+		callback(this._samplesPerPixelSelect.value*1);
 	}
 
 	set width(width){

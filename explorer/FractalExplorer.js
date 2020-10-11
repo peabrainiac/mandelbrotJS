@@ -157,6 +157,7 @@ export default class FractalExplorer extends HTMLElement {
 		});
 	}
 
+	/** @readonly */
 	get fractalCanvas(){
 		return this._fractalCanvas;
 	}
@@ -230,5 +231,15 @@ export default class FractalExplorer extends HTMLElement {
 		return this._fractalCanvas.iterations;
 	}
 
+	set samplesPerPixel(samplesPerPixel){
+		this._fractalCanvas.samplesPerPixel = samplesPerPixel;
+	}
+
+	/**
+	 * The number of samples to take per pixel. Limited to powers of two at the moment.
+	 */
+	get samplesPerPixel(){
+		return this._fractalCanvas.samplesPerPixel;
+	}
 }
 customElements.define("fractal-explorer",FractalExplorer);

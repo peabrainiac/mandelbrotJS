@@ -57,9 +57,10 @@ export default class FractalRenderer {
 	 * Renders a new image. Returns a promise that resolves once it finishes rendering or is cancelled using `stop()` or another call to `render()`.
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
+	 * @param {object} options
+	 * @param {number} options.maxIterations
 	 */
-	async render(formula,viewport,maxIterations){
+	async render(formula,viewport,{maxIterations}){
 		this._formula = formula;
 		this._viewport = viewport;
 		this._maxIterations = maxIterations;
@@ -103,11 +104,16 @@ export default class FractalRenderer {
 	 * @param {number} index
 	 */
 	renderPixel(index){
-		const maxIterations = this._maxIterations;
 		this._memory.renderPixel(index,(x,y)=>{
-			let cx = this._viewport.pixelXToFractalX(x);
-			let cy = this._viewport.pixelYToFractalY(y);
-			return this._formula.iterate(cx,cy,{maxIterations});
+			const maxIterations = this._maxIterations;
+			const sampleOffsets = this._sampleOffsets;
+			let iterations = 0;
+			for (let i=0;i<sampleOffsets.length;i++){
+				let cx = this._viewport.pixelXToFractalX(x+sampleOffsets[i].x);
+				let cy = this._viewport.pixelYToFractalY(y+sampleOffsets[i].y);
+				iterations += this._formula.iterate(cx,cy,{maxIterations});
+			}
+			return iterations/sampleOffsets.length;
 		});
 	}
 }
@@ -134,11 +140,17 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	 * @inheritdoc
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
+	 * @param {object} options
+	 * @param {number} options.maxIterations
+	 * @param {number} options.samplesPerPixel
 	 * @param {SharedArrayBuffer} buffer
 	 */
-	async render(formula,viewport,maxIterations,buffer=null){
-		super.render(formula,viewport,maxIterations);
+	async render(formula,viewport,{maxIterations,samplesPerPixel=8},buffer=null){
+		super.render(formula,viewport,{maxIterations,samplesPerPixel});
+		if (this._samplesPerPixel!==samplesPerPixel){
+			this._samplesPerPixel = samplesPerPixel;
+			this._sampleOffsets = SimpleFractalRenderer.getSampleOffsets(samplesPerPixel);
+		}
 		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
 		this._controlArray.pendingCancel = false;
 		this._i = 0;
@@ -192,6 +204,25 @@ export class SimpleFractalRenderer extends FractalRenderer {
 			}
 			renderPart(this._offset);
 		});
+	}
+
+	/**
+	 * Given the number of samples per pixel, generates the offsets for those samples. Only works for powers of two at the moment.
+	 * @param {number} sampleCount
+	 */
+	static getSampleOffsets(sampleCount){
+		console.assert(Math.log2(sampleCount)%1===0,"Invalid sampleCount parameter: "+sampleCount);
+		let n = 2**Math.ceil(Math.log2(sampleCount)/2);
+		let sampleOffsets = [];
+		for (let x=0;x<n;x++){
+			for (let y=0;y<n;y++){
+				if (n*n===sampleCount||(x+y)%2==0){
+					sampleOffsets.push({x:(0.5+x)/n-0.5,y:(0.5+y)/n-0.5});
+				}
+			}
+		}
+		console.log("SampleOffsets:",sampleOffsets);
+		return sampleOffsets;
 	}
 }
 /**

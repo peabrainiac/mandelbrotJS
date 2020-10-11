@@ -30,14 +30,16 @@ export default class MultithreadedFractalRenderer extends FractalRenderer {
 	 * @inheritdoc
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
-	 * @param {number} maxIterations
+	 * @param {object} options
+	 * @param {number} options.maxIterations
+	 * @param {number} options.samplesPerPixel
 	 */
-	async render(formula,viewport,maxIterations){
-		super.render(formula,viewport,maxIterations);
+	async render(formula,viewport,options){
+		super.render(formula,viewport,options);
 		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight);
 		let isStillRunning = true;
 		this._finishRenderCallPromise = new Promise(async(resolve)=>{
-			await Promise.all(this._renderers.map(renderer=>renderer.render(formula,viewport,maxIterations)));
+			await Promise.all(this._renderers.map(renderer=>renderer.render(formula,viewport,options)));
 			this._state = this._renderers.find(renderer=>(renderer.state!=STATE_FINISHED))?STATE_CANCELLED:STATE_FINISHED;
 			isStillRunning = false;
 			console.log("Computed pixels:",this.memory.pixelsCalculated);

@@ -20,6 +20,7 @@ export default class FractalCanvas extends HTMLElement {
 		this._pixelsPerUnit = 200;
 		this._zoom = 1*this._pixelsPerUnit;
 		this._iterations = 15000;
+		this._samplesPerPixel = 1;
 		this._onViewportChangeCallbacks = [];
 		this._onStateChangeCallbacks = [];
 		this._onProgressChangeCallbacks = [];
@@ -105,7 +106,7 @@ export default class FractalCanvas extends HTMLElement {
 		this._progressTimer.start();
 		this._canvas.width = this._width;
 		this._canvas.height = this._height;
-		await this._renderer.render(this._formula,this.viewport,this._iterations);
+		await this._renderer.render(this._formula,this.viewport,{maxIterations:this._iterations,samplesPerPixel:this._samplesPerPixel});
 		this._progressTimer.stop();
 		if (this._state===STATE_PENDING_CANCEL){
 			this._state = STATE_CANCELLED;
@@ -220,6 +221,19 @@ export default class FractalCanvas extends HTMLElement {
 	/** @type {number} */
 	get iterations(){
 		return this._iterations;
+	}
+
+	set samplesPerPixel(samplesPerPixel){
+		this._samplesPerPixel = samplesPerPixel;
+		this.render();
+	}
+
+	/**
+	 * The number of samples to take per pixel. Limited to powers of two at the moment.
+	 * @type {number}
+	 */
+	get samplesPerPixel(){
+		return this._samplesPerPixel;
 	}
 
 	set x(x){

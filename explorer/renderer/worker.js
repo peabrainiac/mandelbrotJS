@@ -15,7 +15,9 @@ self.addEventListener("message",async(e)=>{
 	}else if(message.action==="render"){
 		let formula = await FractalFormula.fromStructuredClone(message.data.formula);
 		let viewport = FractalViewport.fromStructuredClone(message.data.viewport);
-		await renderer.render(formula,viewport,message.data.maxIterations,message.data.buffer);
+		let maxIterations = message.data.maxIterations;
+		let samplesPerPixel = message.data.samplesPerPixel;
+		await renderer.render(formula,viewport,{maxIterations,samplesPerPixel},message.data.buffer);
 		self.postMessage({message:"finished"});
 	}
 });
