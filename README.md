@@ -13,11 +13,15 @@ A working version of this program can be seen on [peabrainiac.github.io/mandelbr
    - [x] mandelbrot set
    - [x] mandelbar set
    - [x] möbius mandelbrot set
+   - [x] burning ship and other double-abs-fractals
+   - [x] perpendicular burning ship and other single-abs-fractals
+   - [x] buffalo and other quadruple-abs-fractals
    - [ ] custom formulas
-   - [ ] formula parameters
+   - [x] formulas with parameters
  - [x] zoom depth of up to `2^50`
  - [ ] higher zoom depths
  - [x] multithreaded rendering (only works in firefox when loaded from `server.py`, but should always in chrome)
+ - [x] multisampling
  - [x] cyclic point overlay
    - [x] shows cyclic points and their cycle lengths
    - [x] approximates the scale and orientation of minibrots and disks
