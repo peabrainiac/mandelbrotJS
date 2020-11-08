@@ -62,7 +62,7 @@ export class FractalFormula {
 	 * 
 	 * Derived classes with parameters need to implement this and a constructor that takes in the returned object as the first parameter;
 	 * otherwise, their parameters won't work properly when multithreading.
-	 * @return {object}
+	 * @return {unknown}
 	 */
 	getParameters(){
 		return {};
@@ -78,7 +78,7 @@ export class FractalFormula {
 
 	/**
 	 * Reconstructs the formula from its structured clone.
-	 * @param {object} clone
+	 * @param {{moduleURL:string,parameters:unknown}} clone
 	 * @returns {Promise<FractalFormula>}
 	 */
 	static async fromStructuredClone(clone){
@@ -148,6 +148,86 @@ export class FractalFormula {
 	}
 }
 /**
+ * A wrapper that can switch between different fractal formulas.
+ */
+export class FractalFormulaSwitch extends FractalFormula {
+	/**
+	 * Constructs a new `FractalFormulaSwitch`.
+	 * 
+	 * Note that this doesn't take in the same arguments returned by `getParameters()`; as such,
+	 * derived classes must override this constructor in order to be able to be send to workers.
+	 * @param {{switchName:string,formulas:{name:string,formula:FractalFormula}[],selectedIndex?:number}} options
+	 */
+	constructor({switchName,formulas,selectedIndex=0}){
+		super();
+		this._switchName = switchName;
+		this._formulas = formulas;
+		this._formula = formulas[selectedIndex].formula;
+		formulas.forEach(({formula})=>{
+			formula.onChange(()=>{
+				if (this._formula===formula){
+					this.callChangeCallbacks();
+				}
+			});
+		})
+	}
+
+	/**
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {{maxIterations:number}} options
+	 * @inheritdoc
+	 */
+	iterate(cx,cy,options){
+		return this._formula.iterate(cx,cy,options);
+	}
+
+	/**
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @inheritdoc
+	 */
+	approxNearbyCyclicPoints(cx,cy,maxIterations){
+		return this._formula.approxNearbyCyclicPoints(cx,cy,maxIterations);
+	}
+
+	/**
+	 * @param {number} startX
+	 * @param {number} startY
+	 * @param {number} cycleLength
+	 * @inheritdoc
+	 */
+	getNearbyCyclicPoint(startX,startY,cycleLength){
+		return this._formula.getNearbyCyclicPoint(startX,startY,cycleLength);
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	getParameters(){
+		const selectedIndex = this.selectedIndex;
+		const parameters = this._formulas.map(data=>data.formula.getParameters());
+		return {selectedIndex,parameters};
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	createSettingsElement(){
+		return new FractalFormulaSwitchSettings(this,this._switchName,this._formulas);
+	}
+
+	set selectedIndex(selectedIndex){
+		this._formula = this._formulas[selectedIndex].formula;
+		this.callChangeCallbacks();
+	}
+
+	get selectedIndex(){
+		return this._formulas.indexOf(this._formulas.find(data=>(data.formula==this._formula)));
+	}
+}
+/**
  * Workaround so the following class declaration doesn't immediately throw in a worker; only attempting to instantiate it does.
  * @type {typeof HTMLElement}
  */
@@ -169,6 +249,31 @@ export class FractalFormulaSettings extends element {
 	get formula(){
 		return this._formula;
 	}
+}
+/**
+ * Settings element for FractalFormulaSwitches.
+ */
+export class FractalFormulaSwitchSettings extends FractalFormulaSettings {
+	/**
+	 * @param {FractalFormulaSwitch} formula
+	 * @param {string} switchName
+	 * @param {{name:string,formula:FractalFormula,selected?:boolean}[]} formulas
+	 */
+	constructor(formula,switchName,formulas){
+		super(formula);
+		this.innerHTML = `
+			${switchName}: <select class="input-select">
+				${formulas.map((data,index)=>`<option value="${index}">${data.name}</option>`).join("")}
+			</select>
+		`;
+		this._select = this.querySelectorAll("select")[0];
+		this._select.addEventListener("change",()=>{
+			formula.selectedIndex = parseInt(this._select.value);
+		});
+	}
+}
+if (self.constructor.name==="Window"){
+	customElements.define("fractal-formula-switch-settings",FractalFormulaSwitchSettings);
 }
 /**
  * Base class for special points of interest, like cyclic points; extending this allows them to be displayed in the `OrbitPointOverlay`.

@@ -1,9 +1,20 @@
-import {FractalFormula,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport} from "../MandelMaths.js";
+import {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport} from "../MandelMaths.js";
 
 export const TYPE_DISK = "disk";
 export const TYPE_MINIBROT = "minibrot";
 
-export default class MandelbrotFormula extends FractalFormula {
+export default class MandelbrotFormula extends FractalFormulaSwitch {
+	/**
+	 * @param {{selectedIndex?:number}?} options
+	 */
+	constructor({selectedIndex=0}={}){
+		super({switchName:"Algorithm",formulas:[{name:"simple",formula:new MandelbrotBaseFormula()},{name:"experimental",formula:new ExperimentalMandelbrotFormula()}],selectedIndex});
+	}
+}
+/**
+ * A simple mandelbrot formula.
+ */
+export class MandelbrotBaseFormula extends FractalFormula {
 	/**
 	 * Returns the iteration count for a specific point in the mandelbrot set.
 	 * @param {number} cx
@@ -175,6 +186,22 @@ export default class MandelbrotFormula extends FractalFormula {
 		point.steps = steps;
 		point.estimates = estimates;
 		return point;
+	}
+}
+/**
+ * A mandelbrot formula using experimental algorithms.
+ */
+export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
+	/**
+	 * Returns the iteration count for a specific point in the mandelbrot set.
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {Object} options
+	 * @param {number} options.maxIterations maximum number of iterations
+	 * @param {boolean} options.doCardioidClipTest whether to test if points are in the main cardioid or main bulb using a simple implicit formula. Speeds up rendering around these areas immensely, but causes a very slight slowdown everywhere else.
+	 */
+	iterate(cx,cy,{maxIterations=100,doCardioidClipTest=true}){
+		return 5+super.iterate(cx,cy,{maxIterations:maxIterations-5,doCardioidClipTest})
 	}
 }
 /**
