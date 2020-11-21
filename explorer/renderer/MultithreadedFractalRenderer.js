@@ -11,9 +11,7 @@ export const multithreadingSupported = sharedArrayBuffersSupported;
  */
 export default class MultithreadedFractalRenderer extends FractalRenderer {
 	/**
-	 * @param {FractalFormula} formula 
-	 * @param {FractalViewport} viewport 
-	 * @param {number} maxIterations 
+	 * @param {FractalRendererSharedMemory} memory
 	 */
 	constructor(memory){
 		super(memory||new FractalRendererSharedMemory());

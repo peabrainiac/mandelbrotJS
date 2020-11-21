@@ -7,11 +7,12 @@ export default class BurningShipFormula extends FractalFormula {
 	}
 
 	/**
-	 * @inheritdoc
 	 * @param {number} cx
 	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @inheritdoc
 	 */
-	iterate(cx,cy,{maxIterations=100}){
+	iterate(cx,cy,maxIterations){
 		const rx = Math.cos(this._rotation*Math.PI/360);
 		const ry = Math.sin(this._rotation*Math.PI/360);
 		let x = 0;
@@ -56,7 +57,7 @@ export class BurningShipFormulaSettings extends FractalFormulaSettings {
 		`;
 		this._rotationInput = this.querySelectorAll("input")[0];
 		this._rotationInput.addEventListener("change",()=>{
-			formula.rotation = this._rotationInput.value;
+			formula.rotation = parseFloat(this._rotationInput.value);
 		});
 	}
 }

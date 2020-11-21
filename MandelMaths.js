@@ -14,11 +14,25 @@ export class FractalFormula {
 	 * Returns the iteration count for a specific point.
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {Object} options
-	 * @param {number} options.maxIterations
+	 * @param {number} maxIterations
+	 * @param {unknown} preparedData the object or value returned by `prepare()`
 	 */
-	iterate(cx,cy,{maxIterations}){
+	iterate(cx,cy,maxIterations,preparedData){
 		return 0;
+	}
+
+	/**
+	 * Gets called once per thread per image, before the actual rendering process starts. The value returned by this will then be passed to `iterate()` as the fourth argument.
+	 * 
+	 * Derived classes can override this to precalculate some global values to then use during the per-pixel computations.
+	 * @todo call this only once per image and not once for each thread to avoid doing the same work multiple times.
+	 * @param {number} cx image center x
+	 * @param {number} cy image center y
+	 * @param {number} iterations maximum iteration count
+	 * @return {unknown}
+	 */
+	prepare(cx,cy,iterations){
+		return null;
 	}
 
 	/**
@@ -176,11 +190,22 @@ export class FractalFormulaSwitch extends FractalFormula {
 	/**
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {{maxIterations:number}} options
+	 * @param {number} maxIterations
+	 * @param {unknown} preparedData
 	 * @inheritdoc
 	 */
-	iterate(cx,cy,options){
-		return this._formula.iterate(cx,cy,options);
+	iterate(cx,cy,maxIterations,preparedData){
+		return this._formula.iterate(cx,cy,maxIterations,preparedData);
+	}
+
+	/**
+	 * @param {number} cx image center x
+	 * @param {number} cy image center y
+	 * @param {number} iterations maximum iteration count
+	 * @inheritdoc
+	 */
+	prepare(cx,cy,iterations){
+		return this._formula.prepare(cx,cy,iterations);
 	}
 
 	/**

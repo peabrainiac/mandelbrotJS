@@ -8,11 +8,12 @@ export default class MoebiusMandelbrotFormula extends FractalFormula {
 	}
 
 	/**
-	 * @inheritdoc
 	 * @param {number} cx
 	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @inheritdoc
 	 */
-	iterate(cx,cy,{maxIterations=100}){
+	iterate(cx,cy,maxIterations){
 		const a = this._offset;
 		const rx = Math.cos(this._rotation*Math.PI/180);
 		const ry = Math.sin(this._rotation*Math.PI/180);

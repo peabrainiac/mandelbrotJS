@@ -19,11 +19,11 @@ export class MandelbrotBaseFormula extends FractalFormula {
 	 * Returns the iteration count for a specific point in the mandelbrot set.
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {Object} options
-	 * @param {number} options.maxIterations maximum number of iterations
-	 * @param {boolean} options.doCardioidClipTest whether to test if points are in the main cardioid or main bulb using a simple implicit formula. Speeds up rendering around these areas immensely, but causes a very slight slowdown everywhere else.
+	 * @param {number} maxIterations maximum number of iterations
+	 * @param {object} preparedData
+	 * @param {boolean} preparedData.doCardioidClipTest whether to test if points are in the main cardioid or main bulb using a simple implicit formula. Speeds up rendering around these areas immensely, but causes a very slight slowdown everywhere else.
 	 */
-	iterate(cx,cy,{maxIterations=100,doCardioidClipTest=true}){
+	iterate(cx,cy,maxIterations,{doCardioidClipTest=true}){
 		if (doCardioidClipTest&&((cx*cx+2*cx+1+cy*cy<0.0625)||((cx*cx-0.5*cx+0.0625+cy*cy)*(cx-0.25+cx*cx-0.5*cx+0.0625+cy*cy)-0.25*cy*cy<0))){
 			return maxIterations;
 		}else{
@@ -37,6 +37,16 @@ export class MandelbrotBaseFormula extends FractalFormula {
 			}
 			return i;
 		}
+	}
+
+	/**
+	 * @inheritdoc
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} iterations
+	 */
+	prepare(cx,cy,iterations){
+		return {doCardioidClipTest:true}
 	}
 
 	/**
@@ -196,12 +206,21 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 	 * Returns the iteration count for a specific point in the mandelbrot set.
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {Object} options
-	 * @param {number} options.maxIterations maximum number of iterations
-	 * @param {boolean} options.doCardioidClipTest whether to test if points are in the main cardioid or main bulb using a simple implicit formula. Speeds up rendering around these areas immensely, but causes a very slight slowdown everywhere else.
+	 * @param {number} maxIterations maximum number of iterations
+	 * @param {{offset:number,doCardioidClipTest:boolean}} preparedData whether to test if points are in the main cardioid or main bulb using a simple implicit formula. Speeds up rendering around these areas immensely, but causes a very slight slowdown everywhere else.
 	 */
-	iterate(cx,cy,{maxIterations=100,doCardioidClipTest=true}){
-		return 5+super.iterate(cx,cy,{maxIterations:maxIterations-5,doCardioidClipTest})
+	iterate(cx,cy,maxIterations,{offset=5,doCardioidClipTest=true}){
+		return offset+super.iterate(cx,cy,maxIterations-offset,{doCardioidClipTest})
+	}
+
+	/**
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} iterations
+	 * @inheritdoc
+	 */
+	prepare(cx,cy,iterations){
+		return {doCardioidClipTest:true,offset:20};
 	}
 }
 /**

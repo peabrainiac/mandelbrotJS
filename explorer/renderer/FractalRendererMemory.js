@@ -28,7 +28,7 @@ export default class FractalRendererMemory {
 	 * @param {number} height
 	 */
 	constructor(width=0,height=0){
-		/** @type {(()=>{})[]} */
+		/** @type {(()=>void)[]} */
 		this._onResetCallbacks = [];
 		this.reset(width,height);
 	}
@@ -64,7 +64,7 @@ export default class FractalRendererMemory {
 
 	/**
 	 * Registers a callback to be executed after every memory reset.
-	 * @param {()=>{}} callback
+	 * @param {()=>void} callback
 	 */
 	onReset(callback){
 		this._onResetCallbacks.push(callback);

@@ -49,6 +49,22 @@ export default class FractalViewport {
 		return this._height;
 	}
 
+	/**
+	 * the x-coordinate of the center of the viewport in fractal coordinates.
+	 * @readonly
+	 */
+	get x(){
+		return this._x;
+	}
+
+	/**
+	 * the y-coordinate of the center of the viewport in fractal coordinates.
+	 * @readonly
+	 */
+	get y(){
+		return this._y;
+	}
+
 	copy(){
 		return new FractalViewport(this._x,this._y,this._zoom,this._width,this._height);
 	}

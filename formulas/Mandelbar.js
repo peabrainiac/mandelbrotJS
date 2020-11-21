@@ -5,11 +5,12 @@ export const TYPE_MINIBAR = "minibar";
 export const TYPE_SKEWED_MINIBROT = "skewed minibrot";
 export default class MandelbarFormula extends FractalFormula {
 	/**
-	 * @inheritdoc
 	 * @param {number} cx
 	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @inheritdoc
 	 */
-	iterate(cx,cy,{maxIterations=100}){
+	iterate(cx,cy,maxIterations){
 		let x = cx;
 		let y = cy;
 		let i;

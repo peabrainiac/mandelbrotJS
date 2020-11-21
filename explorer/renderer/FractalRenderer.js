@@ -22,7 +22,7 @@ export default class FractalRenderer {
 		this._memory = memory||new FractalRendererMemory();
 		this._state = STATE_LOADING;
 		this._lastScreenRefresh = Date.now();
-		/** @type {(()=>{})[]} */
+		/** @type {(()=>void)[]} */
 		this._onBeforeScreenRefreshCallbacks = [];
 	}
 
@@ -55,12 +55,15 @@ export default class FractalRenderer {
 	
 	/**
 	 * Renders a new image. Returns a promise that resolves once it finishes rendering or is cancelled using `stop()` or another call to `render()`.
+	 * 
+	 * Derived classes may override this method, but should also call it then.
 	 * @param {FractalFormula} formula
 	 * @param {FractalViewport} viewport
 	 * @param {object} options
 	 * @param {number} options.maxIterations
+	 * @param {number} options.samplesPerPixel
 	 */
-	async render(formula,viewport,{maxIterations}){
+	async render(formula,viewport,{maxIterations,samplesPerPixel}){
 		this._formula = formula;
 		this._viewport = viewport;
 		this._maxIterations = maxIterations;
@@ -93,28 +96,10 @@ export default class FractalRenderer {
 	/**
 	 * Registers a callback function to be executed before every screen refresh while rendering,
 	 * and before the first screen refresh after rendering is finished.
-	 * @param {()=>{}} callback
+	 * @param {()=>void} callback
 	 */
 	onBeforeScreenRefresh(callback){
 		this._onBeforeScreenRefreshCallbacks.push(callback);
-	}
-
-	/**
-	 * Renders the pixel at the given index in the grid. The index is calculated as `x+y*width`.
-	 * @param {number} index
-	 */
-	renderPixel(index){
-		this._memory.renderPixel(index,(x,y)=>{
-			const maxIterations = this._maxIterations;
-			const sampleOffsets = this._sampleOffsets;
-			let iterations = 0;
-			for (let i=0;i<sampleOffsets.length;i++){
-				let cx = this._viewport.pixelXToFractalX(x+sampleOffsets[i].x);
-				let cy = this._viewport.pixelYToFractalY(y+sampleOffsets[i].y);
-				iterations += this._formula.iterate(cx,cy,{maxIterations});
-			}
-			return iterations/sampleOffsets.length;
-		});
 	}
 }
 /**
@@ -135,6 +120,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 		this._i = 0;
 		this._shouldDoScreenRefreshs = shouldDoScreenRefreshs;
 		this._controlArray = controlArray;
+		this._preparedData = null;
 	}
 	/**
 	 * @inheritdoc
@@ -154,6 +140,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 		this._memory.reset(viewport.pixelWidth,viewport.pixelHeight,buffer);
 		this._controlArray.pendingCancel = false;
 		this._i = 0;
+		this._preparedData = this._formula.prepare(viewport.x,viewport.y,maxIterations);
 		this._finishRenderCallPromise = new Promise(async(resolve)=>{
 			await this._render();
 			await this._refreshScreen();
@@ -176,6 +163,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	 * Internal method. Does the actual rendering.
 	 * 
 	 * Note: this is written using `promise.then()` instead of async-await syntax because Firefox does not yet JIT-compile async functions.
+	 * @return {Promise<void>}
 	 */
 	async _render(){
 		return new Promise((resolve)=>{
@@ -203,6 +191,24 @@ export class SimpleFractalRenderer extends FractalRenderer {
 				}
 			}
 			renderPart(this._offset);
+		});
+	}
+
+	/**
+	 * Renders the pixel at the given index in the grid. The index is calculated as `x+y*width`.
+	 * @param {number} index
+	 */
+	renderPixel(index){
+		this._memory.renderPixel(index,(x,y)=>{
+			const maxIterations = this._maxIterations;
+			const sampleOffsets = this._sampleOffsets;
+			let iterations = 0;
+			for (let i=0;i<sampleOffsets.length;i++){
+				let cx = this._viewport.pixelXToFractalX(x+sampleOffsets[i].x);
+				let cy = this._viewport.pixelYToFractalY(y+sampleOffsets[i].y);
+				iterations += this._formula.iterate(cx,cy,maxIterations,this._preparedData);
+			}
+			return iterations/sampleOffsets.length;
 		});
 	}
 
@@ -247,7 +253,7 @@ export class SimpleFractalRendererControlArray {
 	}
 
 	set pendingCancel(pendingCancel){
-		this._array[0] = pendingCancel*1;
+		this._array[0] = pendingCancel?1:0;
 	}
 
 	/**
