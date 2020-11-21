@@ -1,4 +1,5 @@
-export {default as FractalViewport} from "./explorer/FractalViewport.js";
+import FractalViewport from "./explorer/FractalViewport.js";
+export {FractalViewport};
 
 /**
  * Default export, currently empty.
@@ -238,7 +239,6 @@ let element = (self.HTMLElement||function(){throw new Error("Can't use this cons
 export class FractalFormulaSettings extends element {
 	/**
 	 * @param {FractalFormula} formula
-	 * @extends HTMLElement
 	 */
 	constructor(formula){
 		super();
@@ -292,7 +292,8 @@ export class SpecialPoint {
 	toElement(viewport){
 		let element = document.createElement("div");
 		element.className = "point";
-		element.style = `left:${100*viewport.toRelativeX(this.x)}%;top:${100*viewport.toRelativeY(this.y)}%`;
+		element.style.left = `${100*viewport.toRelativeX(this.x)}%`;
+		element.style.top = `${100*viewport.toRelativeY(this.y)}%`;
 		return element;
 	}
 }
@@ -318,7 +319,7 @@ export class CyclicPoint extends SpecialPoint {
 		let element = super.toElement(viewport);
 		let label = document.createElement("label");
 		label.className = "point-label";
-		label.textContent = this.cycleLength;
+		label.textContent = this.cycleLength.toString();
 		element.appendChild(label);
 		return element;
 	}
@@ -366,7 +367,7 @@ export class Complex {
 	 * @param {Complex|number} x
 	 * @param {number} y
 	 */
-	multiply(x,y){
+	multiply(x,y=0){
 		let z = (x instanceof Complex)?x:new Complex(x,y);
 		let tx = this.x*z.x-this.y*z.y;
 		let ty = this.x*z.y+this.y*z.x;
@@ -386,7 +387,7 @@ export class Complex {
 	 * @param {number} y
 	 * @returns {Complex|ComplexWithDerivative}
 	 */
-	static sqrt(x,y){
+	static sqrt(x,y=0){
 		let z = (x instanceof Complex)?x:new Complex(x,y);
 		if (!(z instanceof ComplexWithDerivative)){
 			if (z.x===0&&z.y===0){

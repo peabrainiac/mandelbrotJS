@@ -28,7 +28,7 @@ export default class FractalRendererMemory {
 	 * @param {number} height
 	 */
 	constructor(width=0,height=0){
-		/** @type {()=>{}[]} */
+		/** @type {(()=>{})[]} */
 		this._onResetCallbacks = [];
 		this.reset(width,height);
 	}
@@ -164,7 +164,7 @@ export default class FractalRendererMemory {
 
 	/**
 	 * Creates and returns a new iterations array of a given size.
-	 * @param {number} widt
+	 * @param {number} width
 	 * @param {number} height
 	 */
 	static createIterationsArray(width,height){

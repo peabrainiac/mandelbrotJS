@@ -98,7 +98,6 @@ export default class SpecialPointsOverlay extends HTMLElement {
 	/**
 	 * @param {number} cx
 	 * @param {number} cy
-	 * @param {number} iterations
 	 */
 	showPoints(cx,cy){
 		let points = this._formula.approxNearbyCyclicPoints(cx,cy,this._iterations);

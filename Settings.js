@@ -225,6 +225,7 @@ export class FormulaSettingsGroup extends SidebarSection {
 		`;
 		/** @type {FractalFormula[]} */
 		this._formulas = [new MandelbrotFormula(),new MandelbarFormula(),new MoebiusMandelbrotFormula(),new BurningShipFormula(),new PerpendicularBurningShipFormula(),new BuffaloFormula()];
+		/** @type {HTMLSelectElement} */
 		this._formulaSelect = this.querySelector("#formula-select");
 		this._formulaSettingsContainer = this.querySelector("#formula-settings-container");
 		this.onFormulaChange(formula=>{
@@ -255,7 +256,7 @@ export class FormulaSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {(formula:FractalFormula)=>{}} callback 
+	 * @param {(formula:FractalFormula)=>void} callback 
 	 */
 	onFormulaChange(callback){
 		this._formulaSelect.addEventListener("change",()=>{

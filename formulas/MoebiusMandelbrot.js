@@ -75,11 +75,11 @@ export class MoebiusMandelbrotFormulaSettings extends FractalFormulaSettings {
 		`;
 		this._offsetInput = this.querySelectorAll("input")[0];
 		this._offsetInput.addEventListener("change",()=>{
-			formula.offset = this._offsetInput.value;
+			formula.offset = parseFloat(this._offsetInput.value);
 		});
 		this._rotationInput = this.querySelectorAll("input")[1];
 		this._rotationInput.addEventListener("change",()=>{
-			formula.rotation = this._rotationInput.value;
+			formula.rotation = parseFloat(this._rotationInput.value);
 		});
 	}
 }
