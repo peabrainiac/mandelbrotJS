@@ -1,14 +1,14 @@
-import {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport} from "../MandelMaths.js";
+import {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport, FractalFormulaSettings} from "../MandelMaths.js";
 
 export const TYPE_DISK = "disk";
 export const TYPE_MINIBROT = "minibrot";
 
 export default class MandelbrotFormula extends FractalFormulaSwitch {
 	/**
-	 * @param {{selectedIndex?:number}?} options
+	 * @param {{selectedIndex?:number,parameters?:[null,{accuracy?:number}]}?} options
 	 */
-	constructor({selectedIndex=0}={}){
-		super({switchName:"Algorithm",formulas:[{name:"simple",formula:new MandelbrotBaseFormula()},{name:"experimental",formula:new ExperimentalMandelbrotFormula()}],selectedIndex});
+	constructor({selectedIndex=0,parameters=[null,{}]}={}){
+		super({switchName:"Algorithm",formulas:[{name:"simple",formula:new MandelbrotBaseFormula()},{name:"experimental",formula:new ExperimentalMandelbrotFormula(parameters[1])}],selectedIndex});
 	}
 }
 /**
@@ -202,6 +202,11 @@ export class MandelbrotBaseFormula extends FractalFormula {
  * A mandelbrot formula using experimental algorithms.
  */
 export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
+	constructor({accuracy=16}={}){
+		super();
+		this._accuracy = accuracy;
+	}
+
 	/**
 	 * Returns the iteration count for a specific point in the mandelbrot set.
 	 * @param {number} cx
@@ -215,8 +220,8 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 		if (doCardioidClipTest&&((cx*cx+2*cx+1+cy*cy<0.0625)||((cx*cx-0.5*cx+0.0625+cy*cy)*(cx-0.25+cx*cx-0.5*cx+0.0625+cy*cy)-0.25*cy*cy<0))){
 			return maxIterations;
 		}else{
-			const accuracy = 1;
-			const relevantMinibrots = nearbyMinibrots.filter(minibrot=>(cx-minibrot.x)**2+(cy-minibrot.y)**2<(minibrot.approximationRadius/accuracy)**2);
+			const accuracy = this._accuracy;
+			const relevantMinibrots = nearbyMinibrots.filter(minibrot=>(cx-minibrot.x)**2+(cy-minibrot.y)**2<(minibrot.approximationRadius/accuracy)**2&&minibrot.relativeApproximationRadius>accuracy*3);
 			const mainMandelbrot = relevantMinibrots[0];
 			let currentMinibrot = mainMandelbrot;
 			let zx = cx;
@@ -228,7 +233,7 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 				let next = mainMandelbrot;
 				let azx = currentMinibrot.x+zx*currentMinibrot.scale.x-zy*currentMinibrot.scale.y;
 				let azy = currentMinibrot.y+zx*currentMinibrot.scale.y+zy*currentMinibrot.scale.x;
-				for (let i2=relevantMinibrots.length-1;i2>=0;i2--){
+				for (let i2=relevantMinibrots.length-1;i2>=1;i2--){
 					let minibrot = relevantMinibrots[i2];
 					let dx = azx-minibrot.x;
 					let dy = azy-minibrot.y;
@@ -249,7 +254,6 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 					cx2 = (dcx*next.scale.x+dcy*next.scale.y)/(r*r);
 					cy2 = (dcy*next.scale.x-dcx*next.scale.y)/(r*r);
 					currentMinibrot = next;
-					//i += 10;
 				}
 				let zx2 = zx*zx-zy*zy+cx2;
 				let zy2 = 2*zx*zy+cy2;
@@ -269,10 +273,47 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 	 */
 	prepare(cx,cy,iterations){
 		/** @type {Minibrot[]} */
-		const nearbyMinibrots = this.approxNearbyCyclicPoints(-0.1565,-1.0322).filter(cyclicPoint=>cyclicPoint instanceof Minibrot);
+		const nearbyMinibrots = this.approxNearbyCyclicPoints(cx,cy,iterations).filter(cyclicPoint=>cyclicPoint instanceof Minibrot);
 		console.log(nearbyMinibrots);
 		return {doCardioidClipTest:true,nearbyMinibrots};
 	}
+
+	createSettingsElement(){
+		return new ExperimentalMandelbrotFormulaSettings(this);
+	}
+
+	set accuracy(accuracy){
+		this._accuracy = accuracy*1;
+		this.callChangeCallbacks();
+	}
+
+	get accuracy(){
+		return this._accuracy;
+	}
+
+	getParameters(){
+		return {accuracy:this._accuracy};
+	}
+}
+export class ExperimentalMandelbrotFormulaSettings extends FractalFormulaSettings {
+	/**
+	 * @param {ExperimentalMandelbrotFormula} formula
+	 */
+	constructor(formula){
+		super(formula);
+		this.innerHTML = `
+			<span title="Determines how far inside of the calculated &quot;approximation radius&quot; a point should be in order for the approximation to be used.">
+				Accuracy: <input type="number" class="input-number" value="${formula.accuracy}" step="any">
+			</span>
+		`;
+		this._accuracyInput = this.querySelector("input");
+		this._accuracyInput.addEventListener("change",()=>{
+			formula.accuracy = parseFloat(this._accuracyInput.value);
+		})
+	}
+}
+if (self.constructor.name==="Window"){
+	customElements.define("experimental-mandelbrot-formula-settings",ExperimentalMandelbrotFormulaSettings);
 }
 /**
  * A cyclic point in the mandelbrot set.

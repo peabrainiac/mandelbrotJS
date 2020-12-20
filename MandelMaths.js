@@ -252,6 +252,10 @@ export class FractalFormulaSwitch extends FractalFormula {
 	get selectedIndex(){
 		return this._formulas.indexOf(this._formulas.find(data=>(data.formula==this._formula)));
 	}
+
+	get selectedFormula(){
+		return this._formula;
+	}
 }
 /**
  * Workaround so the following class declaration doesn't immediately throw in a worker; only attempting to instantiate it does.
@@ -260,10 +264,11 @@ export class FractalFormulaSwitch extends FractalFormula {
 let element = (self.HTMLElement||function(){throw new Error("Can't use this constructor in a worker!")});
 /**
  * Base class for fractal formula settings.
+ * @template {FractalFormula} F
  */
 export class FractalFormulaSettings extends element {
 	/**
-	 * @param {FractalFormula} formula
+	 * @param {F} formula
 	 */
 	constructor(formula){
 		super();
@@ -277,6 +282,7 @@ export class FractalFormulaSettings extends element {
 }
 /**
  * Settings element for FractalFormulaSwitches.
+ * @extends FractalFormulaSettings<FractalFormulaSwitch>
  */
 export class FractalFormulaSwitchSettings extends FractalFormulaSettings {
 	/**
@@ -290,11 +296,28 @@ export class FractalFormulaSwitchSettings extends FractalFormulaSettings {
 			${switchName}: <select class="input-select">
 				${formulas.map((data,index)=>`<option value="${index}">${data.name}</option>`).join("")}
 			</select>
+			<div></div>
 		`;
 		this._select = this.querySelectorAll("select")[0];
+		this._settingsContainer = this.querySelector("div");
 		this._select.addEventListener("change",()=>{
 			formula.selectedIndex = parseInt(this._select.value);
+			this._updateSettingsElement();
 		});
+		this._updateSettingsElement();
+	}
+
+	/**
+	 * Internal method. Changes the visible settings element to the one of the currently selected formula.
+	 */
+	_updateSettingsElement(){
+		const element = this.formula.selectedFormula.settingsElement;
+		while(this._settingsContainer.firstChild){
+			this._settingsContainer.firstChild.remove();
+		}
+		if (element){
+			this._settingsContainer.appendChild(element);
+		}
 	}
 }
 if (self.constructor.name==="Window"){
