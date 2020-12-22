@@ -5,7 +5,7 @@ import FractalExplorerStatusbar from "./FractalExplorerStatusbar.js";
 import FractalZoomPreview from "./FractalZoomPreview.js";
 
 /**
- * The custom element responsible for displaying a fractal based on a given formula and settings; responsible for zooming, mouse events and managing the fractal canvas and other sub-elements.
+ * Custom element responsible for displaying a fractal based on a given formula and settings; responsible for zooming, mouse events and managing the fractal canvas and other sub-elements.
  * 
  * This, together with its dependencies, basically contains all the code needed for the actual fractal explorer, but none of the code for the settings user interface.
  */
@@ -52,13 +52,17 @@ export default class FractalExplorer extends HTMLElement {
 			</fixed-ratio-container>
 		`;
 		/** @type {FixedRatioContainer} */
+		// @ts-ignore
 		const outerContainer = this.shadowRoot.getElementById("outer-container");
 		const innerContainer = this.shadowRoot.getElementById("inner-container");
 		/** @type {FractalCanvas} */
+		// @ts-ignore
 		const fractalCanvas = this.shadowRoot.getElementById("canvas");
 		/** @type {FractalExplorerStatusbar} */
+		// @ts-ignore
 		const statusbar = this.shadowRoot.getElementById("statusbar");
 		/** @type {FractalZoomPreview} */
+		// @ts-ignore
 		const zoomPreviewElement = this.shadowRoot.getElementById("zoom-preview");
 		zoomPreviewElement.targetCanvas = fractalCanvas.canvas;
 		let mouseX = 0;
@@ -157,6 +161,24 @@ export default class FractalExplorer extends HTMLElement {
 		});
 	}
 
+	/**
+	 * Creates a mostly-deep copy of this element.
+	 */
+	copy(){
+		const explorer = new FractalExplorer();
+		explorer.formula = this.formula;
+		explorer.width = this.width;
+		explorer.height = this.height;
+		explorer.pixelsPerUnit = this.pixelsPerUnit;
+		explorer.zoomFactor = this.zoomFactor;
+		explorer.iterations = this.iterations;
+		explorer.samplesPerPixel = this.samplesPerPixel;
+		explorer.fractalCanvas.x = this.fractalCanvas.x;
+		explorer.fractalCanvas.y = this.fractalCanvas.y;
+		explorer.fractalCanvas.zoom = this.fractalCanvas.zoom;
+		return explorer;
+	}
+
 	/** @readonly */
 	get fractalCanvas(){
 		return this._fractalCanvas;
@@ -171,7 +193,7 @@ export default class FractalExplorer extends HTMLElement {
 	}
 
 	set width(width){
-		this.setAttribute("width",width);
+		this.setAttribute("width",width+"");
 	}
 
 	get width(){
@@ -179,7 +201,7 @@ export default class FractalExplorer extends HTMLElement {
 	}
 
 	set height(height){
-		this.setAttribute("height",height);
+		this.setAttribute("height",height+"");
 	}
 
 	get height(){
@@ -187,7 +209,7 @@ export default class FractalExplorer extends HTMLElement {
 	}
 
 	set pixelsPerUnit(pixelsPerUnit){
-		this.setAttribute("pixels-per-unit",pixelsPerUnit);
+		this.setAttribute("pixels-per-unit",pixelsPerUnit+"");
 	}
 
 	get pixelsPerUnit(){

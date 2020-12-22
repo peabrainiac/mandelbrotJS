@@ -1,3 +1,4 @@
+/** @param {string} string */
 export const parseRatioString = (string)=>{
 	if (/^\d+(?:\.\d+)?$/.test(string)){
 		return string*1;
@@ -5,10 +6,20 @@ export const parseRatioString = (string)=>{
 		let [width,height] = string.split(/:|\//);
 		return width/height;
 	}else{
-		throw new Error(`Error: unsupported ratio string "${string}".`)
+		throw new Error(`Error: unsupported ratio string "${string}".`);
 	}
 };
+/**
+ * Custom element that keeps its contents at a fixed ratio, leaving empty space either above and below or on both sides next to it.
+ * The element itself occupies any space a normal element would; only its contents are kept at a certain ratio.
+ * 
+ * Usable as `<fixed-ratio-container ratio="x:y">`.
+ */
 export default class FixedRatioContainer extends HTMLElement {
+	/**
+	 * Constructs a new FixedRatioContainer.
+	 * @param {number} ratio initial ratio, defaults to one
+	 */
 	constructor(ratio=1){
 		super();
 		this.attachShadow({mode:"open"});
@@ -35,6 +46,9 @@ export default class FixedRatioContainer extends HTMLElement {
 		});
 		this._resizeObserver.observe(this);
 		this.ratio = ratio;
+		// calls these manually because `attributeChangedCallback` doesn't seem to work while still in constructor
+		this._ratio = parseRatioString(ratio);
+		this.update();
 	}
 
 	update(){
@@ -44,8 +58,12 @@ export default class FixedRatioContainer extends HTMLElement {
 		this._innerDiv.style.height = innerHeight+"px";
 	}
 
+	/**
+	 * The ratio that the contents of this element are kept at. While this is technically a number, its setter also accepts strings of the format `x:y`, converting them to the number `x/y`.
+	 * Also accessible via the attribute with the same name.
+	 */
 	set ratio(ratio){
-		this.setAttribute("ratio",ratio);
+		this.setAttribute("ratio",ratio+"");
 	}
 
 	get ratio(){

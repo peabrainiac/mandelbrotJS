@@ -197,6 +197,27 @@ export class MandelbrotBaseFormula extends FractalFormula {
 		point.estimates = estimates;
 		return point;
 	}
+	
+	/**
+	 * @inheritdoc
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @return {Complex[][]}
+	 */
+	getOrbitPoints(cx,cy,maxIterations){
+		let array = [new Complex(cx,cy)];
+		let zx = cx;
+		let zy = cy;
+		let i;
+		for (i=0;i<maxIterations&&zx*zx+zy*zy<4;i++){
+			let temp = zx*zx-zy*zy+cx;
+			zy = 2*zx*zy+cy;
+			zx = temp;
+			array.push(new Complex(zx,zy));
+		}
+		return [array];
+	}
 }
 /**
  * A mandelbrot formula using experimental algorithms.

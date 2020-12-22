@@ -1,4 +1,4 @@
-import {FractalFormula,FractalViewport} from "./MandelMaths.js";
+import {FractalFormula,FractalViewport} from "../MandelMaths.js";
 
 export default class SpecialPointsOverlay extends HTMLElement {
 	constructor(){
@@ -74,16 +74,19 @@ export default class SpecialPointsOverlay extends HTMLElement {
 		this._iterations = 200;
 		this._div = this.shadowRoot.getElementById("div");
 		this.hide();
-		this.addEventListener("mousedown",(e)=>{
+		this.addEventListener("mousedown",e=>{
 			e.stopPropagation();
 			e.preventDefault();
 		});
 		this.addEventListener("mouseup",(e)=>{
-			e.stopPropagation();
 			if (e.button==1){
 				let fractalX = this._viewport.toFractalX(e.offsetX/this.offsetWidth);
 				let fractalY = this._viewport.toFractalY(e.offsetY/this.offsetHeight);
-				console.log(this._formula.approxNearbyCyclicPoints(fractalX,fractalY,this._iterations));
+				console.group("Cyclic points data");
+				console.log("x:",fractalX);
+				console.log("y:",fractalY);
+				console.log("data:",this._formula.approxNearbyCyclicPoints(fractalX,fractalY,this._iterations));
+				console.groupEnd();
 			}else{
 				this.hide();
 			}

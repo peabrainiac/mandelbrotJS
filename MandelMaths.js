@@ -63,6 +63,21 @@ export class FractalFormula {
 	}
 
 	/**
+	 * Returns data to display on the orbit points overlay.
+	 * 
+	 * The data is structured as an array of zero or more (though usually one) arrays of points, each representing an orbit of the given point;
+	 * this is to allow better debugging of algorithms that produce slightly different results than the actual formula, because then the approximated and actual orbits can be shown next to each other and compared.
+	 * 
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @return {Complex[][]}
+	 */
+	getOrbitPoints(cx,cy,maxIterations){
+		return [];
+	}
+
+	/**
 	 * the url of the formula module.
 	 * @readonly
 	 */
@@ -226,6 +241,17 @@ export class FractalFormulaSwitch extends FractalFormula {
 	 */
 	getNearbyCyclicPoint(startX,startY,cycleLength){
 		return this._formula.getNearbyCyclicPoint(startX,startY,cycleLength);
+	}
+
+	/**
+	 * @inheritdoc
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @return {Complex[][]}
+	 */
+	getOrbitPoints(cx,cy,maxIterations){
+		return [].concat(...this._formulas.map(formula=>formula.formula.getOrbitPoints(cx,cy,maxIterations)));
 	}
 
 	/**

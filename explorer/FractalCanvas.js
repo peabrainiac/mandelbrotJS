@@ -31,6 +31,7 @@ export default class FractalCanvas extends HTMLElement {
 		};
 		this._state = STATE_LOADING;
 		this._progress = 0;
+		/** @type {FractalFormula} */
 		this._formula = new MandelbrotFormula();
 		this.attachShadow({mode:"open"});
 		this.shadowRoot.innerHTML = `
@@ -52,6 +53,7 @@ export default class FractalCanvas extends HTMLElement {
 			<canvas id="canvas"></canvas>
 		`;
 		/** @type {HTMLCanvasElement} */
+		// @ts-ignore
 		this._canvas = this.shadowRoot.getElementById("canvas");
 		this._ctx = this._canvas.getContext("2d");
 		this._progressTimer = new Timer();
@@ -132,7 +134,7 @@ export default class FractalCanvas extends HTMLElement {
 
 	/**
 	 * Registers a callback to be executed after every time the canvas is updated, and also once when the callback is registered.
-	 * @param {(canvas:HTMLCanvasElement)=>{}} callback
+	 * @param {(canvas:HTMLCanvasElement)=>void} callback
 	 */
 	onCanvasUpdate(callback){
 		this._onCanvasUpdateCallbacks.push(callback);
@@ -152,7 +154,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(state:number)=>{}} callback 
+	 * @param {(state:number)=>void} callback 
 	 */
 	onStateChange(callback){
 		this._onStateChangeCallbacks.push(callback);
@@ -176,7 +178,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(progress:number)=>{}} callback 
+	 * @param {(progress:number)=>void} callback 
 	 */
 	onProgress(callback){
 		this._onProgressChangeCallbacks.push(callback);
@@ -284,7 +286,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(zoom:number)=>{}} callback 
+	 * @param {(zoom:number)=>void} callback 
 	 */
 	onZoomChange(callback){
 		this._onZoomChangeCallbacks.push(callback);
@@ -296,7 +298,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(viewport:FractalViewport)=>{}} callback 
+	 * @param {(viewport:FractalViewport)=>void} callback 
 	 */
 	onViewportChange(callback){
 		this._onViewportChangeCallbacks.push(callback);
