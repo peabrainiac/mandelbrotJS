@@ -190,9 +190,10 @@ export class MandelbrotBaseFormula extends FractalFormula {
 			}
 		}
 		let a = new Complex(ax,ay);
-		a.multiply(dx,dy);
-		Complex.inverse(a);
-		let point = MandelbrotCyclicPoint.create(cx,cy,cycleLength,a,dx,dy,ddx,ddy);
+		let scale = a.copy();
+		scale.multiply(dx,dy);
+		Complex.inverse(scale);
+		let point = MandelbrotCyclicPoint.create(cx,cy,cycleLength,scale,a,dx,dy,ddx,ddy);
 		point.steps = steps;
 		point.estimates = estimates;
 		return point;
@@ -249,6 +250,12 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			let zy = cy;
 			let cx2 = cx;
 			let cy2 = cy;
+			let ax = 1;
+			let ay = 0;
+			let sx = 1;
+			let sy = 0;
+			let cx3 = 0;
+			let cy3 = 0;
 			let i = 0;
 			while((currentMinibrot!=mainMandelbrot||zx*zx+zy*zy<4)&&i<maxIterations){
 				let next = mainMandelbrot;
@@ -265,21 +272,33 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 					}
 				}
 				if (next!=currentMinibrot){
-					let r = next.scale.length;
+					const scale = next.scale;
+					const a = next.a;
+					ax = a.x;
+					ay = a.y;
+					sx = scale.x;
+					sy = scale.y;
+					let r = scale.length;
 					let dx = azx-next.x;
 					let dy = azy-next.y;
 					let dcx = cx-next.x;
 					let dcy = cy-next.y;
-					zx = (dx*next.scale.x+dy*next.scale.y)/(r*r);
-					zy = (dy*next.scale.x-dx*next.scale.y)/(r*r);
-					cx2 = (dcx*next.scale.x+dcy*next.scale.y)/(r*r);
-					cy2 = (dcy*next.scale.x-dcx*next.scale.y)/(r*r);
+					zx = (dx*scale.x+dy*scale.y)/(r*r);
+					zy = (dy*scale.x-dx*scale.y)/(r*r);
+					cx2 = (dcx*scale.x+dcy*scale.y)/(r*r);
+					cy2 = (dcy*scale.x-dcx*scale.y)/(r*r);
+					let ax2 = next.dx-a.x;
+					let ay2 = next.dy-a.y;
+					cx3 = ax2*cx2-ay2*cy2;
+					cy3 = ay2*cx2+ax2*cy2;
 					currentMinibrot = next;
 				}
-				let zx2 = zx*zx-zy*zy+cx2;
-				let zy2 = 2*zx*zy+cy2;
-				zx = zx2;
-				zy = zy2;
+				let zx2 = zx*ax-zy*ay+cx3;
+				let zy2 = zy*ax+zx*ay+cy3;
+				let zx3 = zx2*zx2-zy2*zy2;
+				let zy3 = 2*zx2*zy2;
+				zx = zx3*sx-zy3*sy+cx2;
+				zy = zx3*sy+zy3*sx+cy2;
 				i += currentMinibrot.cycleLength;
 			}
 			return Math.min(i,maxIterations);
@@ -305,6 +324,12 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 		let zy = cy;
 		let cx2 = cx;
 		let cy2 = cy;
+		let ax = 1;
+		let ay = 0;
+		let sx = 1;
+		let sy = 0;
+		let cx3 = 0;
+		let cy3 = 0;
 		let i = 0;
 		while((currentMinibrot!=mainMandelbrot||zx*zx+zy*zy<4)&&i<maxIterations){
 			let next = mainMandelbrot;
@@ -321,21 +346,42 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 				}
 			}
 			if (next!=currentMinibrot){
-				let r = next.scale.length;
+				const scale = next.scale;
+				const a = next.a;
+				ax = a.x;
+				ay = a.y;
+				sx = scale.x;
+				sy = scale.y;
+				let r = scale.length;
 				let dx = azx-next.x;
 				let dy = azy-next.y;
 				let dcx = cx-next.x;
 				let dcy = cy-next.y;
-				zx = (dx*next.scale.x+dy*next.scale.y)/(r*r);
-				zy = (dy*next.scale.x-dx*next.scale.y)/(r*r);
-				cx2 = (dcx*next.scale.x+dcy*next.scale.y)/(r*r);
-				cy2 = (dcy*next.scale.x-dcx*next.scale.y)/(r*r);
+				zx = (dx*scale.x+dy*scale.y)/(r*r);
+				zy = (dy*scale.x-dx*scale.y)/(r*r);
+				cx2 = (dcx*scale.x+dcy*scale.y)/(r*r);
+				cy2 = (dcy*scale.x-dcx*scale.y)/(r*r);
+				let ax2 = next.dx-a.x;
+				let ay2 = next.dy-a.y;
+				cx3 = ax2*cx2-ay2*cy2;
+				cy3 = ay2*cx2+ax2*cy2;
+				/*console.group("Context switch:");
+				console.log("Minibrot:",next);
+				console.log("cx2:",cx2);
+				console.log("cy2:",cy2);
+				console.log("ax2:",ax2);
+				console.log("ay2:",ay2);
+				console.log("cx3:",cx3);
+				console.log("cy3:",cy3);
+				console.groupEnd();*/
 				currentMinibrot = next;
 			}
-			let zx2 = zx*zx-zy*zy+cx2;
-			let zy2 = 2*zx*zy+cy2;
-			zx = zx2;
-			zy = zy2;
+			let zx2 = zx*ax-zy*ay+cx3;
+			let zy2 = zy*ax+zx*ay+cy3;
+			let zx3 = zx2*zx2-zy2*zy2;
+			let zy3 = 2*zx2*zy2;
+			zx = zx3*sx-zy3*sy+cx2;
+			zy = zx3*sy+zy3*sx+cy2;
 			i += currentMinibrot.cycleLength;
 			let azx2 = currentMinibrot.x+zx*currentMinibrot.scale.x-zy*currentMinibrot.scale.y;
 			let azy2 = currentMinibrot.y+zx*currentMinibrot.scale.y+zy*currentMinibrot.scale.x;
@@ -402,12 +448,17 @@ export class MandelbrotCyclicPoint extends CyclicPoint {
 	 * @param {number} y
 	 * @param {number} cycleLength
 	 * @param {Complex} scale
+	 * @param {Complex} a
+	 * @param {number} approximationRadius
 	 */
-	constructor(x,y,cycleLength,scale,approximationRadius){
+	constructor(x,y,cycleLength,scale,a,approximationRadius,dx,dy){
 		super(x,y,cycleLength);
 		this.scale = scale;
+		this.a = a;
 		this.approximationRadius = approximationRadius;
 		this.relativeApproximationRadius = approximationRadius/scale.length;
+		this.dx = dx;
+		this.dy = dy;
 	}
 
 	/**
@@ -416,16 +467,16 @@ export class MandelbrotCyclicPoint extends CyclicPoint {
 	 * @param {number} y
 	 * @param {number} cycleLength
 	 * @param {Complex} scale
+	 * @param {Complex} a
 	 * @param {number} dx
 	 * @param {number} dy
 	 * @param {number} ddx
 	 * @param {number} ddy
 	 */
-	static create(x,y,cycleLength,scale,dx,dy,ddx,ddy){
+	static create(x,y,cycleLength,scale,a,dx,dy,ddx,ddy){
 		let radius = 0.5*Math.sqrt((dx*dx+dy*dy)/(ddx*ddx+ddy*ddy));
 		let relativeRadius = radius/scale.length;
-		let point = relativeRadius<=1?new Disk(x,y,cycleLength,scale,radius):new Minibrot(x,y,cycleLength,scale,radius);
-		point.dz = new Complex(dx,dy);
+		let point = relativeRadius<=1?new Disk(x,y,cycleLength,scale,a,radius,dx,dy):new Minibrot(x,y,cycleLength,scale,a,radius,dx,dy);
 		point.ddz = new Complex(ddx,ddy);
 		return point;
 	}
