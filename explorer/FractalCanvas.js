@@ -24,7 +24,10 @@ export default class FractalCanvas extends HTMLElement {
 		this._onViewportChangeCallbacks = [];
 		this._onStateChangeCallbacks = [];
 		this._onProgressChangeCallbacks = [];
+		/** @type {((canvas:HTMLCanvasElement)=>void)[]} */
 		this._onCanvasUpdateCallbacks = [];
+		/** @type {((canvas:HTMLCanvasElement)=>void)[]} */
+		this._onNextCanvasUpdateCallbacks = [];
 		this._onZoomChangeCallbacks = [];
 		this._formulaChangeCallback = ()=>{
 			this.render();
@@ -130,6 +133,10 @@ export default class FractalCanvas extends HTMLElement {
 		this._onCanvasUpdateCallbacks.forEach(callback=>{
 			callback(this._canvas);
 		});
+		this._onNextCanvasUpdateCallbacks.forEach(callback=>{
+			callback(this._canvas);
+		});
+		this._onNextCanvasUpdateCallbacks = [];
 	}
 
 	/**
@@ -139,6 +146,14 @@ export default class FractalCanvas extends HTMLElement {
 	onCanvasUpdate(callback){
 		this._onCanvasUpdateCallbacks.push(callback);
 		callback(this._canvas);
+	}
+
+	/**
+	 * Registers a callback to be executed after the next time the canvas is updated.
+	 * @param {(canvas:HTMLCanvasElement)=>void} callback
+	 */
+	onNextCanvasUpdate(callback){
+		this._onNextCanvasUpdateCallbacks.push(callback);
 	}
 
 	get _pixelsCalculated(){

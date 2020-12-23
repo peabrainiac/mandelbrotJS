@@ -115,7 +115,9 @@ export class FullOrbitPointsOverlay extends Overlay {
 		overlay.style.pointerEvents = "none";
 		overlay.showPoints(fractalX,fractalY);
 		copy.fractalCanvas.onViewportChange(viewport=>{
-			overlay.showPoints(fractalX,fractalY);
+			copy.fractalCanvas.onNextCanvasUpdate(canvas=>{
+				overlay.showPoints(fractalX,fractalY);
+			});
 		});
 	}
 }

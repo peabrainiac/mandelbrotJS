@@ -38,6 +38,7 @@ export default class FractalRenderer {
 	get imageData(){
 		if (!this._colorizer){
 			this._colorizer = new FractalColorizer(this._memory);
+			this._colorizer.maxIterations = this._maxIterations;
 			this._memory.onReset(()=>{
 				this._colorizer.reset();
 			});
