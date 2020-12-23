@@ -32,6 +32,22 @@ export default class OrbitPointsOverlay extends HTMLElement {
 					height: 6px;
 					pointer-events: none;
 				}
+				::slotted(.point.color-0) {
+					border: 2px solid hsla(0,0%,84%,50%);
+					background: hsla(0,0%,58%,40%);
+				}
+				::slotted(.point.color-1) {
+					border: 2px solid hsla(30,60%,60%,50%);
+					background: hsla(30,35%,35%,40%);
+				}
+				::slotted(.point.color-2) {
+					border: 2px solid hsla(-30,60%,60%,50%);
+					background: hsla(-30,35%,35%,40%);
+				}
+				::slotted(.point.color-3) {
+					border: 2px solid hsla(90,60%,60%,50%);
+					background: hsla(90,35%,35%,40%);
+				}
 			</style>
 			<slot></slot>
 		`;
@@ -77,8 +93,10 @@ export default class OrbitPointsOverlay extends HTMLElement {
 	}
 
 	showPoints(fractalX,fractalY){
+
 		const orbits = this._explorer.formula.getOrbitPoints(fractalX,fractalY,this._explorer.iterations);
-		this.innerHTML = orbits.map(orbit=>{
+		this.innerHTML = orbits.map((orbit,index)=>{
+			let orbitColorIndex = index%4;
 			let html = "";
 			for (let i=0;i<orbit.length;i++){
 				let relativeX = this._viewport.toRelativeX(orbit[i].x);
@@ -86,7 +104,7 @@ export default class OrbitPointsOverlay extends HTMLElement {
 				let pixelX = relativeX*this._explorer.width;
 				let pixelY = relativeY*this._explorer.height;
 				if (pixelX>-4&&pixelX<this._explorer.width+4&&pixelY>-4&&pixelY<this._explorer.height+4){
-					html += `<div class="point" style="left:${100*relativeX}%;top:${100*relativeY}%"></div>`;
+					html += `<div class="point color-${orbitColorIndex}" style="left:${100*relativeX}%;top:${100*relativeY}%"></div>`;
 				}
 			}
 			return html;

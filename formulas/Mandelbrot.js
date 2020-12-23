@@ -285,6 +285,64 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			return Math.min(i,maxIterations);
 		}
 	}
+	
+	/**
+	 * @inheritdoc
+	 * @todo pass this the prepared minibrots as a parameter instead of just recomputing them
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @return {Complex[][]}
+	 */
+	getOrbitPoints(cx,cy,maxIterations){
+		const {nearbyMinibrots} = this.prepare(cx,cy,maxIterations);
+		const array = [new Complex(cx,cy)];
+		const accuracy = this._accuracy;
+		const relevantMinibrots = nearbyMinibrots.filter(minibrot=>(cx-minibrot.x)**2+(cy-minibrot.y)**2<(minibrot.approximationRadius/accuracy)**2&&minibrot.relativeApproximationRadius>accuracy*3);
+		const mainMandelbrot = relevantMinibrots[0];
+		let currentMinibrot = mainMandelbrot;
+		let zx = cx;
+		let zy = cy;
+		let cx2 = cx;
+		let cy2 = cy;
+		let i = 0;
+		while((currentMinibrot!=mainMandelbrot||zx*zx+zy*zy<4)&&i<maxIterations){
+			let next = mainMandelbrot;
+			let azx = currentMinibrot.x+zx*currentMinibrot.scale.x-zy*currentMinibrot.scale.y;
+			let azy = currentMinibrot.y+zx*currentMinibrot.scale.y+zy*currentMinibrot.scale.x;
+			for (let i2=relevantMinibrots.length-1;i2>=1;i2--){
+				let minibrot = relevantMinibrots[i2];
+				let dx = azx-minibrot.x;
+				let dy = azy-minibrot.y;
+				let r = minibrot.approximationRadius/accuracy;
+				if (dx*dx+dy*dy<r*r){
+					next = minibrot;
+					break;
+				}
+			}
+			if (next!=currentMinibrot){
+				let r = next.scale.length;
+				let dx = azx-next.x;
+				let dy = azy-next.y;
+				let dcx = cx-next.x;
+				let dcy = cy-next.y;
+				zx = (dx*next.scale.x+dy*next.scale.y)/(r*r);
+				zy = (dy*next.scale.x-dx*next.scale.y)/(r*r);
+				cx2 = (dcx*next.scale.x+dcy*next.scale.y)/(r*r);
+				cy2 = (dcy*next.scale.x-dcx*next.scale.y)/(r*r);
+				currentMinibrot = next;
+			}
+			let zx2 = zx*zx-zy*zy+cx2;
+			let zy2 = 2*zx*zy+cy2;
+			zx = zx2;
+			zy = zy2;
+			i += currentMinibrot.cycleLength;
+			let azx2 = currentMinibrot.x+zx*currentMinibrot.scale.x-zy*currentMinibrot.scale.y;
+			let azy2 = currentMinibrot.y+zx*currentMinibrot.scale.y+zy*currentMinibrot.scale.x;
+			array.push(new Complex(azx2,azy2));
+		}
+		return [array];
+	}
 
 	/**
 	 * @param {number} cx
@@ -295,7 +353,6 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 	prepare(cx,cy,iterations){
 		/** @type {Minibrot[]} */
 		const nearbyMinibrots = this.approxNearbyCyclicPoints(cx,cy,iterations).filter(cyclicPoint=>cyclicPoint instanceof Minibrot);
-		console.log(nearbyMinibrots);
 		return {doCardioidClipTest:true,nearbyMinibrots};
 	}
 
