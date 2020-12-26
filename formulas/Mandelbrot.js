@@ -245,22 +245,30 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			const accuracy = this._accuracy;
 			const relevantMinibrots = nearbyMinibrots.filter(minibrot=>(cx-minibrot.x)**2+(cy-minibrot.y)**2<(minibrot.approximationRadius/accuracy)**2&&minibrot.relativeApproximationRadius>accuracy*3);
 			const mainMandelbrot = relevantMinibrots[0];
+			/** the minibrot that is currently used as a reference point. the cycle length of this determines how many iterations are calculated at once */
 			let currentMinibrot = mainMandelbrot;
+			/** x-Position relative to the current minibrot */
 			let zx = cx;
+			/** y-Position relative to the current minibrot */
 			let zy = cy;
+			/** number that gets added to the real component during each iteration in the current reference frame after squaring. */
 			let cx2 = cx;
+			/** number that gets added to the imaginary component during each iteration in the current reference frame after squaring. */
 			let cy2 = cy;
+			/** real component of the a-value of the current minibrot */
 			let ax = 1;
+			/** imaginary component of the a-value of the current minibrot */
 			let ay = 0;
-			let sx = 1;
-			let sy = 0;
+			/** number that gets added to the real component during each iteration in the current reference frame before squaring. */
 			let cx3 = 0;
+			/** number that gets added to the imaginary component during each iteration in the current reference frame before squaring. */
 			let cy3 = 0;
+			/** number of iterations computed so far */
 			let i = 0;
 			while((currentMinibrot!=mainMandelbrot||zx*zx+zy*zy<4)&&i<maxIterations){
 				let next = mainMandelbrot;
-				let azx = currentMinibrot.x+zx*currentMinibrot.scale.x-zy*currentMinibrot.scale.y;
-				let azy = currentMinibrot.y+zx*currentMinibrot.scale.y+zy*currentMinibrot.scale.x;
+				let azx = currentMinibrot.x+zx;
+				let azy = currentMinibrot.y+zy;
 				for (let i2=relevantMinibrots.length-1;i2>=1;i2--){
 					let minibrot = relevantMinibrots[i2];
 					let dx = azx-minibrot.x;
@@ -272,33 +280,23 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 					}
 				}
 				if (next!=currentMinibrot){
-					const scale = next.scale;
 					const a = next.a;
 					ax = a.x;
 					ay = a.y;
-					sx = scale.x;
-					sy = scale.y;
-					let r = scale.length;
-					let dx = azx-next.x;
-					let dy = azy-next.y;
-					let dcx = cx-next.x;
-					let dcy = cy-next.y;
-					zx = (dx*scale.x+dy*scale.y)/(r*r);
-					zy = (dy*scale.x-dx*scale.y)/(r*r);
-					cx2 = (dcx*scale.x+dcy*scale.y)/(r*r);
-					cy2 = (dcy*scale.x-dcx*scale.y)/(r*r);
-					let ax2 = next.dx-a.x;
-					let ay2 = next.dy-a.y;
+					zx = azx-next.x;
+					zy = azy-next.y;
+					cx2 = cx-next.x;
+					cy2 = cy-next.y;
+					let ax2 = next.dx-ax;
+					let ay2 = next.dy-ay;
 					cx3 = ax2*cx2-ay2*cy2;
 					cy3 = ay2*cx2+ax2*cy2;
 					currentMinibrot = next;
 				}
 				let zx2 = zx*ax-zy*ay+cx3;
 				let zy2 = zy*ax+zx*ay+cy3;
-				let zx3 = zx2*zx2-zy2*zy2;
-				let zy3 = 2*zx2*zy2;
-				zx = zx3*sx-zy3*sy+cx2;
-				zy = zx3*sy+zy3*sx+cy2;
+				zx = zx2*zx2-zy2*zy2+cx2;
+				zy = 2*zx2*zy2+cy2;
 				i += currentMinibrot.cycleLength;
 			}
 			return Math.min(i,maxIterations);

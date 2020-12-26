@@ -38,6 +38,7 @@ export default class FractalColorizer {
 	}
 
 	get imageData(){
+		//const t = performance.now();
 		const w = this._imageWidth;
 		const h = this._imageHeight;
 		const maxIterations = this._maxIterations;
@@ -64,6 +65,7 @@ export default class FractalColorizer {
 				}
 			}
 		}
+		//console.log(`Updated ${this._memory.pixelsCalculated-this._pixelsDrawn} pixels: `,(performance.now()-t)+"ms");
 		this._pixelsDrawn = i;
 		return this._imageData;
 	}
