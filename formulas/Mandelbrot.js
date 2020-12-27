@@ -243,32 +243,29 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			return maxIterations;
 		}else{
 			const accuracy = this._accuracy;
+			/** minibrots close enough to `c` whose approximation is accurate enough  */
 			const relevantMinibrots = nearbyMinibrots.filter(minibrot=>(cx-minibrot.x)**2+(cy-minibrot.y)**2<(minibrot.approximationRadius/accuracy)**2&&minibrot.relativeApproximationRadius>accuracy*3);
 			const mainMandelbrot = relevantMinibrots[0];
 			/** the minibrot that is currently used as a reference point. the cycle length of this determines how many iterations are calculated at once */
 			let currentMinibrot = mainMandelbrot;
-			/** x-Position relative to the current minibrot */
-			let zx = cx;
-			/** y-Position relative to the current minibrot */
-			let zy = cy;
-			/** number that gets added to the real component during each iteration in the current reference frame after squaring. */
+			/** x-Position */
+			let zx = 0;
+			/** y-Position */
+			let zy = 0;
+			/** number that gets added to the real component during each iteration in the current reference frame. */
 			let cx2 = cx;
-			/** number that gets added to the imaginary component during each iteration in the current reference frame after squaring. */
+			/** number that gets added to the imaginary component during each iteration in the current reference frame. */
 			let cy2 = cy;
-			/** real component of the a-value of the current minibrot */
+			/** real component of the `a`-value of the current minibrot */
 			let ax = 1;
-			/** imaginary component of the a-value of the current minibrot */
+			/** imaginary component of the `a`-value of the current minibrot */
 			let ay = 0;
-			/** number that gets added to the real component during each iteration in the current reference frame before squaring. */
-			let cx3 = 0;
-			/** number that gets added to the imaginary component during each iteration in the current reference frame before squaring. */
-			let cy3 = 0;
-			/** number of iterations computed so far */
-			let i = 0;
+			/** number of iterations computed so far. Starts at -1 because iteration skipping is here based on the iteration before a minibrot gets hit, not the iteration itself. */
+			let i = -1;
 			while((currentMinibrot!=mainMandelbrot||zx*zx+zy*zy<4)&&i<maxIterations){
 				let next = mainMandelbrot;
-				let azx = currentMinibrot.x+zx;
-				let azy = currentMinibrot.y+zy;
+				let azx = zx*zx-zy*zy+cx;
+				let azy = 2*zx*zy+cy;
 				for (let i2=relevantMinibrots.length-1;i2>=1;i2--){
 					let minibrot = relevantMinibrots[i2];
 					let dx = azx-minibrot.x;
@@ -283,20 +280,18 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 					const a = next.a;
 					ax = a.x;
 					ay = a.y;
-					zx = azx-next.x;
-					zy = azy-next.y;
-					cx2 = cx-next.x;
-					cy2 = cy-next.y;
-					let ax2 = next.dx-ax;
-					let ay2 = next.dy-ay;
-					cx3 = ax2*cx2-ay2*cy2;
-					cy3 = ay2*cx2+ax2*cy2;
+					let dx = next.dx;
+					let dy = next.dy;
+					let dx2 = cx-next.x;
+					let dy2 = cy-next.y;
+					cx2 = dx2*dx-dy2*dy;
+					cy2 = dx2*dy+dy2*dx;
 					currentMinibrot = next;
 				}
-				let zx2 = zx*ax-zy*ay+cx3;
-				let zy2 = zy*ax+zx*ay+cy3;
-				zx = zx2*zx2-zy2*zy2+cx2;
-				zy = 2*zx2*zy2+cy2;
+				let zx2 = zx*zx-zy*zy;
+				let zy2 = 2*zx*zy;
+				zx = zx2*ax-zy2*ay+cx2;
+				zy = zx2*ay+zy2*ax+cy2;
 				i += currentMinibrot.cycleLength;
 			}
 			return Math.min(i,maxIterations);
@@ -448,6 +443,8 @@ export class MandelbrotCyclicPoint extends CyclicPoint {
 	 * @param {Complex} scale
 	 * @param {Complex} a
 	 * @param {number} approximationRadius
+	 * @param {number} dx
+	 * @param {number} dy
 	 */
 	constructor(x,y,cycleLength,scale,a,approximationRadius,dx,dy){
 		super(x,y,cycleLength);
@@ -455,7 +452,9 @@ export class MandelbrotCyclicPoint extends CyclicPoint {
 		this.a = a;
 		this.approximationRadius = approximationRadius;
 		this.relativeApproximationRadius = approximationRadius/scale.length;
+		/** real component of the derivative of `z_{n-1}` with respect to `z_0` */
 		this.dx = dx;
+		/** imaginary component of the derivative of `z_{n-1}` with respect to `z_0` */
 		this.dy = dy;
 	}
 
