@@ -248,6 +248,8 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			const mainMandelbrot = relevantMinibrots[0];
 			/** the minibrot that is currently used as a reference point. the cycle length of this determines how many iterations are calculated at once */
 			let currentMinibrot = mainMandelbrot;
+			/** index of the current minibrot in the `relevantMinibrots` array */
+			let currentMinibrotIndex = 0;
 			/** x-Position */
 			let zx = 0;
 			/** y-Position */
@@ -262,37 +264,116 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			let ay = 0;
 			/** number of iterations computed so far. Starts at -1 because iteration skipping is here based on the iteration before a minibrot gets hit, not the iteration itself. */
 			let i = -1;
-			while((currentMinibrot!=mainMandelbrot||zx*zx+zy*zy<4)&&i<maxIterations){
-				let next = mainMandelbrot;
-				let azx = zx*zx-zy*zy+cx;
-				let azy = 2*zx*zy+cy;
-				for (let i2=relevantMinibrots.length-1;i2>=1;i2--){
-					let minibrot = relevantMinibrots[i2];
-					let dx = azx-minibrot.x;
-					let dy = azy-minibrot.y;
-					let r = minibrot.approximationRadius/accuracy;
-					if (dx*dx+dy*dy<r*r){
-						next = minibrot;
-						break;
-					}
+			/** cycle length of the current minibrot; number of iterations that get computed at once */
+			let cycleLength = 1;
+			/** radius around `c` at which computation might need to stop for the current minibrot. `4` for the main mandelbrot, `approximationRadius/accuracy-|c-m|` for everything else. */
+			let escapeRadius = 4;
+			/** minimum radius around `c` that fully contains all relevant minibrots with radii smaller than the current one */
+			let innerRadius = 0;
+			for (let i2=1,l=relevantMinibrots.length;i2<l;i2++){
+				let minibrot = relevantMinibrots[i2];
+				let dx = cx-minibrot.x;
+				let dy = cy-minibrot.y;
+				let r2 = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
+				if (r2>innerRadius){
+					innerRadius = r2;
 				}
-				if (next!=currentMinibrot){
-					const a = next.a;
-					ax = a.x;
-					ay = a.y;
-					let dx = next.dx;
-					let dy = next.dy;
-					let dx2 = cx-next.x;
-					let dy2 = cy-next.y;
-					cx2 = dx2*dx-dy2*dy;
-					cy2 = dx2*dy+dy2*dx;
-					currentMinibrot = next;
+			}
+			loop:while(i<maxIterations){
+				/** `|z|^2`; distance between the next iteration and `c` */
+				let r = zx*zx+zy*zy;
+				if(r>escapeRadius){
+					if (currentMinibrot===mainMandelbrot){
+						break loop;
+					}else{
+						let next = mainMandelbrot;
+						let i2 = currentMinibrotIndex;
+						let zx2 = zx*zx-zy*zy+cx;
+						let zy2 = 2*zx*zy+cy;
+						for (;i2>=1;i2--){
+							let minibrot = relevantMinibrots[i2];
+							let dx = zx2-minibrot.x;
+							let dy = zy2-minibrot.y;
+							let r = minibrot.approximationRadius/accuracy;
+							if (dx*dx+dy*dy<r*r){
+								next = minibrot;
+								break;
+							}
+						}
+						if (next!==currentMinibrot){
+							const a = next.a;
+							ax = a.x;
+							ay = a.y;
+							let dx = next.dx;
+							let dy = next.dy;
+							let dx2 = cx-next.x;
+							let dy2 = cy-next.y;
+							cx2 = dx2*dx-dy2*dy;
+							cy2 = dx2*dy+dy2*dx;
+							cycleLength = next.cycleLength;
+							currentMinibrot = next;
+							currentMinibrotIndex = i2;
+							escapeRadius = next===mainMandelbrot?4:next.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
+							innerRadius = 0;
+							i2++;
+							for (let l=relevantMinibrots.length;i2<l;i2++){
+								let minibrot = relevantMinibrots[i2];
+								let dx = cx-minibrot.x;
+								let dy = cy-minibrot.y;
+								let r2 = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
+								if (r2>innerRadius){
+									innerRadius = r2;
+								}
+							}
+						}
+					}
+				}else if (r<innerRadius){
+					let next = currentMinibrot;
+					let i2 = relevantMinibrots.length-1;
+					let zx2 = zx*zx-zy*zy+cx;
+					let zy2 = 2*zx*zy+cy;
+					for (;i2>currentMinibrotIndex;i2--){
+						let minibrot = relevantMinibrots[i2];
+						let dx = zx2-minibrot.x;
+						let dy = zy2-minibrot.y;
+						let r = minibrot.approximationRadius/accuracy;
+						if (dx*dx+dy*dy<r*r){
+							next = minibrot;
+							break;
+						}
+					}
+					if (next!==currentMinibrot){
+						const a = next.a;
+						ax = a.x;
+						ay = a.y;
+						let dx = next.dx;
+						let dy = next.dy;
+						let dx2 = cx-next.x;
+						let dy2 = cy-next.y;
+						cx2 = dx2*dx-dy2*dy;
+						cy2 = dx2*dy+dy2*dx;
+						cycleLength = next.cycleLength;
+						currentMinibrot = next;
+						currentMinibrotIndex = i2;
+						escapeRadius = next.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
+						innerRadius = 0;
+						i2++;
+						for (let l=relevantMinibrots.length;i2<l;i2++){
+							let minibrot = relevantMinibrots[i2];
+							let dx = cx-minibrot.x;
+							let dy = cy-minibrot.y;
+							let r2 = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
+							if (r2>innerRadius){
+								innerRadius = r2;
+							}
+						}
+					}
 				}
 				let zx2 = zx*zx-zy*zy;
 				let zy2 = 2*zx*zy;
 				zx = zx2*ax-zy2*ay+cx2;
 				zy = zx2*ay+zy2*ax+cy2;
-				i += currentMinibrot.cycleLength;
+				i += cycleLength;
 			}
 			return Math.min(i,maxIterations);
 		}
@@ -392,7 +473,10 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 	prepare(cx,cy,iterations){
 		/** @type {Minibrot[]} */
 		const nearbyMinibrots = this.approxNearbyCyclicPoints(cx,cy,iterations).filter(cyclicPoint=>cyclicPoint instanceof Minibrot);
-		return {doCardioidClipTest:true,nearbyMinibrots};
+		const nearbyMinibrotsTree = new MinibrotNode(nearbyMinibrots[0]);
+		nearbyMinibrotsTree.insertChildren(nearbyMinibrots.slice(1),this._accuracy);
+		console.log(nearbyMinibrotsTree);
+		return {doCardioidClipTest:true,nearbyMinibrots,nearbyMinibrotsTree};
 	}
 
 	createSettingsElement(){
@@ -531,5 +615,76 @@ export class Disk extends MandelbrotCyclicPoint {
 
 	get type(){
 		return TYPE_DISK;
+	}
+}
+/**
+ * A minibrot with possibly a parent and some other nodes as children, essentially forming a tree-like structure.
+ * 
+ * The children here are just minibrots that lie inside of the approximation radius of this minibrot, not necessarily minibrots that are also sub-minibrots of this minibrot.
+ * 
+ * Currently unused; I thought I needed this, but didn't. At least for now.
+ */
+export class MinibrotNode extends Minibrot {
+	/**
+	 * @param {Minibrot} minibrot
+	 * @param {MinibrotNode} parentNode
+	 */
+	constructor(minibrot,parentNode=null){
+		super(minibrot.x,minibrot.y,minibrot.cycleLength,minibrot.scale,minibrot.a,minibrot.approximationRadius,minibrot.dx,minibrot.dy);
+		this._parent = parentNode;
+		/** @type {MinibrotNode[]} */
+		this._children = [];
+	}
+
+	/**
+	 * Inserts nodes into the tree in such a way that their `approximationRadius` lies fully within that of their parent, but not inside that of any of its children.
+	 * @param {(Minibrot|MinibrotNode)[]} minibrots
+	 * @param {number} accuracy
+	 */
+	insertChildren(minibrots,accuracy){
+		for (let i=0;i<minibrots.length;i++){
+			let minibrot = minibrots[i];
+			this.getSmallestContainingMinibrot(minibrot,accuracy).addChild(minibrot);
+		}
+	}
+
+	/**
+	 * Adds a node as a child directly, without further checks.
+	 * @param {Minibrot|MinibrotNode} minibrot
+	 */
+	addChild(minibrot){
+		this._children.push(minibrot instanceof MinibrotNode?minibrot:new MinibrotNode(minibrot,this));
+	}
+
+	/**
+	 * Returns the smallest minibrot in this tree whose `approximationRadius` fully contains that of the given minibrot, or `null`.
+	 * 
+	 * Based on the assumption that every minibrot in this tree only has children whose `approximationRadius` is fully contained in that of the parent node,
+	 * and also that no two nodes with the same parent have overlapping approximationRadii. Might not work correctly otherwise.
+	 * @param {Minibrot} minibrot
+	 * @param {number} accuracy
+	 */
+	getSmallestContainingMinibrot(minibrot,accuracy){
+		if (Math.sqrt((minibrot.x-this.x)**2+(minibrot.y-this.y)**2)>(this.approximationRadius-minibrot.approximationRadius)/accuracy){
+			return null;
+		}else{
+			for (let i=0;i<this.children.length;i++){
+				let smallestContainingChild = this.children[i].getSmallestContainingMinibrot(minibrot,accuracy);
+				if (smallestContainingChild){
+					return smallestContainingChild;
+				}
+			}
+			return this;
+		}
+	}
+
+	/** @readonly */
+	get parent(){
+		return this._parent;
+	}
+
+	/** @readonly */
+	get children(){
+		return this._children;
 	}
 }
