@@ -268,114 +268,86 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 			let cycleLength = 1;
 			/** radius around `c` at which computation might need to stop for the current minibrot. `4` for the main mandelbrot, `approximationRadius/accuracy-|c-m|` for everything else. */
 			let escapeRadius = 4;
-			/** minimum radius around `c` that fully contains all relevant minibrots with radii smaller than the current one */
-			let innerRadius = 0;
-			for (let i2=1,l=relevantMinibrots.length;i2<l;i2++){
-				let minibrot = relevantMinibrots[i2];
-				let dx = cx-minibrot.x;
-				let dy = cy-minibrot.y;
-				let r2 = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
-				if (r2>innerRadius){
-					innerRadius = r2;
+			/** the next minibrot to switch to */
+			let next = null;
+			/** index of the next minibrot to switch to */
+			let nextIndex = 0;
+			loop:while(true){
+				if (next!==null){
+					const a = next.a;
+					ax = a.x;
+					ay = a.y;
+					let dx = next.dx;
+					let dy = next.dy;
+					let dx2 = cx-next.x;
+					let dy2 = cy-next.y;
+					cx2 = dx2*dx-dy2*dy;
+					cy2 = dx2*dy+dy2*dx;
+					cycleLength = next.cycleLength;
+					currentMinibrot = next;
+					currentMinibrotIndex = nextIndex;
+					escapeRadius = next===mainMandelbrot?4:next.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
 				}
-			}
-			loop:while(i<maxIterations){
-				/** `|z|^2`; distance between the next iteration and `c` */
-				let r = zx*zx+zy*zy;
-				if(r>escapeRadius){
-					if (currentMinibrot===mainMandelbrot){
-						break loop;
-					}else{
-						let next = mainMandelbrot;
-						let i2 = currentMinibrotIndex;
+				/** minimum radius around `c` that fully contains all relevant minibrots with radii smaller than the current one */
+				let innerRadius = 0;
+				for (let i2=currentMinibrotIndex+1,l=relevantMinibrots.length;i2<l;i2++){
+					let minibrot = relevantMinibrots[i2];
+					let dx = cx-minibrot.x;
+					let dy = cy-minibrot.y;
+					let r = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
+					if (r>innerRadius){
+						innerRadius = r;
+					}
+				}
+				while(i<maxIterations){
+					/** `|z|^2`; distance between the next iteration and `c` */
+					let r = zx*zx+zy*zy;
+					if(r>escapeRadius){
+						if (currentMinibrot===mainMandelbrot){
+							return i;
+						}else{
+							next = mainMandelbrot;
+							nextIndex = 0;
+							let zx2 = zx*zx-zy*zy+cx;
+							let zy2 = 2*zx*zy+cy;
+							for (let i2=currentMinibrotIndex;i2>=1;i2--){
+								let minibrot = relevantMinibrots[i2];
+								let dx = zx2-minibrot.x;
+								let dy = zy2-minibrot.y;
+								let r = minibrot.approximationRadius/accuracy;
+								if (dx*dx+dy*dy<r*r){
+									next = minibrot;
+									nextIndex = i2;
+									break;
+								}
+							}
+							if (next!==currentMinibrot){
+								continue loop;
+							}
+						}
+					}else if (r<innerRadius){
 						let zx2 = zx*zx-zy*zy+cx;
 						let zy2 = 2*zx*zy+cy;
-						for (;i2>=1;i2--){
+						for (let i2 = relevantMinibrots.length-1;i2>currentMinibrotIndex;i2--){
 							let minibrot = relevantMinibrots[i2];
 							let dx = zx2-minibrot.x;
 							let dy = zy2-minibrot.y;
 							let r = minibrot.approximationRadius/accuracy;
 							if (dx*dx+dy*dy<r*r){
 								next = minibrot;
-								break;
-							}
-						}
-						if (next!==currentMinibrot){
-							const a = next.a;
-							ax = a.x;
-							ay = a.y;
-							let dx = next.dx;
-							let dy = next.dy;
-							let dx2 = cx-next.x;
-							let dy2 = cy-next.y;
-							cx2 = dx2*dx-dy2*dy;
-							cy2 = dx2*dy+dy2*dx;
-							cycleLength = next.cycleLength;
-							currentMinibrot = next;
-							currentMinibrotIndex = i2;
-							escapeRadius = next===mainMandelbrot?4:next.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
-							innerRadius = 0;
-							i2++;
-							for (let l=relevantMinibrots.length;i2<l;i2++){
-								let minibrot = relevantMinibrots[i2];
-								let dx = cx-minibrot.x;
-								let dy = cy-minibrot.y;
-								let r2 = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
-								if (r2>innerRadius){
-									innerRadius = r2;
-								}
+								nextIndex = i2;
+								continue loop;
 							}
 						}
 					}
-				}else if (r<innerRadius){
-					let next = currentMinibrot;
-					let i2 = relevantMinibrots.length-1;
-					let zx2 = zx*zx-zy*zy+cx;
-					let zy2 = 2*zx*zy+cy;
-					for (;i2>currentMinibrotIndex;i2--){
-						let minibrot = relevantMinibrots[i2];
-						let dx = zx2-minibrot.x;
-						let dy = zy2-minibrot.y;
-						let r = minibrot.approximationRadius/accuracy;
-						if (dx*dx+dy*dy<r*r){
-							next = minibrot;
-							break;
-						}
-					}
-					if (next!==currentMinibrot){
-						const a = next.a;
-						ax = a.x;
-						ay = a.y;
-						let dx = next.dx;
-						let dy = next.dy;
-						let dx2 = cx-next.x;
-						let dy2 = cy-next.y;
-						cx2 = dx2*dx-dy2*dy;
-						cy2 = dx2*dy+dy2*dx;
-						cycleLength = next.cycleLength;
-						currentMinibrot = next;
-						currentMinibrotIndex = i2;
-						escapeRadius = next.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
-						innerRadius = 0;
-						i2++;
-						for (let l=relevantMinibrots.length;i2<l;i2++){
-							let minibrot = relevantMinibrots[i2];
-							let dx = cx-minibrot.x;
-							let dy = cy-minibrot.y;
-							let r2 = minibrot.approximationRadius/accuracy-Math.sqrt(dx*dx+dy*dy);
-							if (r2>innerRadius){
-								innerRadius = r2;
-							}
-						}
-					}
+					let zx2 = zx*zx-zy*zy;
+					let zy2 = 2*zx*zy;
+					zx = zx2*ax-zy2*ay+cx2;
+					zy = zx2*ay+zy2*ax+cy2;
+					i += cycleLength;
 				}
-				let zx2 = zx*zx-zy*zy;
-				let zy2 = 2*zx*zy;
-				zx = zx2*ax-zy2*ay+cx2;
-				zy = zx2*ay+zy2*ax+cy2;
-				i += cycleLength;
+				return maxIterations;
 			}
-			return Math.min(i,maxIterations);
 		}
 	}
 	
