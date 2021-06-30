@@ -1,4 +1,4 @@
-import {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport, FractalFormulaSettings} from "../MandelMaths.js";
+import {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport,FractalFormulaSettings,ComplexJacobian} from "../MandelMaths.js";
 
 export const TYPE_DISK = "disk";
 export const TYPE_MINIBROT = "minibrot";
@@ -36,6 +36,38 @@ export class MandelbrotBaseFormula extends FractalFormula {
 				zx = temp;
 			}
 			return i;
+		}
+	}
+
+	/**
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @returns {Generator<{zx:number,zy:number,zdz:ComplexJacobian,zdc:ComplexJacobian},void,void>}
+	 */
+	*iterator(cx,cy,maxIterations){
+		let zx = cx;
+		let zy = cy;
+		let zxdz = 1;
+		let zydz = 0;
+		let zxdc = 1;
+		let zydc = 0;
+		let i;
+		yield {zx,zy,zdz:new ComplexJacobian(zxdz,zydz),zdc:new ComplexJacobian(zxdc,zydc)};
+		for (i=0;i<maxIterations;i++){
+			let zx2 = zx*zx-zy*zy+cx;
+			let zy2 = 2*zx*zy+cy;
+			let zxdz2 = 2*(zx*zxdz-zy*zydz);
+			let zydz2 = 2*(zx*zydz+zy*zxdz);
+			let zxdc2 = 2*(zx*zxdc-zy*zydc)+1;
+			let zydc2 = 2*(zx*zydc+zy*zxdc);
+			zx = zx2;
+			zy = zy2;
+			zxdz = zxdz2;
+			zydz = zydz2;
+			zxdc = zxdc2;
+			zydc = zydc2;
+			yield {zx,zy,zdz:new ComplexJacobian(zxdz,zydz),zdc:new ComplexJacobian(zxdc,zydc)};
 		}
 	}
 

@@ -15,11 +15,24 @@ export class FractalFormula {
 	 * @param {number} cx
 	 * @param {number} cy
 	 * @param {number} maxIterations
-	 * @param {unknown} preparedData the object or value returned by `prepare()`
+	 * @param {unknown} preparedData the object or value returned by {@link FractalFormula.prepare `prepare()`}
 	 */
 	iterate(cx,cy,maxIterations,preparedData){
 		return 0;
 	}
+
+	/**
+	 * Returns all steps in the orbit of a point, one by one.
+	 * 
+	 * This method is used by a number of fallback implementations of other methods, such as {@link FractalFormula.prepare `prepare()`},
+	 * so implementing this is an easy way to get that functionality to work too.
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @param {unknown} preparedData the object or value returned by `prepare()`
+	 * @returns {Generator<{zx:number,zy:number,zdz:ComplexJacobian,zdc:ComplexJacobian},void,void>}
+	 */
+	*iterator(cx,cy,maxIterations,preparedData){}
 
 	/**
 	 * Gets called once per thread per image, before the actual rendering process starts. The value returned by this will then be passed to `iterate()` as the fourth argument.
@@ -68,13 +81,14 @@ export class FractalFormula {
 	 * The data is structured as an array of zero or more (though usually one) arrays of points, each representing an orbit of the given point;
 	 * this is to allow better debugging of algorithms that produce slightly different results than the actual formula, because then the approximated and actual orbits can be shown next to each other and compared.
 	 * 
+	 * If not overridden, the default implementation of this returns an array with a single array of points obtained from {@link FractalFormula.iterator}.
 	 * @param {number} cx
 	 * @param {number} cy
 	 * @param {number} maxIterations
 	 * @return {Complex[][]}
 	 */
 	getOrbitPoints(cx,cy,maxIterations){
-		return [];
+		return [[...this.iterator(cx,cy,maxIterations)].map(({zx,zy})=>new Complex(zx,zy))];
 	}
 
 	/**
@@ -211,6 +225,17 @@ export class FractalFormulaSwitch extends FractalFormula {
 	 */
 	iterate(cx,cy,maxIterations,preparedData){
 		return this._formula.iterate(cx,cy,maxIterations,preparedData);
+	}
+
+	/**
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @param {unknown} preparedData the object or value returned by `prepare()`
+	 * @returns {Generator<{zx:number,zy:number,zdz0:ComplexJacobian,zdc:ComplexJacobian},void,void>}
+	 */
+	iterator(cx,cy,maxIterations,preparedData){
+		return this._formula.iterator(cx,cy,maxIterations,preparedData);
 	}
 
 	/**

@@ -23,6 +23,50 @@ export default class MandelbarFormula extends FractalFormula {
 	}
 
 	/**
+	 * @param {number} cx
+	 * @param {number} cy
+	 * @param {number} maxIterations
+	 * @returns {Generator<{zx:number,zy:number,zdz:ComplexJacobian,zdc:ComplexJacobian},void,void>}
+	 */
+	*iterator(cx,cy,maxIterations){
+		let zx = cx;
+		let zy = cy;
+		let zxdzx = 1;
+		let zydzx = 0;
+		let zxdzy = 0;
+		let zydzy = 1;
+		let zxdcx = 1;
+		let zydcx = 0;
+		let zxdcy = 0;
+		let zydcy = 1;
+		let i;
+		yield {zx,zy,zdz:new ComplexJacobian(zxdzx,zydzx,zxdzy,zydzy),zdc:new ComplexJacobian(zxdcx,zydcx,zxdcy,zydcy)};
+		for (i=0;i<maxIterations;i++){
+			let zx2 = zx*zx-zy*zy+cx;
+			let zy2 = -2*zx*zy+cy;
+			let zxdzx2 = 2*(zx*zxdzx-zy*zydzx);
+			let zydzx2 = -2*(zx*zydzx+zy*zxdzx);
+			let zxdzy2 = 2*(zx*zxdzy-zy*zydzy);
+			let zydzy2 = -2*(zx*zydzy+zy*zxdzy);
+			let zxdcx2 = 2*(zx*zxdcx-zy*zydcx)+1;
+			let zydcx2 = -2*(zx*zydcx+zy*zxdcx);
+			let zxdcy2 = 2*(zx*zxdcy-zy*zydcy);
+			let zydcy2 = -2*(zx*zydcy+zy*zxdcy)+1;
+			zx = zx2;
+			zy = zy2;
+			zxdzx = zxdzx2;
+			zydzx = zydzx2;
+			zxdzy = zxdzy2;
+			zydzy = zydzy2;
+			zxdcx = zxdcx2;
+			zydcx = zydcx2;
+			zxdcy = zxdcy2;
+			zydcy = zydcy2;
+			yield {zx,zy,zdz:new ComplexJacobian(zxdzx,zydzx,zxdzy,zydzy),zdc:new ComplexJacobian(zxdcx,zydcx,zxdcy,zydcy)};
+		}
+	}
+
+	/**
 	 * Approximates nearby cyclic points - see `./docs/idk.pdf` for a detailed explanation.
 	 * 
 	 * Only applies a single calculation step without further refining, so the results may be wieldly inaccurate.
