@@ -1,5 +1,10 @@
 import {ComplexJacobian,FractalFormula,FractalFormulaSettings} from "../MandelMaths.js";
 
+/**
+ * Formula for fractals of the type `z->(cabs(z/r)*r)^2+c`, where `r` is a parameter that indicates the rotation of the componentwise abs operation.
+ * 
+ * Fractals falling into this class are for example the burning ship, the celtic and mandelbar celtic fractals.
+ */
 export default class BurningShipFormula extends FractalFormula {
 	constructor({rotation=0}={}){
 		super();
@@ -40,52 +45,53 @@ export default class BurningShipFormula extends FractalFormula {
 	 *iterator(cx,cy,maxIterations){
 		const rx = Math.cos(this._rotation*Math.PI/360);
 		const ry = Math.sin(this._rotation*Math.PI/360);
-		const rx2 = rx*rx-ry*ry;
-		const ry2 = 2*rx*ry;
-		const cx2 = rx2*cx+ry2*cy;
-		const cy2 = rx2*cy-ry2*cx;
-		const cxdc = rx2;
-		const cydc = -ry2;
-		let zx = rx*cx2-ry*cy2;
-		let zy = ry*cx2+rx*cy2;
-		let sx = Math.sign(zx);
-		let sy = Math.sign(zy);
-		zx = Math.abs(zx);
-		zy = Math.abs(zy);
-		let zxdzx = sx*(rx*cxdc);
-		let zydzx = sy*(ry*cydc);
-		let zxdzy = sx*(ry*cydc);
-		let zydzy = sy*(rx*cxdc);
-		let zxdcx = sx*(rx*cxdc);
-		let zydcx = sy*(ry*cydc);
-		let zxdcy = sx*(ry*cydc);
-		let zydcy = sy*(rx*cxdc);
+		let zx = cx;
+		let zy = cy;
+		let zxdzx = 1;
+		let zydzx = 0;
+		let zxdzy = 0;
+		let zydzy = 1;
+		let zxdcx = 1;
+		let zydcx = 0;
+		let zxdcy = 0;
+		let zydcy = 1;
 		let i;
+		yield {zx,zy,zdz:new ComplexJacobian(zxdzx,zydzx,zxdzy,zydzy),zdc:new ComplexJacobian(zxdcx,zydcx,zxdcy,zydcy)};
 		for (i=0;i<maxIterations;i++){
-			let zx2 = zx*zx-zy*zy+cx2;
-			let zy2 = 2*zx*zy+cy2;
-			let zxdzx2 = 2*(zx*zxdzx-zy*zydzx);
-			let zydzx2 = 2*(zx*zydzx+zy*zxdzx);
-			let zxdzy2 = 2*(zx*zxdzy-zy*zydzy);
-			let zydzy2 = 2*(zx*zydzy+zy*zxdzy);
-			let zxdcx2 = 2*(zx*zxdcx-zy*zydcx)+cxdc;
-			let zydcx2 = 2*(zx*zydcx+zy*zxdcx)+cydc;
-			let zxdcy2 = 2*(zx*zxdcy-zy*zydcy)-cydc;
-			let zydcy2 = 2*(zx*zydcy+zy*zxdcy)+cxdc;
-			zx = rx*zx2-ry*zy2;
-			zy = ry*zx2+rx*zy2;
-			let sx = Math.sign(zx);
-			let sy = Math.sign(zy);
-			zx = Math.abs(zx);
-			zy = Math.abs(zy);
-			zxdzx = sx*(rx*zxdzx2);
-			zydzx = sy*(ry*zydzx2);
-			zxdzy = sx*(-ry*zxdzy2);
-			zydzy = sy*(rx*zydzy2);
-			zxdcx = sx*(rx*zxdcx2);
-			zydcx = sy*(ry*zydcx2);
-			zxdcy = sx*(-ry*zxdcy2);
-			zydcy = sy*(rx*zydcy2);
+			let zx2 = rx*zx+ry*zy;
+			let zy2 = rx*zy-ry*zx;
+			let sx = Math.sign(zx2);
+			let sy = Math.sign(zy2);
+			let zxdzx2 = sx*(rx*zxdzx+ry*zydzx);
+			let zydzx2 = sy*(rx*zydzx-ry*zxdzx);
+			let zxdzy2 = sx*(rx*zxdzy+ry*zydzy);
+			let zydzy2 = sy*(rx*zydzy-ry*zxdzy);
+			let zxdcx2 = sx*(rx*zxdcx+ry*zydcx);
+			let zydcx2 = sy*(rx*zydcx-ry*zxdcx);
+			let zxdcy2 = sx*(rx*zxdcy+ry*zydcy);
+			let zydcy2 = sy*(rx*zydcy-ry*zxdcy);
+			zx = Math.abs(zx2);
+			zy = Math.abs(zy2);
+			zx2 = rx*zx-ry*zy;
+			zy2 = rx*zy+ry*zx;
+			let zxdzx3 = rx*zxdzx2-ry*zydzx2;
+			let zydzx3 = rx*zydzx2+ry*zxdzx2;
+			let zxdzy3 = rx*zxdzy2-ry*zydzy2;
+			let zydzy3 = rx*zydzy2+ry*zxdzy2;
+			let zxdcx3 = rx*zxdcx2-ry*zydcx2;
+			let zydcx3 = rx*zydcx2+ry*zxdcx2;
+			let zxdcy3 = rx*zxdcy2-ry*zydcy2;
+			let zydcy3 = rx*zydcy2+ry*zxdcy2;
+			zx = zx2*zx2-zy2*zy2+cx;
+			zy = 2*zx2*zy2+cy;
+			zxdzx = 2*(zx*zxdzx3-zy*zydzx3);
+			zydzx = 2*(zx*zydzx3+zy*zxdzx3);
+			zxdzy = 2*(zx*zxdzy3-zy*zydzy3);
+			zydzy = 2*(zx*zydzy3+zy*zxdzy3);
+			zxdcx = 2*(zx*zxdcx3-zy*zydcx3)+1;
+			zydcx = 2*(zx*zydcx3+zy*zxdcx3);
+			zxdcy = 2*(zx*zxdcy3-zy*zydcy3);
+			zydcy = 2*(zx*zydcy3+zy*zxdcy3)+1;
 			yield {zx,zy,zdz:new ComplexJacobian(zxdzx,zydzx,zxdzy,zydzy),zdc:new ComplexJacobian(zxdcx,zydcx,zxdcy,zydcy)};
 		}
 	}
