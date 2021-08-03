@@ -112,6 +112,9 @@ export default class PerpendicularBurningShipFormula extends FractalFormula {
 		return {rotation:this._rotation};
 	}
 }
+/**
+ * @extends FractalFormulaSettings<PerpendicularBurningShipFormula>
+ */
 export class PerpendicularBurningShipFormulaSettings extends FractalFormulaSettings {
 	/** @param {PerpendicularBurningShipFormula} formula */
 	constructor(formula){

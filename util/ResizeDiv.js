@@ -52,35 +52,33 @@ export default class ResizeDiv extends HTMLElement {
                 </svg>
             </div>
         `;
-        var element = this;
         var handle = shadowRoot.getElementById("handle");
-        handle.addEventListener("mousedown",startDragging);
-
-        function startDragging(e){
-            let temp = element.getBoundingClientRect();
+        handle.addEventListener("mousedown",(e)=>{
+            let temp = this.getBoundingClientRect();
             let initialWidth = temp.width;
             let initialHeight = temp.height;
             let initialMouseX = e.screenX;
             let initialMouseY = e.screenY;
             window.addEventListener("mousemove",onMouseMove);
             window.addEventListener("mouseup",onMouseUp);
+            /** @param {MouseEvent} e */
             function onMouseMove(e){
-                let resizeX = element.getAttribute("resize-x");
-                let resizeY = element.getAttribute("resize-y");
+                let resizeX = this.resizeX;
+                let resizeY = this.resizeY;
                 let width = initialWidth+(e.screenX-initialMouseX)*resizeX;
                 let height = initialHeight+(e.screenY-initialMouseY)*resizeY;
                 if (resizeX!=0){
-                    element.style.width = Math.max(width,12)+"px";
+                    this.style.width = Math.max(width,12)+"px";
                 }
                 if (resizeY!=0){
-                    element.style.height = Math.max(height,12)+"px";
+                    this.style.height = Math.max(height,12)+"px";
                 }
             }
             function onMouseUp(){
                 window.removeEventListener("mousemove",onMouseMove);
                 window.removeEventListener("mouseup",onMouseUp);
             }
-        }
+        });
     }
     attributeChangedCallback(){
         let resizeX = this.resizeX;
@@ -89,16 +87,16 @@ export default class ResizeDiv extends HTMLElement {
         handle.className = ((resizeX==0)?((resizeY==0)?"none":"vertical"):((resizeY==0)?"horizontal":"both"));
     }
     get resizeX(){
-        return this.getAttribute("resize-x");
+        return parseFloat(this.getAttribute("resize-x"));
     }
     get resizeY(){
-        return this.getAttribute("resize-y");
+        return parseFloat(this.getAttribute("resize-y"));
     }
     set resizeX(value){
-        this.setAttribute("resize-x",value);
+        this.setAttribute("resize-x",value.toString());
     }
     set resizeY(value){
-        this.setAttribute("resize-y",value);
+        this.setAttribute("resize-y",value.toString());
     }
 }
 window.customElements.define("resize-div",ResizeDiv);

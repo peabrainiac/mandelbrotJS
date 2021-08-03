@@ -1,5 +1,5 @@
 export default class Utils {
-	
+	/** @param {()=>void} callback */
 	static onPageLoad(callback){
 		if (document.readyState!="loading"){
 			callback();
@@ -8,6 +8,12 @@ export default class Utils {
 		}
 	};
 	
+	/**
+	 * @param {HTMLElement} element
+	 * @param {number} width
+	 * @param {number} height
+	 * @deprecated
+	 */
 	static setSize(element,width,height){
 		element.style.width = width+"px";
 		element.style.height = height+"px";
@@ -17,6 +23,7 @@ export default class Utils {
 		}
 	};
 
+	/** @param {HTMLTextAreaElement} element */
 	static enableSmartTab(element){
 		console.log("Enabling smart tab for element:",element);
 		element.addEventListener("keydown",(e)=>{
@@ -42,25 +49,49 @@ export default class Utils {
 		});
 	}
 
+	/**
+	 * @param {string} type
+	 * @param {string} className
+	 * @param {string} style
+	 * @returns {HTMLElement}
+	 * @deprecated
+	 */
 	static createElement(type,className,style){
 		var element = document.createElement(type);
 		element.className = className;
+		// @ts-ignore
 		element.style = style;
 		return element;
 	}
 
+	/**
+	 * @param {HTMLElement} parent
+	 * @param {string} type
+	 * @param {string} className
+	 * @param {string} style
+	 * @returns {HTMLElement}
+	 * @deprecated
+	 */
 	static addNewElement(parent,type,className,style){
 		var element = Utils.createElement(type,className,style);
 		parent.appendChild(element);
 		return element;
 	}
 
+	/**
+	 * @param {HTMLElement} parent
+	 * @param {string} text
+	 * @deprecated
+	 */
 	static addNewTextNode(parent,text){
 		var textNode = document.createTextNode(text);
 		parent.appendChild(textNode);
 		return textNode;
 	}
 
+	/**
+	 * @param {Error} error
+	 */
 	static errorToString(error){
 		var string = error.stack;
 		if (!string.startsWith(error.name)){

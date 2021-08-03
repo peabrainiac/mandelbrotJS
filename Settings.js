@@ -43,18 +43,24 @@ export class GeneralSettingsGroup extends SidebarSection {
 				<span id="screenshot-button" class="button" style="display:inline-block">Save image</span>
 			</div>
 		`;
+		/** @type {HTMLInputElement} */
 		this._widthInput = this.querySelector("#width");
+		/** @type {HTMLInputElement} */
 		this._heightInput = this.querySelector("#height");
+		/** @type {HTMLInputElement} */
 		this._pixelsPerUnitInput = this.querySelector("#pixels-per-unit");
+		/** @type {HTMLInputElement} */
 		this._iterationsInput = this.querySelector("#iterations");
+		/** @type {HTMLButtonElement} */
 		this._screenshotButton = this.querySelector("#screenshot-button");
+		/** @type {HTMLSelectElement} */
 		this._zoomFactorSelect = this.querySelector("#zoom-factor-select");
 		/** @type {HTMLSelectElement} */
 		this._samplesPerPixelSelect = this.querySelector("#samples-per-pixel-select");
 	}
 
 	/**
-	 * @param {FractalExplorer} fractalExplorer 
+	 * @param {FractalExplorer} fractalExplorer
 	 */
 	link(fractalExplorer){
 		this.onResolutionChange((width,height)=>{
@@ -87,7 +93,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {(width:number,height:number)=>{}} callback 
+	 * @param {(width:number,height:number)=>void} callback
 	 */
 	onResolutionChange(callback){
 		let width = this.width;
@@ -108,7 +114,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {(pixelsPerUnit:number)=>{}} callback 
+	 * @param {(pixelsPerUnit:number)=>void} callback
 	 */
 	onPixelsPerUnitChange(callback){
 		let width = this.width;
@@ -142,7 +148,7 @@ export class GeneralSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {(iterations:number)=>{}} callback 
+	 * @param {(iterations:number)=>void} callback
 	 */
 	onIterationsChange(callback){
 		this._iterationsInput.addEventListener("change",()=>{
@@ -151,17 +157,19 @@ export class GeneralSettingsGroup extends SidebarSection {
 		callback(this.iterations);
 	}
 
+	/** @param {()=>void} callback */
 	onScreenshotTake(callback){
 		this._screenshotButton.addEventListener("click",()=>{
 			callback();
 		});
 	}
 
+	/** @param {(zoomFactor:number)=>void} callback */
 	onZoomFactorChange(callback){
 		this._zoomFactorSelect.addEventListener("change",()=>{
-			callback(this._zoomFactorSelect.value);
+			callback(parseFloat(this._zoomFactorSelect.value));
 		});
-		callback(this._zoomFactorSelect.value);
+		callback(parseFloat(this._zoomFactorSelect.value));
 	}
 
 	/**
@@ -170,41 +178,41 @@ export class GeneralSettingsGroup extends SidebarSection {
 	 */
 	onSamplesPerPixelChange(callback){
 		this._samplesPerPixelSelect.addEventListener("change",()=>{
-			callback(this._samplesPerPixelSelect.value*1);
+			callback(parseFloat(this._samplesPerPixelSelect.value));
 		});
-		callback(this._samplesPerPixelSelect.value*1);
+		callback(parseFloat(this._samplesPerPixelSelect.value));
 	}
 
 	set width(width){
-		this._widthInput.value = width;
+		this._widthInput.value = width.toString();
 	}
 
 	get width(){
-		return 1*this._widthInput.value;
+		return parseFloat(this._widthInput.value);
 	}
 
 	set height(height){
-		this._heightInput.value = height;
+		this._heightInput.value = height.toString();
 	}
 
 	get height(){
-		return 1*this._heightInput.value;
+		return parseFloat(this._heightInput.value);
 	}
 
 	set pixelsPerUnit(pixelsPerUnit){
-		this._pixelsPerUnitInput.value = ((pixelsPerUnit+0.03)%1<0.06)?Math.round(pixelsPerUnit):Math.round(pixelsPerUnit*100)/100;
+		this._pixelsPerUnitInput.value = (((pixelsPerUnit+0.03)%1<0.06)?Math.round(pixelsPerUnit):Math.round(pixelsPerUnit*100)/100).toString();
 	}
 
 	get pixelsPerUnit(){
-		return 1*this._pixelsPerUnitInput.value;
+		return parseFloat(this._pixelsPerUnitInput.value);
 	}
 
 	set iterations(iterations){
-		this._iterationsInput.value = iterations;
+		this._iterationsInput.value = iterations.toString();
 	}
 
 	get iterations(){
-		return 1*this._iterationsInput.value;
+		return parseFloat(this._iterationsInput.value);
 	}
 }
 export class FormulaSettingsGroup extends SidebarSection {
@@ -239,7 +247,7 @@ export class FormulaSettingsGroup extends SidebarSection {
 	}
 
 	/**
-	 * @param {FractalExplorer} fractalExplorer 
+	 * @param {FractalExplorer} fractalExplorer
 	 */
 	link(fractalExplorer){
 		this.onFormulaChange((formula)=>{
@@ -252,11 +260,11 @@ export class FormulaSettingsGroup extends SidebarSection {
 	}
 
 	get formula(){
-		return this._formulas[this._formulaSelect.value];
+		return this._formulas[parseFloat(this._formulaSelect.value)];
 	}
 
 	/**
-	 * @param {(formula:FractalFormula)=>void} callback 
+	 * @param {(formula:FractalFormula)=>void} callback
 	 */
 	onFormulaChange(callback){
 		this._formulaSelect.addEventListener("change",()=>{

@@ -21,13 +21,17 @@ export default class FractalCanvas extends HTMLElement {
 		this._zoom = 1*this._pixelsPerUnit;
 		this._iterations = 15000;
 		this._samplesPerPixel = 1;
+		/** @type {((viewport:FractalViewport)=>void)[]} */
 		this._onViewportChangeCallbacks = [];
+		/** @type {((state:number)=>void)[]} */
 		this._onStateChangeCallbacks = [];
+		/** @type {((progress:number)=>void)[]} */
 		this._onProgressChangeCallbacks = [];
 		/** @type {((canvas:HTMLCanvasElement)=>void)[]} */
 		this._onCanvasUpdateCallbacks = [];
 		/** @type {((canvas:HTMLCanvasElement)=>void)[]} */
 		this._onNextCanvasUpdateCallbacks = [];
+		/** @type {((zoom:number)=>void)[]} */
 		this._onZoomChangeCallbacks = [];
 		this._formulaChangeCallback = ()=>{
 			this.render();
@@ -118,11 +122,15 @@ export default class FractalCanvas extends HTMLElement {
 			console.log("Cancelled Rendering!");
 		}else{
 			this._state = STATE_FINISHED;
-			console.log(`Finished Rendering in ${Math.floor(this._progressTimer*10000)/10}ms!`);
+			console.log(`Finished Rendering in ${Math.floor(this._progressTimer.time*10000)/10}ms!`);
 			console.assert(this.progress===1,`Somehow finished at ${this.progress*100}%, not 100.`);
 		}
 	}
 
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 */
 	getPixelIterations(x,y){
 		return this._renderer?this._renderer.memory.getIterations(x,y):ITERATIONS_NOT_YET_KNOWN;
 	}
@@ -169,7 +177,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(state:number)=>void} callback 
+	 * @param {(state:number)=>void} callback
 	 */
 	onStateChange(callback){
 		this._onStateChangeCallbacks.push(callback);
@@ -193,7 +201,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(progress:number)=>void} callback 
+	 * @param {(progress:number)=>void} callback
 	 */
 	onProgress(callback){
 		this._onProgressChangeCallbacks.push(callback);
@@ -301,7 +309,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(zoom:number)=>void} callback 
+	 * @param {(zoom:number)=>void} callback
 	 */
 	onZoomChange(callback){
 		this._onZoomChangeCallbacks.push(callback);
@@ -313,7 +321,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	/**
-	 * @param {(viewport:FractalViewport)=>void} callback 
+	 * @param {(viewport:FractalViewport)=>void} callback
 	 */
 	onViewportChange(callback){
 		this._onViewportChangeCallbacks.push(callback);
@@ -326,24 +334,28 @@ export default class FractalCanvas extends HTMLElement {
 		});
 	}
 
+	/** @param {number} x */
 	mouseXToFractalX(x){
 		return this._x+(x/this.offsetWidth-0.5)*this._width/this._zoom;
 	}
 
+	/** @param {number} y */
 	mouseYToFractalY(y){
 		return this._y+(y/this.offsetHeight-0.5)*this._height/this._zoom;
 	}
 
+	/** @param {number} x */
 	mouseXToPixelX(x){
 		return x*this._width/this.offsetWidth;
 	}
 
+	/** @param {number} y */
 	mouseYToPixelY(y){
 		return y*this._height/this.offsetHeight;
 	}
 
 	set width(width){
-		this.setAttribute("width",width);
+		this.setAttribute("width",width.toString());
 	}
 
 	get width(){
@@ -351,7 +363,7 @@ export default class FractalCanvas extends HTMLElement {
 	}
 
 	set height(height){
-		this.setAttribute("height",height);
+		this.setAttribute("height",height.toString());
 	}
 
 	get height(){
@@ -362,13 +374,18 @@ export default class FractalCanvas extends HTMLElement {
 		return ["width","height"];
 	}
 
+	/**
+	 * @param {string} name
+	 * @param {string} oldValue
+	 * @param {string} newValue
+	 */
 	attributeChangedCallback(name,oldValue,newValue){
 		if (name==="width"){
-			this._width = newValue*1;
+			this._width = parseFloat(newValue);
 			this._callViewportChangeCallbacks();
 			this.render();
 		}else if (name=="height"){
-			this._height = newValue*1;
+			this._height = parseFloat(newValue);
 			this._callViewportChangeCallbacks();
 			this.render();
 		}

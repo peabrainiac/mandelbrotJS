@@ -10,7 +10,7 @@ export default class FractalColorizer {
 	constructor(memory){
 		this._memory = memory;
 		this._maxIterations = 200;
-		this.reset(memory);
+		this.reset();
 	}
 
 	/**

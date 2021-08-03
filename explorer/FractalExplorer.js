@@ -220,17 +220,22 @@ export default class FractalExplorer extends HTMLElement {
 		return ["width","height","pixels-per-unit"];
 	}
 
+	/**
+	 * @param {string} name
+	 * @param {string} oldValue
+	 * @param {string} newValue
+	 */
 	attributeChangedCallback(name,oldValue,newValue){
 		if (name==="width"){
-			this._width = newValue*1;
+			this._width = parseFloat(newValue);
 			this._outerContainer.ratio = this._width/this._height;
 			this._fractalCanvas.width = this.width;
 		}else if (name=="height"){
-			this._height = newValue*1;
+			this._height = parseFloat(newValue);
 			this._outerContainer.ratio = this._width/this._height;
 			this._fractalCanvas.height = this.height;
 		}else if(name=="pixels-per-unit"){
-			this._pixelsPerUnit = newValue*1;
+			this._pixelsPerUnit = parseFloat(newValue);
 			this._fractalCanvas.pixelsPerUnit = this.pixelsPerUnit;
 		}
 	}

@@ -20,7 +20,7 @@ export class ModuleData {
 	 */
 	/**
 	 * Loads, analyzes and constructs a new `ModuleData` for the module at the given URL.
-	 * @param {string} path 
+	 * @param {string} path
 	 */
 	constructor(path){
 		console.log(`Loading module "${path}".`);

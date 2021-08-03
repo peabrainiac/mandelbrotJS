@@ -56,14 +56,14 @@ export default class Timer {
 	 * The only place where this doesn't work is with addition, as that would result in string concatenation instead.
 	 */
 	toString(){
-		return ""+this.time;
+		return this.time.toString();
 	}
 
 	/**
 	 * Calls the callbacks whenever the timer value changes.
 	 * 
 	 * This is internally based on `requestAnimationFrame`; as such, it will trigger about 60 times per second when the timer is running, and with up to 1/60th of a second delay when it is modified while paused.
-	 * @param {(time:number)=>void} callback 
+	 * @param {(time:number)=>void} callback
 	 */
 	onChange(callback){
 		let _time = this._time;

@@ -141,6 +141,9 @@ export default class MoebiusMandelbrotFormula extends FractalFormula {
 		return {offset:this._offset,rotation:this._rotation};
 	}
 }
+/**
+ * @extends FractalFormulaSettings<MoebiusMandelbrotFormula>
+ */
 export class MoebiusMandelbrotFormulaSettings extends FractalFormulaSettings {
 	/** @param {MoebiusMandelbrotFormula} formula */
 	constructor(formula){

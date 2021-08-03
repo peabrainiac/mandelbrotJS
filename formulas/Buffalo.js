@@ -97,6 +97,9 @@ export default class BuffaloFormula extends FractalFormula {
 		return {rotation:this._rotation};
 	}
 }
+/**
+ * @extends {FractalFormulaSettings<BuffaloFormula>}
+ */
 export class BuffaloFormulaSettings extends FractalFormulaSettings {
 	/** @param {BuffaloFormula} formula */
 	constructor(formula){

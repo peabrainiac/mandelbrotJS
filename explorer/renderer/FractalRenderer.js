@@ -1,7 +1,7 @@
 import {FractalFormula,FractalViewport} from "../../MandelMaths.js";
 import FractalColorizer from "./FractalColorizer.js";
 
-import FractalRendererMemory, {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
+import FractalRendererMemory, {FractalRendererSharedMemory,ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES} from "./FractalRendererMemory.js";
 
 export {ITERATIONS_NOT_YET_KNOWN,RENDER_GRID_SIZES};
 export const STATE_LOADING = 0;
@@ -106,7 +106,7 @@ export default class FractalRenderer {
 /**
  * A simple, single-threaded fractal renderer.
  * 
- * Can be configured to render only part of the image to a `FractalRendererSharedMemory`, so that multiple of these can render one image together across multiple threads.
+ * Can be configured to render only part of the image to a {@link FractalRendererSharedMemory}, so that multiple of these can render one image together across multiple threads.
  */
 export class SimpleFractalRenderer extends FractalRenderer {
 	/**
@@ -123,6 +123,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 		this._controlArray = controlArray;
 		this._preparedData = null;
 	}
+	
 	/**
 	 * @inheritdoc
 	 * @param {FractalFormula} formula
@@ -135,6 +136,7 @@ export class SimpleFractalRenderer extends FractalRenderer {
 	async render(formula,viewport,{maxIterations,samplesPerPixel=8},buffer=null){
 		super.render(formula,viewport,{maxIterations,samplesPerPixel});
 		if (this._samplesPerPixel!==samplesPerPixel){
+			/** @type {number} */
 			this._samplesPerPixel = samplesPerPixel;
 			this._sampleOffsets = SimpleFractalRenderer.getSampleOffsets(samplesPerPixel);
 		}

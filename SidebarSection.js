@@ -73,7 +73,7 @@ export default class SidebarSection extends HTMLElement {
 		this._body.style.height = this._body.offsetHeight+"px";
 		setTimeout(()=>{
 			this.classList.add("collapsed");
-			this._body.style.height = 0;
+			this._body.style.height = "0";
 		},30);
 	}
 
@@ -97,6 +97,11 @@ export default class SidebarSection extends HTMLElement {
 		return ["section-title"];
 	}
 
+	/**
+	 * @param {string} name
+	 * @param {string} oldValue
+	 * @param {string} newValue
+	 */
 	attributeChangedCallback(name,oldValue,newValue){
 		if (name==="section-title"){
 			this._titleSpan.textContent = newValue;

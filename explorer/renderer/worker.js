@@ -18,6 +18,8 @@ self.addEventListener("message",async(e)=>{
 		let maxIterations = message.data.maxIterations;
 		let samplesPerPixel = message.data.samplesPerPixel;
 		await renderer.render(formula,viewport,{maxIterations,samplesPerPixel},message.data.buffer);
+		// shows an error because typescript doesn't know that self refers to a worker context here
+		// @ts-ignore
 		self.postMessage({message:"finished"});
 	}
 });

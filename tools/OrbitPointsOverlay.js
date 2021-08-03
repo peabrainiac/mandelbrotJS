@@ -92,8 +92,11 @@ export default class OrbitPointsOverlay extends HTMLElement {
 		});
 	}
 
+	/**
+	 * @param {number} fractalX
+	 * @param {number} fractalY
+	 */
 	showPoints(fractalX,fractalY){
-
 		const orbits = this._explorer.formula.getOrbitPoints(fractalX,fractalY,this._explorer.iterations);
 		this.innerHTML = orbits.map((orbit,index)=>{
 			let orbitColorIndex = index%4;

@@ -136,7 +136,7 @@ export class FractalFormula {
 	 * This is an internal method, only intended to be called by the `settingsElement` getter method; external code should just call that instead.
 	 * 
 	 * By default, just returns `null`; however, derived classes can override this method to implement their own formula settings element.
-	 * @return {FractalFormulaSettings}
+	 * @return {FractalFormulaSettings<FractalFormula>}
 	 */
 	createSettingsElement(){
 		return null;
@@ -148,7 +148,7 @@ export class FractalFormula {
 	 * 
 	 * Internally calls `createSettingsElement` to create the element the first time it is called;
 	 * as such, derived classed should override that method to implement their own settings element.
-	 * @type {FractalFormulaSettings}
+	 * @type {FractalFormulaSettings<FractalFormula>}
 	 * @readonly
 	 */
 	get settingsElement(){
@@ -232,7 +232,7 @@ export class FractalFormulaSwitch extends FractalFormula {
 	 * @param {number} cy
 	 * @param {number} maxIterations
 	 * @param {unknown} preparedData the object or value returned by `prepare()`
-	 * @returns {Generator<{zx:number,zy:number,zdz0:ComplexJacobian,zdc:ComplexJacobian},void,void>}
+	 * @returns {Generator<{zx:number,zy:number,zdz:ComplexJacobian,zdc:ComplexJacobian},void,void>}
 	 */
 	iterator(cx,cy,maxIterations,preparedData){
 		return this._formula.iterator(cx,cy,maxIterations,preparedData);
@@ -581,6 +581,7 @@ export class Complex {
 				let radicantY = 2*bx*by-4*(ax*cy+ay*cx);
 				let radicantDx = 2*(dbx*bx-dby*by)-4*(dax*cx-day*cy+ax*dcx-ay*dcy);
 				let radicantDy = 2*(dbx*by+dby*bx)-4*(dax*cy+day*cx+ax*dcy+ay*dcx);
+				/** @type {ComplexWithDerivative} *///@ts-ignore
 				let radicantRoot = Complex.sqrt(new ComplexWithDerivative(radicantX,radicantY,radicantDx,radicantDy));
 				let divInv = Complex.inverse(new ComplexWithDerivative(2*ax,2*ay,2*dax,2*day));
 				let root1 = new ComplexWithDerivative(-bx+radicantRoot.x,-by+radicantRoot.y,-dbx+radicantRoot.dx,-dby+radicantRoot.dy);
@@ -740,8 +741,8 @@ export class Matrix2f {
 	}
 	/**
 	 * Scales the matrix by a certain factor. If two factors are given, scales each row independently.
-	 * @param {number} scale 
-	 * @param {number} scaleY 
+	 * @param {number} scale
+	 * @param {number} scaleY
 	 */
 	scale(scale,scaleY=scale){
 		this.xdx *= scale;
@@ -759,8 +760,8 @@ export class Matrix2f {
 
 	/**
 	 * Returns this matrix in css `matrix()` notation.
-	 * @param {number} offsetX 
-	 * @param {number} offsetY 
+	 * @param {number} offsetX
+	 * @param {number} offsetY
 	 */
 	toCssString(offsetX=0,offsetY=0){
 		return `matrix(${this.xdx},${this.ydx},${this.xdy},${this.ydy},${offsetX},${offsetY})`;
@@ -804,7 +805,7 @@ export class ComplexJacobian extends Matrix2f {
 	
 	/**
 	 * Multiplies both partial derivatives by the given complex number.
-	 * @param {Complex} z 
+	 * @param {Complex} z
 	 */
 	multiply(z){
 		let xdx2 = this.xdx*z.x-this.ydx*z.y;

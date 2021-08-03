@@ -65,9 +65,14 @@ export default class Overlay extends HTMLElement {
 		return ["ratio"];
 	}
 
+	/**
+	 * @param {string} name
+	 * @param {string} oldValue
+	 * @param {string} newValue
+	 */
 	attributeChangedCallback(name,oldValue,newValue){
 		if (name==="ratio"){
-			this._container.ratio = newValue;
+			this._container.ratio = parseFloat(newValue);
 		}
 	}
 }

@@ -124,12 +124,14 @@ export default class ScrollDiv extends HTMLElement {
         resizeObserver.observe(innerContainer);
 
         horizontalHandle.addEventListener("mousedown",startHorizontalDragging);
+        /** @param {MouseEvent} e */
         function startHorizontalDragging(e){
             let initialX = container.scrollLeft;
             let initialMouseX = e.screenX;
             window.addEventListener("mousemove",onMouseMove);
             window.addEventListener("mouseup",onMouseUp);
             horizontalHandle.classList.add("active");
+            /** @param {MouseEvent} e */
             function onMouseMove(e){
                 let factor = container.scrollWidth/horizontalScrollbar.offsetWidth;
                 let x = initialX+(e.screenX-initialMouseX)*factor;
@@ -144,12 +146,14 @@ export default class ScrollDiv extends HTMLElement {
         }
 
         verticalHandle.addEventListener("mousedown",startVerticalDragging);
+        /** @param {MouseEvent} e */
         function startVerticalDragging(e){
             let initialY = container.scrollTop;
             let initialMouseY = e.screenY;
             window.addEventListener("mousemove",onMouseMove);
             window.addEventListener("mouseup",onMouseUp);
             verticalHandle.classList.add("active");
+            /** @param {MouseEvent} e */
             function onMouseMove(e){
                 let factor = container.scrollHeight/verticalScrollbar.offsetHeight;
                 let y = initialY+(e.screenY-initialMouseY)*factor;

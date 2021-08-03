@@ -37,8 +37,9 @@ export default class FractalRendererMemory {
 	 * Prepares the memory to compute a new image. Resets all buffers, resizes them if necessary and resets the pixel counter.
 	 * @param {number} width
 	 * @param {number} height
+	 * @param {SharedArrayBuffer} [buffer] in the case of shared memories, uses this as the next buffer if given instead of creating a new one. otherwise unused
 	 */
-	reset(width,height){
+	reset(width,height,buffer){
 		if (this._imageWidth!==width||this._imageHeight!==height){
 			/** @type {number} */
 			this._imageWidth = width;
@@ -187,6 +188,11 @@ export default class FractalRendererMemory {
 		const w = width;
 		const h = height;
 		let index = 0;
+		/**
+		 * @param {number} x
+		 * @param {number} y
+		 * @param {number} pixelSize
+		 */
 		let writePixel = (x,y,pixelSize)=>{
 			if (x+pixelSize>0&&y+pixelSize>0&&x<w&&y<h){
 				let px = Math.max(0,Math.min(width-1,Math.floor(x+pixelSize/2)));
@@ -248,6 +254,7 @@ export class FractalRendererSharedMemory extends FractalRendererMemory {
 	 */
 	reset(width,height,buffer=null){
 		if (this._imageWidth!==width||this._imageHeight!==height||(buffer!==null&&this.buffer!==buffer)){
+			/** @type {number} */
 			this._imageWidth = width;
 			this._imageHeight = height;
 			if (width>0&&height>0){

@@ -91,7 +91,7 @@ export default class MandelbarFormula extends FractalFormula {
 		let ydydy = 0;
 		let i;
 		let points = [];
-		let steps = [];
+		//let steps = [];
 		for (i=0;i<maxIterations&&x*x+y*y<4;i++){
 			let d = Math.sqrt(x*x+y*y);
 			//steps.push({x,y,d,dx,dy,i,ddx,ddy});
@@ -151,7 +151,7 @@ export default class MandelbarFormula extends FractalFormula {
 			xdydy = xdydy2;
 			ydydy = ydydy2;
 		}
-		points.steps = steps;
+		//points.steps = steps;
 		return points;
 	}
 
@@ -287,18 +287,17 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 	 * @param {Complex} relativeApproximationRadius
 	 */
 	constructor(x,y,cycleLength,scale,relativeApproximationRadius){
-		super(x,y);
-		this.cycleLength = cycleLength;
+		super(x,y,cycleLength);
 		this.scale = scale;
 		this.relativeApproximationRadius = relativeApproximationRadius;
 	}
 
 	/**
-	 * @param {number} x 
-	 * @param {number} y 
-	 * @param {number} cycleLength 
-	 * @param {ComplexJacobian} scale 
-	 * @param {ComplexJacobian} jacobian 
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} cycleLength
+	 * @param {ComplexJacobian} scale
+	 * @param {ComplexJacobian} jacobian
 	 * @param {ComplexJacobianDerivative} jacobianDerivative
 	 */
 	static create(x,y,cycleLength,scale,jacobian,jacobianDerivative){
@@ -348,6 +347,10 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 		}
 		element.appendChild(super.toElement(viewport));
 		return element;
+	}
+
+	get relativeRadius(){
+		return 1;
 	}
 }
 /** A cyclic point in the mandelbar set that belongs to a skewed, hence elliptical disk. */

@@ -2,6 +2,9 @@
  * Custom element responsible for displaying a preview of the region around the cursor before zooming in.
  */
 export default class FractalZoomPreview extends HTMLElement {
+	/**
+	 * @param {HTMLCanvasElement} canvas
+	 */
 	constructor(canvas=null){
 		super();
 		this.attachShadow({mode:"open"});
@@ -37,6 +40,11 @@ export default class FractalZoomPreview extends HTMLElement {
 		this.zoom = 8;
 	}
 
+	/**
+	 * @param {number} x
+	 * @param {number} y
+	 * @param {number} zoom
+	 */
 	setPosition(x,y,zoom=this._zoom){
 		this._x = x;
 		this._y = y;
@@ -87,6 +95,7 @@ export default class FractalZoomPreview extends HTMLElement {
 
 	set zoom(zoom){
 		if (this._zoom!==zoom){
+			/** @type {number} */
 			this._zoom = zoom;
 			this.style.width = `${Math.cbrt(zoom)*100/zoom}%`;
 			this.style.height = `${Math.cbrt(zoom)*100/zoom}%`;
