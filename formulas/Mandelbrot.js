@@ -1,4 +1,4 @@
-import {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport,FractalFormulaSettings,ComplexJacobian} from "../MandelMaths.js";
+import MandelMaths, {FractalFormula,FractalFormulaSwitch,CyclicPoint,Complex,ComplexWithDerivative,FractalViewport,FractalFormulaSettings,ComplexJacobian, InfiniteArray} from "../MandelMaths.js";
 
 export const TYPE_DISK = "disk";
 export const TYPE_MINIBROT = "minibrot";
@@ -228,6 +228,32 @@ export class MandelbrotBaseFormula extends FractalFormula {
 		let point = MandelbrotCyclicPoint.create(cx,cy,cycleLength,scale,a,dx,dy,ddx,ddy);
 		point.steps = steps;
 		point.estimates = estimates;
+		point.derivatives = new InfiniteArray(n=>{
+			if (n==0){
+				return new Complex(x,y);
+			}else if(n==1){
+				return new Complex(dx,dy);
+			}else{
+				let binomialCoefficients = MandelMaths.binomialCoefficients(n);
+				let derivatives = [];
+				for (let j=0;j<=n;j++){
+					derivatives.push(new Complex(0));
+				}
+				for (let i=0;i<cycleLength;i++){
+					for (let j=n;j>=0;j--){
+						let temp = new Complex(0);
+						for (let k=0;k<=j;k++){
+							temp.add(derivatives[k].copy().multiply(derivatives[j-k]).multiply(binomialCoefficients[k]));
+						}
+						derivatives[j] = temp;
+					}
+					derivatives[0].x += cx;
+					derivatives[0].y += cy;
+					derivatives[1].x += 1;
+				}
+				return derivatives[n];
+			}
+		});
 		return point;
 	}
 	
@@ -500,6 +526,9 @@ export class ExperimentalMandelbrotFormula extends MandelbrotBaseFormula {
 		return {accuracy:this._accuracy};
 	}
 }
+/**
+ * @extends {FractalFormulaSettings<ExperimentalMandelbrotFormula>}
+ */
 export class ExperimentalMandelbrotFormulaSettings extends FractalFormulaSettings {
 	/**
 	 * @param {ExperimentalMandelbrotFormula} formula
@@ -520,9 +549,6 @@ export class ExperimentalMandelbrotFormulaSettings extends FractalFormulaSetting
 if (self.constructor.name==="Window"){
 	customElements.define("experimental-mandelbrot-formula-settings",ExperimentalMandelbrotFormulaSettings);
 }
-/**
- * A cyclic point in the mandelbrot set.
- */
 export class MandelbrotCyclicPoint extends CyclicPoint {
 	/**
 	 * @param {number} x

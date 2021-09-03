@@ -2,9 +2,24 @@ import FractalViewport from "./explorer/FractalViewport.js";
 export {FractalViewport};
 
 /**
- * Default export, currently empty.
+ * Default export, currently not used much.
  */
-export default class MandelMaths {}
+export default class MandelMaths {
+	/**
+	 * Returns the coefficients of the polynomial $(1+x)^n$.
+	 * @param {number} n
+	 */
+	static binomialCoefficients(n){
+		let coefficients = [1];
+		for (let i=1;i<=n;i++){
+			coefficients[i] = 1;
+			for (let j=i-1;j>=1;j--){
+				coefficients[j] = coefficients[j-1]+coefficients[j];
+			}
+		}
+		return coefficients;
+	}
+}
 
 /**
  * Base class for fractal formulas.
@@ -462,7 +477,21 @@ export class Complex {
 	}
 
 	/**
+	 * Adds another number to this one.
+	 * Stores the result in this number and then returns it.
+	 * @param {Complex|number} x
+	 * @param {number} y
+	 */
+	add(x,y=0){
+		let z = (x instanceof Complex)?x:new Complex(x,y);
+		this.x += z.x;
+		this.y += z.y;
+		return this;
+	}
+
+	/**
 	 * Multiplies this number with another.
+	 * Stores the result in this number and then returns it.
 	 * @param {Complex|number} x
 	 * @param {number} y
 	 */
@@ -472,6 +501,19 @@ export class Complex {
 		let ty = this.x*z.y+this.y*z.x;
 		this.x = tx;
 		this.y = ty;
+		return this;
+	}
+
+	toString(){
+		if (this.x===0&&this.y===0){
+			return "0";
+		}else if (this.y===0){
+			return this.x+"";
+		}else if (this.x===0){
+			return this.y+"i";
+		}else{
+			return this.x+(this.y<0?"":"+")+this.y+"i";
+		}
 	}
 
 	/**
@@ -888,4 +930,74 @@ export class ComplexJacobianDerivative {
 		let mydmydmy = (xdmydmy*m.xdy+ydmydmy*m.ydy)/Math.sqrt(m.xdy**2+m.ydy**2);
 		return new ComplexJacobianDerivative(mxdmxdmx,mydmxdmx,mxdmydmx,mydmydmx,mxdmxdmy,mydmxdmy,mxdmydmy,mydmydmy);
 	}
+}
+/**
+ * @template T
+ * @extends Array<T>
+ */
+export class InfiniteArray extends Array {
+	/**
+	 * @param {(index:number)=>T} f
+	 */
+	constructor(f){
+		super();
+		this._f = f;
+		this._array = this;
+		return new Proxy(this,{
+			has(array,key){
+				return key in array||(typeof key=="string"&&/^(0|[1-9][0-9]*)$/.test(key));
+			},
+			get(array,key){
+				if (key==="length"){
+					return Infinity;
+				}else if(key in array){
+					// @ts-ignore
+					return array[key];
+				}else if(typeof key==="string"&&/^(0|[1-9][0-9]*)$/.test(key)){
+					let index = parseInt(key);
+					array[index] = f(index);
+					return array[index];
+				}else{
+					return undefined;
+				}
+			}
+		});
+	}
+
+	/**
+	 * @see https://tc39.es/ecma262/multipage/indexed-collections.html#sec-array.prototype.slice
+	 * @return {Array<T>}
+	 */
+	slice(start=0,end=Infinity){
+		if (start<0){
+			throw new RangeError("can't use negative start indices with infinite arrays");
+		}else if(start===Infinity){
+			return [];
+		}
+		let k = Math.floor(start);
+		let final = end<0?Infinity:Math.floor(end);
+		if (final<Infinity){
+			/** @type {Array<T>} */
+			let temp = Object.create(this);
+			temp.constructor = Array;
+			return Array.prototype.slice.apply(temp,[start,end]);
+		}else{
+			let f = this._f;
+			let array = new InfiniteArray(i=>f(i+k));
+			for (let i=k,l=this._array.length;i<l;i++){
+				if (i in this._array){
+					array[i-k] = this._array[i];
+				}
+			}
+			return array;
+		}
+	}
+
+	toString(n=8){
+		return this.slice(0,n).toString()+",...";
+	}
+}
+if (self.HTMLElement){
+	// @ts-ignore
+	Object.assign(self,{MandelMaths,InfiniteArray});
 }
