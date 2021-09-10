@@ -4,6 +4,17 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 
+\usepackage{hyperref}
+\usepackage{tikz}
+\usepackage{ifthen}
+\usepackage{xcolor}
+\hypersetup{
+	colorlinks,
+	linkcolor={blue!80!black},
+	citecolor={red!50!black},
+	urlcolor={blue!80!black}
+}
+
 \setlength{\textwidth}{16.6cm} \setlength{\textheight}{26.5cm}% Formatierung der Seite
 \setlength{\topmargin}{-2.5cm} \setlength{\oddsidemargin}{-0.5cm}
 \setlength{\evensidemargin}{-0.0cm}
@@ -20,105 +31,162 @@
 % !TeX spellcheck = en_US
 
 \begin{document}
-	
-\section{Finding cyclic points}
 
-Or however these points are called that is, idk.
+\section{basic concepts}
 
-At the center of each cardioid or disk in the mandelbrot set sits one point which ends up exactly at zero after a finite iteration count $n-1$, and therefore at its initial value $z_0$ the iteration after that; this means that the point immediately gets stuck in a periodic cycle of length $n$, hence the name.
+\subsection{terminology \& notation}
 
-\subsection{Motivation}
+For the purpose of this document, we'll define the Mandelbrot set as the set of points $c\in\mathbb C$ for which the sequence $(z_n)$ defined by $z_0:=0$ and $z_{n+1}:=z_n^2+c$ remains bounded. This sequence is then called the orbit of $c$.
 
-Finding these points can be useful for a number of reasons; for one, they always indicate the presence of a minibrot cardioid or disk around them, meaning they can be used to automatically find and zoom towards the nearest minibrot. If the type and size of the cardioid or disk is known, they can also be used to clip parts of that disk, so these typically expensive to compute points can be discarded as inside the mandelbrot set in a matter of milliseconds.
+\subsection{derivatives}
 
-Also, knowing the cycle length of a specific minibrot or disk can be useful as well; it can be used to estimate the iteration count required to render a reasonably detailed image of that minibrot, as each iteration of that minibrot or its julia sets requires following along one cycle of that minibrot's main cardioid's orbit, taking $n$ actual iterations to complete.
-
-Finally, being able to automatically analyze the location, cycle length and orientation of minibrot sets may eventually enable us to build an algorithm that can automatically skip iterating through the full cycle and just compute iterations on the minibrot directly; this would allow rendering nested minibrots and julia sets in $O(log(n))$-complexity.
-
-\subsection{Computation}
-
-So, given all of that, how can these points be computed?
-
-The first key insight here is that just like the function values $z_n$ after $n$ iterations, their derivatives $\frac{dz_n}{dz_0}$ can also be computed iteratively:
+There are two sorts of derivatives that are going to particularly important later on; the first is the derivative $\frac{dz_n}{dc}$ of a point $z_n$ with respect to $c$, the second is the derivative $\frac{dz_n}{dz_1}$ of that point with respect to $z_1$, that is, the rate at which $z_n$ would change if $z_1$ was varied but $c$ stayed constant. Like $z_n$, both of these can be computed iteratively:
+$$z_{n+1}=z_n^2+c$$
 \begin{align*}
-	z_{n+1} &= z_n^2+z_0\\
-	\frac{dz_{n+1}}{dz_0} &= \frac{d(z_n^2+z_0)}{dz_0}\\
-	&= \frac{dz_n^2}{dz_0}+1\\
-	&= 2\frac{dz_n}{dz_0}z_n+1.
+	\Rightarrow&&\frac{dz_{n+1}}{dc}&=2z_n\frac{dz_n}{dc}+1,&\frac{dz_{n+1}}{dz_1}&=2z_n\frac{dz_n}{dz_1}\\
+	\Rightarrow&&\frac{d^2z_{n+1}}{dc^2}&=2z_n\frac{d^2z_n}{dc^2}+2\left(\frac{dz_n}{dc}\right)^2,&\frac{d^2z_{n+1}}{dz_1^2}&=2z_n\frac{d^2z_n}{dz_1^2}+2\left(\frac{dz_n}{dz_1}\right)^2\\
+	&&&\;...&&\;...\\
+	&&\frac{d^kz_{n+1}}{dc^k}&=\sum_{i=0}^k\binom ki\frac{d^iz_n}{dc^i}\cdot\frac{d^{k-i}z_n}{dc^{k-i}},&\frac{d^kz_{n+1}}{dz_1^k}&=\sum_{i=0}^k\binom ki\frac{d^iz_n}{dz_1^i}\cdot\frac{d^{k-i}z_n}{dz_1^{k-i}}.
 \end{align*}
+
+As we can see, both higher derivatives can be elegantly expressed by the same formula; the only difference here is that the first derivative $\frac{dz_n}{dc}$ contains an extra $+1$ compared to $\frac{dz_n}{dz_1}$.
+
+\subsection{polynomials}
+
+
+Instead of looking at the orbits of individual points, one can also look at the iterations as a sequence of polynomials, recursively defined as $p_1:=c$ and $p_{n+1}:=p_n^2+c$. Those are what we'll here call the Mandelbrot polynomials; they are all monic, of degree $\deg(p_n)=2^n$, divisible by $c$ and related to our previously defined concepts by $p_n(c)=z_n$ and $p_n'(c)=\frac{dz_n}{dc}$.
+
+The reason those are interesting to us is that the zeroes of those polynomials $p_n$ are exactly the points whose orbits are periodic; since $z_{n+1}$ only depends on $z_n$ and $c$, $z_n=0=z_0$ inductively implies $z_{n+m}=z_m$ for all $m$. These periodic points will be of particular importance later on for finding minibrots, making methods for finding zeroes of these polynomials immensely important.
+
+For now though, the important bit here is that zeroes in the polynomials occur periodically; so for example, every zero of $p_3$ is also a zero of $p_6$, $p_9$, $p_{12}$ and so on. Since this is true for all zeroes, $p_6$ as a whole must be divisible by $p_3$; and in general, $p_k\mid p_n$ must for hold for all $k\mid n$.
+
+This allows us to recursively define what I'll here call the refined Mandelbrot polynomials $q_n$: $$q_1:=p_1,\;\;\;q_n:=\frac{p_n}{\prod_{n\neq k\mid n}q_k}.$$
+Each of those polynomials $q_n$ contains precisely those points as zeroes which are zeroes of $p_n$ but not any of the previous Mandelbrot polynomials; this is accomplished by dividing each $p_n$ by all $q_k$ for which $k$ is a proper divisor of $n$, and whose zeroes are thus also zeroes of $p_n$. For example, the first few such polynomials would be:
 \begin{align*}
-	\frac{d^2z_{n+1}}{dz_0^2} &= \frac{d(\frac{dz_{n+1}}{dz_0})}{dz_0}\\
-	&= \frac{d(2\frac{dz_n}{dz_0}z_n+1)}{dz_0}\\
-	&= 2\frac{d(\frac{dz_n}{dz_0}z_n)}{dz_0}\\
-	&= 2\cdot\frac{d^2z_n}{dz_0^2}z_n+2\cdot(\frac{dz_n}{dz_0})^2.\\
-	\frac{d^3z_{n+1}}{dz_0^3} &= 2\cdot\frac{d^3z_n}{dz_0^3}z_n+6\cdot\frac{d^2z_n}{dz_0^2}\cdot\frac{dz_n}{dz_0}\\
-	\frac{d^4z_{n+1}}{dz_0^4} &= 2\cdot\frac{d^4z_n}{dz_0^4}z_n+8\cdot\frac{d^3z_n}{dz_0^3}\cdot\frac{dz_n}{dz_0}+6\cdot(\frac{d^2z_n}{dz_0^2})\\
-	\frac{d^5z_{n+1}}{dz_0^5} &= 2\cdot\frac{d^5z_n}{dz_0^5}z_n+10\cdot\frac{d^4z_n}{dz_0^4}\cdot\frac{dz_n}{dz_0}+20\cdot\frac{d^3z_n}{dz_0^3}\cdot\frac{d^2z_n}{d^2z_0}\\
-	...
+	q_1&=p_1=c,\\
+	q_2&=\frac{p_2}{p_1}=c+1,\\
+	q_3&=\frac{p_3}{p_1}=c^3+2c^2+c+1,\\
+	q_4&=\frac{p_4}{\frac{p_2}{p_1}p_1}=c^6+3c^5+3c^4+3c^3+2c^2+1,\\
+	q_5&=\frac{p_5}{p_1}=c^{15}+8c^{14}+...+2c^2+c+1,\\
+	q_6&=\frac{p_6}{\frac{p_3}{p_1}\frac{p_2}{p_1}p_1}=c^{27}+13c^{26}+...+c^2-c+1,\\
+	&\;...
 \end{align*}
-Generally, the $k$th derivative can be expressed as
-$$\frac{d^kz_{n+1}}{dz_0^k} = \sum_{i=0}^{k}\binom{k}{i}\cdot\frac{d^{k-i}z_n}{dz_0^{k-i}}\cdot\frac{d^iz_n}{dz_0^i}$$
-for all $k\geq2$; however, anything beyond the third derivative is as far as I know rarely ever needed, and therefore largely just a curiosity.
+Two things become apparent quite quickly here; for one, working with those polynomials in coefficient representations quickly becomes impractical because of their large number of coefficients; and secondly, quite a lot of the polynomial divisions cancel out, leaving only relatively compact algebraic representations such as $q_4=\frac{p_4}{p_2}$ and $q_6=\frac{p_6p_1}{p_3p_2}$ behind. In fact, if we define a signum $\sigma(n)$ for each number based on its prime decomposition like this: $$\sigma(n):=\begin{cases}
+	+1&\textrm{if $n$ has an even number of prime factors and none of them appear twice},\\
+	-1&\textrm{if $n$ has an odd number of prime factors and none of them appear twice},\\
+	0&\textrm{otherwise},
+\end{cases}$$
+then exactly those $p_k$ with $\sigma(\frac nk)=+1$ end up in the numerator of $q_n$ and those with $\sigma(\frac nk)=-1$ in the denominator, while those with $\sigma(\frac nk)=0$ cancel out completely.\footnote{this can be proven relatively easily by canceling out the terms $q_k$ inductively, starting at the largest ones, and showing that this property holds for them; however, since this part is already kind of long, I won't go over the proof in detail here.} With this in mind, we can now compute $q_n$ way more easily like this: $$q_n=\prod_{k\mid n}p_k^{\sigma(\frac nk)}.$$
 
-The first few derivatives are useful however as they can be used to approximate the $n$th iteration of points close to the one the derivatives where computed for:
-$$x_n \approx z_n+(x_0-z_0)\frac{dz_n}{dz_0}.$$
-By calculating the root of this approximation, one can also generate an estimate for a root of the $n$th iteration of the set. This can then be used as the new base point for the next approximation to generate an even better estimate, basically using Newton's method; that way, a root of the $n$th iteration of the mandelbrot set and therefore a point with cycle length $n+1$ can be computed recursively as long as the estimate actually converges.
+Together with the fact that we can enumerate the values $p_1(c)$ to $p_n(c)$ for a given $c$ in linear time by iterating $z\mapsto z^2+c$, this also solves our other problem and enables us to evaluate these $q_n$ efficiently; we can just compute $p_1(c)$ to $p_n(c)$ in order, for all $k$ which divide $n$ compute $\sigma(\frac nk)$, and then multiply or divide our end result by $p_k(c)$ accordingly. This way we can compute $q_n(c)$ and similarly all of its derivatives in almost\footnote{linear time assuming $\sigma(\frac nk)$ can be computed in constant time. this of course isn't actually true, but should be pretty close; the worst case for computing $\sigma(n)$ should be at most $O(\sqrt n)$, and only occur when $n$ is prime or has very large prime factors.} linear time, without having to deal with the exponentially growing number of coefficients.
+%{
+	%\makeatletter
+	%\newcommand\expandq[1]{
+		%\ifnum#1=1 p_1\else\frac{p_{#1}}{
+			%{
+				%\count@=\numexpr#1-1\relax
+				%\loop
+				%\ifnum\numexpr#1/\count@*\count@=#1\relax{
+					%\expandafter\expandq\expandafter{\the\count@}
+					%\ifnum\count@>1\cdot\fi
+				%}\fi
+				%\advance\count@-1
+				%\ifnum\count@>0
+				%\repeat
+			%}
+		%}\fi
+	%}
+	%\makeatother
+	%$$\expandq{12}$$
+	%$$\expandq{105}$$
+%}
 
-Based on this, a naive approach to find points with cyclic orbits close to a given base point $z_0$ would be to compute $z_n$ and $\frac{dz_n}{dz_0}$ for each iteration $n$ and each time simply try if Newton's method converges; however, as computing the values and derivatives of other points as required by Newton's method has linear complexity regarding iteration count, doing this for each iteration has a complexity of $O(n^2)$, making it very slow for high iteration counts.
+\section{periodic points}
 
-One way to speed this up is therefore to perform some simple test to see if Newtons method could converge before actually performing it; another is to improve the initial estimate, so that Newton's method converges quicker when you do actually perform it. One simple way to do the latter is to use a quadratic approximation instead of a linear one and compute the first estimate based on that using the quadratic formula:
-$$x_n \approx z_n+(x_0-z_0)\frac{dz_n}{dz_0}+\frac{1}{2}(x_0-z_0)^2\frac{d^2z_n}{dz_0^2}.$$
-$$x_0' = z_0+\frac{-\frac{dz_n}{dz_0}\pm\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}{\frac{d^2z_n}{dz_0^2}}.$$
-Out of the two roots produced by this, one can then simply choose the one that is closer to the base point to get an already slightly better first estimate. It might be possible to get an even better estimate by including even more higher derivatives in the polynomial approximation and using Newton's method on that first; however, I haven't tried that yet so I'm not sure if it is actually faster.
+As we've already seen, the zeroes of these Mandelbrot polynomials are so-called periodic points; they end up exactly at zero after $n$ iterations, making their orbit repeat from that point on.
 
-Regardless of which method is used to compute this estimate, as long as the derivative $\frac{dx_0'}{dz_0}$ of that estimate with respect to $z_0$ can also be computed, a simple test to decide whether to use Newton's method this iteration or not would be to test if the absolute value of that derivative is less than one (or some other constant, for that matter); that way, estimates which are relatively unstable and dependent on $z_0$ can be quickly discarded. As an example, for the quadratic estimate described above this derivative could be computed like this:
-\begin{align*}
-	\frac{dx_0'}{dz_0} &= \frac{d\left(z_0+\frac{(x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}}{\frac{d^2z_n}{dz_0^2}}\right)}{dz_0}\\
-	&= 1+\frac{\frac{d\left((x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}\right)}{dz_0}\cdot\frac{d^2z_n}{dz_0^2}-((x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2})\cdot\frac{d^3z_n}{dz_0^3}}{(\frac{d^2z_n}{dz_0^2})^2}\\
-	&= 1+\frac{\frac{d\left(-\frac{dz_n}{dz_0}\pm\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}\right)}{dz_0}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
-	&= 1+\frac{-\frac{d^2z_n}{dz_0^2}\pm\left(\frac{\frac{d((\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n)}{dz_0}}{2\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}\right)-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
-	&= \frac{\pm\frac{2\cdot\frac{dz_n}{dz_0}\cdot\frac{d^2z_n}{dz_0^2}-2(\frac{d^3z_n}{dz_0^3}z_n+\frac{d^2z_n}{dz_0^2}\cdot\frac{dz_n}{dz_0})}{2\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
-	&= \frac{\frac{-\frac{d^3z_n}{dz_0^3}z_n}{\pm\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
-	&= \frac{\frac{-\frac{d^3z_n}{dz_0^3}z_n}{(x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}+\frac{dz_n}{dz_0}}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
-	&= -\frac{\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\cdot\left(\frac{z_n}{(x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}+\frac{dz_n}{dz_0}}+(x_0'-z_0)\right).
-\end{align*}
-Calculating this, $x_0'$ and all the derivatives necessary for that for every single iteration on the base point $z_0$ just to see if Newton's method could be used is obviously kind of slow itself; however, the crucial part here is that this doesn't require any derivative samples from other points each iteration, and as such runs with nearly linear complexity in regards to the iteration count $n$ (though it still requires these samples to use Newton's method for iterations where it could converge according to the test - if you factor that in, the complexity is probably something like $O(n\log(n))$).
+Together with our previously shown formula for the derivative $\frac{dz_m}{dc}$, this also implies that this derivative repeats itself every $n$ iterations too.\footnote{This is only true for the first derivative though; all higher derivatives are only preperiodic, not periodic. The $k$-th derivative generally only starts repeating itself after $kn$ iterations, yet still with period $n$, meaning the first $(k-1)n$ values never occur in the sequence again.} This shows that while the points around $z$ are not strictly $n$-periodic themselves (otherwise they would've been zeroes of $p_n$ too), they show a very similar behavior; more specifically, they converge against a periodic cycle of length $n$. Because of this, these periodic points are always surrounded by compact areas fully belonging to the mandelbrot set, such as disks, cardioids and other similar but slightly imperfect shapes.
 
-\subsection{Finding minibrots - WIP}
+Because of this, finding periodic points is immensely useful for a number of reasons; for one, they always indicate the presence of a minibrot cardioid or disk around them, meaning they can be used to automatically find and zoom towards the nearest minibrot. If the type and size of the cardioid or disk is known, they can also be used to clip parts of that disk, so these typically expensive to compute points can be discarded as inside the mandelbrot set in a matter of milliseconds.
+
+Besides that, knowing the period of a specific minibrot or disk can be useful as well; it can be used to estimate the iteration count required to render a reasonably detailed image of that minibrot, as each iteration of that minibrot or its julia sets requires following along one cycle of that minibrot's main cardioid's orbit, taking $n$ actual iterations to complete.
+
+Finally, being able to automatically analyze the location, period and orientation of minibrots may eventually enable us to build an algorithm that can automatically skip iterating through the full cycle and just compute iterations on the minibrot directly; this would allow rendering nested minibrots and julia sets in $O(log(n))$-complexity.
+
+\subsection{computation}
+
+Finding these points is also relatively simple; since they are precisely the zeroes of the mandelbrot polynomials $p_n$, Newton's method can be used to find zeroes near an initial estimate for a given $n$. Simply looping through all $n$ up to a certain maximum will yield all nearby cyclic points with a period in that range.
+
+One slight pitfall here is that since the $n$-th Mandelbrot polynomial $p_n$ always also contains all the zeroes from all $p_k$ for which $k$ divides $n$, running Newton's method on $p_n$ may often return points whose period is not actually $n$ but a proper divisor of it. This is undesirable for multiple reasons; for one, many of the methods we'll describe here require us to know the period precisely and will produce wrong results of fed with a multiple of that period instead. This alone can of course simply be fixed by checking if the point really has the right period before proceeding, however, that still leaves us with a second problem: those redundant zeroes take up space in the Newton fractal of $p_n$, effectively shrinking the basins of attraction of the zeroes actually introduced in that iteration. Or, in other words: searching for points with period $n$ and $2n$ may return the same point point of period $n$ or smaller twice, instead of one $n$-periodic and one $2n$-periodic point, even when a point with a period $2n$ is relatively near.
+
+This can of course be fixed by dividing out all zeroes from earlier polynomials; either by dividing them all out exactly once, as we already did with $q_n$, or by dividing $p_n$ by $p_k$ for all proper divisors $k$ of $n$ without correcting for multiplicity, creating poles where some of the zeroes used to be.\footnote{The latter has also previously been done by claude for example - see \url{https://mathr.co.uk/blog/2018-11-17_newtons_method_for_periodic_points.html}.}
+
+[TODO: more about poles, when they are desirable and some example Newton fractals here]
+
+%For any one of these three methods, a simple approach to find periodic points close to a given $c$ would then be to compute $z_n$ and $\frac{dz_n}{dc}$ for each iteration $n$ and each time simply try if Newton's method converges; however, as computing the values and derivatives of other points as required by Newton's method has linear complexity regarding iteration count, doing this for each iteration has a complexity of $O(n^2)$, making it very slow for high iteration counts.
+
+%One way to speed this up is therefore to perform some simple test to see if Newtons method could converge before actually performing it; another is to improve the initial estimate, so that Newton's method converges quicker when you do actually perform it. One simple way to do the latter is to use a quadratic approximation instead of a linear one and compute the first estimate based on that using the quadratic formula:
+%$$x_n \approx z_n+(x_0-z_0)\frac{dz_n}{dz_0}+\frac{1}{2}(x_0-z_0)^2\frac{d^2z_n}{dz_0^2}.$$
+%$$x_0' = z_0+\frac{-\frac{dz_n}{dz_0}\pm\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}{\frac{d^2z_n}{dz_0^2}}.$$
+%Out of the two roots produced by this, one can then simply choose the one that is closer to the base point to get an already slightly better first estimate. It might be possible to get an even better estimate by including even more higher derivatives in the polynomial approximation and using Newton's method on that first; however, I haven't tried that yet so I'm not sure if it is actually faster.
+
+%Regardless of which method is used to compute this estimate, as long as the derivative $\frac{dx_0'}{dz_0}$ of that estimate with respect to $z_0$ can also be computed, a simple test to decide whether to use Newton's method this iteration or not would be to test if the absolute value of that derivative is less than one (or some other constant, for that matter); that way, estimates which are relatively unstable and dependent on $z_0$ can be quickly discarded. As an example, for the quadratic estimate described above this derivative could be computed like this:
+%\begin{align*}
+	%\frac{dx_0'}{dz_0} &= \frac{d\left(z_0+\frac{(x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}}{\frac{d^2z_n}{dz_0^2}}\right)}{dz_0}\\
+	%&= 1+\frac{\frac{d\left((x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}\right)}{dz_0}\cdot\frac{d^2z_n}{dz_0^2}-((x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2})\cdot\frac{d^3z_n}{dz_0^3}}{(\frac{d^2z_n}{dz_0^2})^2}\\
+	%&=1+\frac{\frac{d\left(-\frac{dz_n}{dz_0}\pm\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}\right)}{dz_0}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
+	%&=1+\frac{-\frac{d^2z_n}{dz_0^2}\pm\left(\frac{\frac{d((\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n)}{dz_0}}{2\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}\right)-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
+	%&=\frac{\pm\frac{2\cdot\frac{dz_n}{dz_0}\cdot\frac{d^2z_n}{dz_0^2}-2(\frac{d^3z_n}{dz_0^3}z_n+\frac{d^2z_n}{dz_0^2}\cdot\frac{dz_n}{dz_0})}{2\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
+	%&=\frac{\frac{-\frac{d^3z_n}{dz_0^3}z_n}{\pm\sqrt{(\frac{dz_n}{dz_0})^2-2\frac{d^2z_n}{dz_0^2}z_n}}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
+	%&=\frac{\frac{-\frac{d^3z_n}{dz_0^3}z_n}{(x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}+\frac{dz_n}{dz_0}}-(x_0'-z_0)\cdot\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\\
+	%%&\;...\\
+	%&=-\frac{\frac{d^3z_n}{dz_0^3}}{\frac{d^2z_n}{dz_0^2}}\cdot\left(\frac{z_n}{(x_0'-z_0)\cdot\frac{d^2z_n}{dz_0^2}+\frac{dz_n}{dz_0}}+(x_0'-z_0)\right).
+%\end{align*}
+%sCalculating this, $x_0'$ and all the derivatives necessary for that for every single iteration on the base point $z_0$ just to see if Newton's method could be used is obviously kind of slow itself; however, the crucial part here is that this doesn't require any derivative samples from other points each iteration, and as such runs with nearly linear complexity in regards to the iteration count $n$ (though it still requires these samples to use Newton's method for iterations where it could converge according to the test - if you factor that in, the complexity is probably something like $O(n\log(n))$).
+
+\subsection{finding minibrots}
 
 Finding points with cyclic orbits is all well and good, but to really take advantage of that we also need to be able to locate the minibrots around them; that is, detect whether the point belongs to a cardioid or disk, and what the orientation and size of that cardioid or disk is.
 
-To do this, let's assume we already have a perfectly $n$-cyclic starting point $z_0$, meaning that $z_{n-1}$ is exactly zero and is the first element in the sequence to do so. The $n-1$th iteration of the close vicinity around $z_0$ can as usual be approximated as $x_{n-1}\approx z_{n-1}+(x_0-z_0)\frac{dz_{n-1}}{dz_0}$; but since $z_{n-1}$ is $0$, this then simplifies down to $x_{n-1}\approx(x_0-z_0)\frac{dz_{n-1}}{dz_0}$. Let's call this value $d_0$. The next iteration can then be approximated as $x_{n}\approx x_0+d_0^2$; the iteration after that as
+To do this, let's assume we already have a perfectly $n$-periodic starting point $c$, meaning that $z_n$ is exactly zero and is the first element in the sequence to do so. The $n$th iteration of points $c'$ close to $c$ can then as usual be approximated as $x_n\approx z_n+(c'-c)\frac{dz_n}{dc}$; but since $z_n$ is $0$, this then simplifies down to $x_n\approx(c'-c)\frac{dz_n}{dc}$. Let's call this value $d_1$. The next iteration can then be approximated as $x_{n+1}\approx c'+d_1^2=x_1+d_1^2$; the iteration after that as
 \begin{align*}
-	x_{n+1} &\approx (x_0+d_0^2)^2+x_0\\
-	&\approx x_0^2+2x_0d_0^2+d_0^4+x_0\\
-	&\approx x_1+2x_0d_0^2+d_0^4.
+	x_{n+2} &\approx (x_1+d_1^2)^2+x_1\\
+	&=x_1^2+2x_1d_1^2+d_1^4+x_1\\
+	&=x_2+2x_1d_1^2+d_1^4.
 \end{align*}
-However, as $d_0^2$ is already very, very close to zero, the term $d_0^4$ and any terms multiplied by it can be ignored as they are basically negligible in comparison; also, $x_0d_0^2$ can be replaced with $z_0d_0^2$ for similar reasons:
+However, as $d_1^2$ is already very, very close to zero, the term $d_1^4$ and any terms multiplied by it can be ignored as they are basically negligible in comparison; also, $x_1d_1^2$ can be replaced with $z_1d_1^2$ for similar reasons:
 \begin{align*}
-	x_{n+1} &\approx x_1+2z_0d_0^2\\
-	x_{n+2} &\approx (x_1+2z_0d_0^2)^2+x_0\\
-	&\approx x_1^2+4z_0x_1d_0^2+4z_0^2d_0^4+x_0\\
-	&\approx x_2+4z_0z_1d_0^2\\
-	x_{n+3} &\approx x_3+8z_0z_1z_2d_0^2\\
+	x_{n+2} &\approx x_2+2z_1d_1^2\\
+	x_{n+3} &\approx (x_2+2z_1d_1^2)^2+x_1\\
+	&=x_2^2+4z_1x_2d_1^2+4z_1^2d_1^4+x_1\\
+	&\approx x_3+4z_1z_2d_1^2\\
+	x_{n+4} &\approx x_4+8z_1z_2z_3d_1^2\\
 	...
 \end{align*}
-This pattern continues until we hit the next multiple of $n$, minus one; let's call this value $d_1$:
+This pattern continues until we hit the next multiple of $n$; let's call this value $d_2$:
 \begin{align*}
-	x_{2n-1} &\approx x_{n-1}+2^{n-1}(z_0z_1...z_{n-2})d_0^2\\
-	d_1 &\approx d_0+2^{n-1}(z_0z_1...z_{n-2})d_0^2.
+	x_{2n} &\approx x_n+2^{n-1}(z_1z_2...z_{n-1})d_1^2\\
+	&\approx d_1+2^{n-1}(z_1z_2...z_{n-1})d_1^2\\
+	&=d_1+\frac{dz_n}{dz_1}d_1^2\\
+	&=:d_2.
 \end{align*}
-Now it should already become apparent why these minibrots even exist; $x_{2n}$ will then be $x_0+d_1^2$, $x_{3n-1}$ will be $d_0+2^{n-1}(z_0z_1...z_{n-2})d_1^2$ and so on; generally, the sequence $d_k$ as defined by the values of $x_{(k+1)n-1}$ will approximately follow the equation $d_{k+1}=2^{n-1}(z_0z_1...z_{n-2})d_k^2+d_0$ for as long as it stays small enough, completing one iteration every $n$ iterations of $x$.
+Now it should already become apparent why these minibrots even exist; $x_{2n+1}$ will then be $x_1+d_2^2$, $x_{3n}$ will be $d_1+\frac{dz_n}{dz_1}d_2^2$ and so on; generally, the values $x_{kn}$ will closely follow the sequence $(d_k)$ defined by $d_1:=(c'-c)\frac{dz_n}{dc}$ and $d_{k+1}=\frac{dz_n}{dz_1}d_k^2+d_1$ as long as it stays small enough, completing one iteration of $d$ every $n$ iterations of $x$.
 
-To get rid of the factor $2^{n-1}(z_0z_1...z_{n-2})$ and turn this into an actual mandelbrot set equation, we can just multiply both sides of the equation with it:
-$$2^{n-1}(z_0z_1...z_{n-2})d_{k+1}=(2^{n-1}(z_0z_1...z_{n-2})d_k)^2+2^{n-1}(z_0z_1...z_{n-2})d_0$$
-It is therefore the term $2^{n-1}(z_0z_1...z_{n-2})d_k$ that actually iterates just like the mandelbrot set, and the term $2^{n-1}(z_0z_1...z_{n-2})d_0$ or $2^{n-1}(z_0z_1...z_{n-2})(x_0-z_0)\frac{dz_{n-1}}{dz_0}$ that acts as the starting value for it; as such, a number $s$ indicating the scale and orientation of the minibrot set can be computed as $$s=\frac{1}{2^{n-1}(z_0z_1...z_{n-2})\frac{dz_{n-1}}{dz_0}}.$$
+To get rid of the factor $\frac{dz_n}{dz_1}$ and turn this into an equation of the form $d_{k+1}'=d_k'^2+d_1'$, we can just multiply both sides of the equation with it:
+$$\frac{dz_n}{dz_1}d_{k+1}=\left(\frac{dz_n}{dz_1}d_k\right)^2+\frac{dz_n}{dz_1}d_1.$$
+It is therefore the sequence $(d_k')$ defined by $d_k':=\frac{dz_n}{dz_1}d_k$ that actually iterates just like the mandelbrot set, and the term $\frac{dz_n}{dz_1}d_1$ or $\frac{dz_n}{dz_1}\frac{dz_n}{dc}(c'-c)$ that acts as the starting value for it; as such, a number $s$ indicating the scale and orientation of the minibrot set can be computed as $$s=\frac{1}{\frac{dz_n}{dz_1}\frac{dz_n}{dc}}.$$
 
-\subsection{Skipping iterations - very WIP indeed}
+The center of the main disk of the minibrot is then approximately $c-1\cdot s$ instead of the usual $-1$, the tip of the needle approximately $c-2\cdot s$ and so on.
+
+\subsection{minibrot formulas}
+
+[TODO]
+
+\subsection{skipping iterations - very WIP indeed}
 
 %While the sequence above is probably the simplest one to see why minibrots exist, it is not the only example of a subsequence that can itself be approximated using a simple iterative formula. To see how these work in general, let's again consider an $n$-cyclic starting point $z_0$ and a nearby starting point $x_0$, as well as the sequence $d_i:=x_i-z_i$:
 
-[just image some explanatory text here for now, gotta add that later]. Let $z_0$ again be a point with an $n$-cyclic orbit, $x_0$ a point very close to that, and $d_i:=x_i-z_i$ for all $i\in\mathbb{N}_0$: 
+[just image some explanatory text here for now, gotta add that later]. Let $z_0$ again be a point with an $n$-cyclic orbit, $x_0$ a point very close to that, and $d_i:=x_i-z_i$ for all $i\in\mathbb{N}_0$:
 
 \begin{align*}
 	d_{i+1}&=x_{i+1}-z_{i+1}\\

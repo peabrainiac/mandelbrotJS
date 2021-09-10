@@ -1,0 +1,45 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc} % Für Umlaute
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+\setlength{\textwidth}{16.6cm} \setlength{\textheight}{26.5cm}% Formatierung der Seite
+\setlength{\topmargin}{-2.5cm} \setlength{\oddsidemargin}{-0.5cm}
+\setlength{\evensidemargin}{-0.0cm}
+
+\setlength{\parskip}{\baselineskip}
+\setlength\parindent{0pt}
+
+\newcommand{\abs}[1]{\left|#1\right|}
+\newcommand{\restrict}[1]{\left.#1\right|}
+\newcommand{\mat}[1]{\begin{pmatrix}#1\end{pmatrix}}
+
+\newcommand{\setN}{\mathbb N}
+\newcommand{\setR}{\mathbb R}
+\newcommand{\setC}{\mathbb C}
+
+
+
+% !TeX spellcheck = en_US
+
+\begin{document}
+	
+\section{idk}
+
+\subsection{Notation}
+
+
+Let's first consider the general case of a mapping of the form $f_c:z\mapsto f(z)+c$ for a function $f:\setC\to\setC$ partially differentiable almost everywhere, and for which $0$ is a zero of order $d\geq 2$. This would for example be $f:z\mapsto z^n$ for the $n$-th-power mandelbrot set, $f:z\mapsto(z^n)^*$ for the $n$-th-power mandelbar set, $f:\abs{\Re(z^2)}+i\abs{\Im(z^2)}$ for the burning ship fractal and so on. For any starting point $z_0$, let's also define $z_n$ as $f_{z_0}^n(z_0)$; the fractal set in question is then the set of values $z_0\in\setC$ for which $(z_n)$ does not tend towards infinity. Also, from here on we'll use $\frac{\partial z'}{\partial z}$ to denote the Jacobian matrix $$\frac{\partial z'}{\partial z}:=\mat{\frac{\partial\Re(z')}{\partial\Re(z)}&\frac{\partial\Re(z')}{\partial\Im(z)}\\\frac{\partial\Im(z')}{\partial\Re(z)}&\frac{\partial\Im(z')}{\partial\Im(z)}}$$ of $(\Re(z'),\Im(z'))\in\setR^2$ with respect to $(\Re(z),\Im(z))$, and $M(z)$ to denote the matrix $$M(z):=\mat{\Re(z)&-\Im(z)\\\Im(z)&\Re(z)}.$$
+
+Now, let $z_0$ be a point with $z_{n-1}=0$ for an $n\in\setN$ and $z_k\neq 0$ for all $k\in\{1,...,n-2\}$. Then for all $x_0\simeq z_0$, the orbit of $x_0$ evolves as follows:
+\begin{align*}
+	%x_{n-1}&=z_{n-1}+(x_0-z_0)\restrict{\frac{df_c^{n-1}(c)}{dc}}_{c=z_0}+(x_0-z_0)^*\restrict{\frac{df_c^{n-1}(c)}{dc^*}}_{c=z_0}+o((x_0-z_0)^2)
+	x_{n-1}&=z_{n-1}+\frac{\partial f_{z_0}^{n-1}(z_0)}{\partial z_0}\cdot(x_0-z_0)+o((x_0-z_0)^2)\\
+	&=0+\frac{\partial f_{z_0}^{n-1}(z_0)}{\partial z_0}\cdot(x_0-z_0)+o((x_0-z_0)^2)\\
+	&=:d_0+o((x_0-z_0)^2),\\
+	x_n&=x_{n-1}^2+x_0
+\end{align*}
+
+\end{document}
