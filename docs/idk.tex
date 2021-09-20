@@ -32,6 +32,13 @@
 
 \begin{document}
 
+\title{idk.tex}
+\author{}
+\date{}
+\maketitle
+
+This document is intended to be a collection of ideas, concepts, formulas, proofs and explanations related to the mandelbrot set, reflecting my current knowledge and understanding at the time of writing; most ideas here have probably been covered in greater detail and with greater mathematical rigor somewhere else already many times before. As such, this should not be taken as an attempt of mine to claim any of the ideas discussed here as my own, but rather as my attempt at collecting and structuring the ideas I have had and encountered so far in a single document.
+
 \section{basic concepts}
 
 \subsection{terminology \& notation}
@@ -179,6 +186,8 @@ It is therefore the sequence $(d_k')$ defined by $d_k':=\frac{dz_n}{dz_1}d_k$ th
 The center of the main disk of the minibrot is then approximately $c-1\cdot s$ instead of the usual $-1$, the tip of the needle approximately $c-2\cdot s$ and so on.
 
 \subsection{minibrot formulas}
+
+This idea of the minibrot around $c$ being a perfect replicate of the entire mandelbrot set, just scaled down by a factor of $s$, is of course only a linear approximation though; in reality, the higher-order terms we ignored here lead to the minibrot being distorted,\footnote{intuitively, I'd think that these are still in some sense homeomorphic to the entire mandelbrot though, as long as you ignore the extra filaments around them - however, I don't really enough about topology yet to further investigate that and haven't been able to find anything useful for that online so far}, sometimes more, sometimes less.
 
 [TODO]
 
