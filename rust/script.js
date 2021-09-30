@@ -1,8 +1,9 @@
 import Utils from "../util/Utils.js";
-import * as wasm from "./test/pkg/test.js";
+import * as wasm from "./idk/pkg/idk.js";
 
 await wasm.default();
 Utils.onPageLoad(async()=>{
+	console.log("wasm:",wasm);
 	const ITERATIONS = 1000000;
 	await testFunction(()=>mandelbrotPolynomial(Math.random()*0.25,Math.random()*0.25,ITERATIONS),"js_basic");
 	await testFunction(()=>wasm.test_basic(Math.random()*0.25,Math.random()*0.25,ITERATIONS),"wasm_basic");

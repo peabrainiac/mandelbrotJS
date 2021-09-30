@@ -1,3 +1,4 @@
-@cd test
+@cd idk
 wasm-pack build --target web
-pause
+cargo build --bins --release
+@cd ..
