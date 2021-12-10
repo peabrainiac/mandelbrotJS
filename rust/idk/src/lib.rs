@@ -1,4 +1,3 @@
-use std::ops::{Add, Mul};
 use wasm_bindgen::prelude::*;
 
 pub mod complex;
@@ -28,7 +27,7 @@ fn mandelbrot_polynomial_basic(cx: f64, cy: f64, n:i32) -> f64 {
 	return zx;
 }
 
-pub fn mandelbrot_polynomial<C: Copy+Add<C,Output=C>+Mul<C,Output=C>>(c: C, n:i32) -> C {
+pub fn mandelbrot_polynomial<C: Copy+complex::Field>(c: C, n:i32) -> C {
 	let mut z = c;
 	for _ in 1..n {
 		z = z*z+c;
