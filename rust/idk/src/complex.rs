@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Neg, Mul, Div};
+use std::ops::{Add, Sub, Neg, Mul, Div, AddAssign};
 use std::str::FromStr;
 use std::fmt;
 use std::num::ParseFloatError;
@@ -57,6 +57,13 @@ impl Add<Complex> for Complex {
 			x: self.x+z.x,
 			y: self.y+z.y
 		}
+	}
+}
+
+impl AddAssign<Complex> for Complex {
+	fn add_assign(&mut self, z: Complex) {
+		self.x += z.x;
+		self.y += z.y;
 	}
 }
 

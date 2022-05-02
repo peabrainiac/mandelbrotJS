@@ -76,14 +76,12 @@ pub fn find_periodic_point(c: complex::Complex, n:i32) -> Option<PeriodicPoint> 
 }
 
 impl PeriodicPoint {
+	// returns the first few coefficients of the bivariate polynomial p(z,c) such that the minibrot can be iterated as z->p(z^2+c,c)
 	pub fn get_formula_coefficients(&self, n:usize) -> Vec<Vec<Complex>> {
+		let binom = get_all_binom_coefficients(n);
 		let mut dz  = vec![vec![Complex::ZERO;n+1];n+1];
-		//dz[0][0] = self.position;
-		//dz[0][1] = Complex::ONE;
 		dz[0][0] = self.position;
-		dz[0][2] = Complex::ONE;
-		dz[1][0] = Complex::ONE;
-		//println!("{:?}",dz);
+		dz[0][1] = Complex::ONE;
 		for _ in 1..self.period {
 			for i in (0..(n+1)).rev() {
 				for j in (0..(n+1)).rev() {
@@ -100,33 +98,34 @@ impl PeriodicPoint {
 			dz[1][0] = dz[1][0]+Complex::ONE;
 			//println!("{:?}",dz);
 		}
-		/*let mut s = dz[0].to_string();
-		let mut f = 1.0;
-		for i in 1..(n+1) {
-			f *= i as f64;
-			s += &format!("+({})z^{}",dz[i]/f,i);
-		}
-		println!("{}",s);*/
-		let a = dz[0][2];
-		let b  = dz[1][0];
-		//println!("a: {}",a);
-		//println!("a^2: {}",a*a);
-		//println!("a^2+ab: {}",a*a+a*b);
-		//println!("1/(a^2+ab): {}",Complex::ONE/(a*a+a*b));
-		//println!("scale: {}",self.scale);
+		let a = dz[0][1];
+		println!("a: {}",a);
+		// p(z,c) -> a*p(z/a^2,c)
 		let mut temp = a;
 		for j in 0..(n+1) {
 			for i in 0..(n+1) {
 				dz[i][j] = dz[i][j]*temp;
 			}
-			temp = temp/a;
+			temp = temp/(a*a);
 		}
+		// p(z,c) -> p(z-b*c,c)
+		let b = dz[1][0];
+		for j in 0..=n {
+			for i in 0..=n {
+				let mut temp = -b;
+				for k in 1..=std::cmp::min(j,n-i) {
+					dz[i+k][j-k] = dz[i+k][j-k]+(binom[j][k] as f64)*dz[i][j]*temp;
+					temp = temp*-b;
+				}
+			}
+		}
+		// p(z,c) -> p(z,c/(a^2+b))
 		let mut temp = Complex::ONE;
 		for i in 0..(n+1) {
 			for j in 0..(n+1) {
 				dz[i][j] = dz[i][j]*temp;
 			}
-			temp = temp/(a*b);
+			temp = temp/(a*a+b);
 		}
 		let mut s = dz[0][0].to_string();
 		for i in 1..(n+1) {

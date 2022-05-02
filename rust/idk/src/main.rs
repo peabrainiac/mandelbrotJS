@@ -69,7 +69,10 @@ pub fn main() {
 				PointType::PeriodicPoint =>{
 					let c = Complex{x,y};
 					match find_periodic_point(c,period.unwrap()) {
-						Some(point) => println!("{}\nscale: {}\n{:?}",point.position,point.scale,point.get_formula_coefficients(6)),
+						Some(point) => {
+							point.get_formula_coefficients(6);
+							println!("{}\nscale: {}",point.position,point.scale);
+						},
 						_ => println!("No such point found.")
 					}
 				},
