@@ -37,8 +37,15 @@ impl VectorSpace<f64> for Complex {}
 impl Algebra<f64> for Complex {}
 
 impl Complex {
-	fn conj(&self) -> Complex {
+	pub const ZERO:Complex = Complex{x:0.0,y:0.0};
+	pub const ONE:Complex = Complex{x:1.0,y:0.0};
+
+	pub fn conj(&self) -> Complex {
 		Complex {x: self.x, y:-self.y}
+	}
+
+	pub fn abs(&self) -> f64 {
+		f64::sqrt(self.x*self.x+self.y*self.y)
 	}
 }
 
@@ -81,7 +88,7 @@ impl Mul<Complex> for Complex {
 	fn mul(self, z: Complex) -> Complex {
 		Complex {
 			x: self.x*z.x-self.y*z.y,
-			y: 2.0*self.x*z.y
+			y: self.x*z.y+self.y*z.x
 		}
 	}
 }

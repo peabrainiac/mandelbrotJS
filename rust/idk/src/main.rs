@@ -1,5 +1,6 @@
 use idk::complex::Complex;
 
+use idk::find_periodic_point;
 use structopt::StructOpt;
 use strum::EnumString;
 use strum::ToString;
@@ -26,7 +27,7 @@ enum Cli {
 		target: PointType,
 		x: f64,
 		y: f64,
-		iterations: Option<i32>
+		period: Option<i32>
 	},
 }
 
@@ -62,6 +63,18 @@ pub fn main() {
 				FunctionType::MandelbrotPolynomial => idk::mandelbrot_polynomial(c,n)
 			};
 			println!("{}",value);
+		},
+		Cli::Find {target,x,y,period} => {
+			match target {
+				PointType::PeriodicPoint =>{
+					let c = Complex{x,y};
+					match find_periodic_point(c,period.unwrap()) {
+						Some(point) => println!("{}\nscale: {}\n{:?}",point.position,point.scale,point.get_formula_coefficients(6)),
+						_ => println!("No such point found.")
+					}
+				},
+				_ => println!("This part isn't implemented yet.")
+			}
 		},
 		_ => {
 			println!("This part isn't implemented yet. But also, hello world from main.rs!\n");
