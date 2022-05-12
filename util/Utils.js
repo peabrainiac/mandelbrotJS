@@ -2,7 +2,7 @@ export default class Utils {
 	/** @param {()=>void} callback */
 	static onPageLoad(callback){
 		if (document.readyState!="loading"){
-			callback();
+			queueMicrotask(callback);
 		}else{
 			window.addEventListener("load",callback);
 		}
