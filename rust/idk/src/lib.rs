@@ -80,8 +80,10 @@ impl PeriodicPoint {
 	pub fn get_formula_coefficients(&self, n:usize) -> Vec<Vec<Complex>> {
 		let binom = get_all_binom_coefficients(n);
 		let mut dz  = vec![vec![Complex::ZERO;n+1];n+1];
+		// p = c0+z, where c0 is the position of the periodic point
 		dz[0][0] = self.position;
 		dz[0][1] = Complex::ONE;
+		// (p -> p^2+c0+c) n-1 one times
 		for _ in 1..self.period {
 			for i in (0..(n+1)).rev() {
 				for j in (0..(n+1)).rev() {
@@ -96,9 +98,8 @@ impl PeriodicPoint {
 			}
 			dz[0][0] = dz[0][0]+self.position;
 			dz[1][0] = dz[1][0]+Complex::ONE;
-			//println!("{:?}",dz);
 		}
-		let a = dz[0][1];
+		/*let a = dz[0][1];
 		println!("a: {}",a);
 		// p(z,c) -> a*p(z/a^2,c)
 		let mut temp = a;
@@ -127,6 +128,14 @@ impl PeriodicPoint {
 			}
 			temp = temp/(a*a+b);
 		}
+		// cleans up coefficients for 1, z and c
+		assert!(dz[0][0].abs()<1e-12);
+		dz[0][0] = Complex::ZERO;
+		assert!((dz[0][1]-Complex::ONE).abs()<1e-12);
+		dz[0][1] = Complex::ONE;
+		assert!(dz[1][0].abs()<1e-12);
+		dz[1][0] = Complex::ZERO;*/
+		// prints the polynomial
 		let mut s = dz[0][0].to_string();
 		for i in 1..(n+1) {
 			for j in 0..(i+1) {

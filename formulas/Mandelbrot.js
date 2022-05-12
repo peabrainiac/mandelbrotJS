@@ -201,7 +201,17 @@ export class MandelbrotBaseFormula extends FractalFormula {
 		let dy = 0;
 		let ddx = 0;
 		let ddy = 0;
+		let ddxdz0 = 0;
+		let ddydz0 = 0;
 		for (let i=0;i<cycleLength;i++){
+			/*if (i==cycleLength-1){
+				console.group(cycleLength);
+				console.log(`dz0: ${ax}+${ay}i`);
+				console.log(`ddz0: ${ddxdz0}+${ddydz0}i`);
+				console.log(`dz: ${dx}+${dy}i`);
+				console.log(`ddz: ${ddx}+${ddy}i`);
+				console.groupEnd();
+			}*/
 			let x2 = x*x-y*y+cx;
 			let y2 = 2*x*y+cy;
 			let dx2 = 2*(dx*x-dy*y)+1;
@@ -217,8 +227,12 @@ export class MandelbrotBaseFormula extends FractalFormula {
 			if (i<cycleLength-1){
 				let ax2 = 2*(ax*x-ay*y);
 				let ay2 = 2*(ax*y+ay*x);
+				let ddxdz02 = 2*(ddxdz0*x-ddydz0*y+ax*ax-ay*ay);
+				let ddydz02 = 2*(ddxdz0*y+ddydz0*x+2*ax*ay);
 				ax = ax2;
 				ay = ay2;
+				ddxdz0 = ddxdz02;
+				ddydz0 = ddydz02;
 			}
 		}
 		let a = new Complex(ax,ay);
