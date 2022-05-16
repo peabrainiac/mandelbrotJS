@@ -11,8 +11,8 @@ const observer = new IntersectionObserver((entries)=>{
 });
 /**
  * Registers a callback to be called when the given element enters the viewport and becomes visible for the first time.
- * @param {Element} element 
- * @param {()=>void} callback 
+ * @param {Element} element
+ * @param {()=>void} callback
  */
 export function onFirstVisible(element,callback){
 	callbackMap.set(element,callback);

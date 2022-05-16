@@ -48,7 +48,7 @@ function findMinibrots(maxPeriod=1){
 }
 /**
  * Returns the approximate positions of two nearby minibrots of period n+1 when given one of period n.
- * @param {MandelbrotCyclicPoint} minibrot 
+ * @param {MandelbrotCyclicPoint} minibrot
  * @returns {Complex[]};
  */
 function estimateChildren(minibrot){
