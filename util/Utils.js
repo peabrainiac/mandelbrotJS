@@ -1,3 +1,24 @@
+/** @type {WeakMap<Element,()=>void>} */
+const callbackMap = new WeakMap();
+const observer = new IntersectionObserver((entries)=>{
+	entries.forEach(entry=>{
+		if (entry.isIntersecting){
+			callbackMap.get(entry.target)();
+			callbackMap.delete(entry.target);
+			observer.unobserve(entry.target);
+		}
+	});
+});
+/**
+ * Registers a callback to be called when the given element enters the viewport and becomes visible for the first time.
+ * @param {Element} element 
+ * @param {()=>void} callback 
+ */
+export function onFirstVisible(element,callback){
+	callbackMap.set(element,callback);
+	observer.observe(element);
+}
+
 export default class Utils {
 	/** @param {()=>void} callback */
 	static onPageLoad(callback){

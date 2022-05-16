@@ -634,6 +634,14 @@ export class MandelbrotCyclicPoint extends CyclicPoint {
 		element.appendChild(super.toElement(viewport));
 		return element;
 	}
+
+	/**
+	 * Tests wether a given cyclic point is the same as this one.
+	 * @param {MandelbrotCyclicPoint} point
+	 */
+	equals(point){
+		return Math.hypot(point.x-this.x,point.y-this.y)<Math.max(0.5*Math.min(point.scale.length,this.scale.length),0.1*Math.max(point.scale.length,this.scale.length));
+	}
 }
 /**
  * A cyclic point in the mandelbrot set that belongs to the main cardioid or the cardioid of a minibrot.
