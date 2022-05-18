@@ -505,15 +505,20 @@ export class Complex {
 		return this;
 	}
 
-	toString(){
+	/**
+	 * @param {object} [options]
+	 * @param {number} [options.precision] precision of both components, analogous to {@link Number.prototype.toPrecision}
+	 * @param {boolean} [options.includeBreakingSpace] if set, includes a zero-width space between the real and imaginary parts, if both are nonzero
+	 */
+	toString({precision=17,includeBreakingSpace=false}={}){
 		if (this.x===0&&this.y===0){
 			return "0";
 		}else if (this.y===0){
-			return this.x+"";
+			return this.x.toPrecision(precision);
 		}else if (this.x===0){
-			return this.y+"i";
+			return this.y.toPrecision(precision)+"i";
 		}else{
-			return this.x+(this.y<0?"":"+")+this.y+"i";
+			return this.x.toPrecision(precision)+(includeBreakingSpace?"\u200b":"")+(this.y<0?"":"+")+this.y.toPrecision(precision)+"i";
 		}
 	}
 

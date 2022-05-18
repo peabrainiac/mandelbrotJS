@@ -239,6 +239,10 @@ export class MandelbrotBaseFormula extends FractalFormula {
 		let scale = a.copy();
 		scale.multiply(dx,dy);
 		Complex.inverse(scale);
+		if (Math.abs(cy)<scale.length/10){
+			cy = 0;
+			scale.y = 0;
+		}
 		let point = MandelbrotPeriodicPoint.create(cx,cy,period,scale,a,dx,dy,ddx,ddy);
 		point.steps = steps;
 		point.estimates = estimates;
@@ -584,6 +588,12 @@ export class MandelbrotPeriodicPoint extends PeriodicPoint {
 		this.dx = dx;
 		/** imaginary component of the derivative of `z_{n-1}` with respect to `z_0` */
 		this.dy = dy;
+		/** @type {string|undefined} */
+		this.kneadingSequence = undefined;
+		/** @type {string|undefined} */
+		this.lowerExternalAngle = undefined;
+		/** @type {string|undefined} */
+		this.upperExternalAngle = undefined;
 	}
 
 	/**

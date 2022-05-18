@@ -14,7 +14,7 @@ Utils.onPageLoad(()=>{
 		[-1.995,0,6],[-1.97,0,6],[-1.91,0,6],[-1.77,0,6],[-1.5,0,6],[-1.3,0.4,6],[-1.1,0.2,6],[-0.6,0.6,6],[-0.2,1.1,6],[-0.15,1.1,6],[-0.1,0.9,6],[0,1,6],[0.35,0.7,6],[0.4,0.6,6],[0.44,0.37,6],[0.4,0.2,6]
 	].map(([cx,cy,n])=>cy==0?[[cx,cy,n]]:[[cx,cy,n],[cx,-cy,n]]).flat().map(([cx,cy,n])=>formula.getNearbyPeriodicPoint(cx,cy,n));*/
 	let t = Date.now();
-	const minibrots = findMinibrots(8);
+	const minibrots = findMinibrots(6);
 	console.log((Date.now()-t)+"ms");
 	console.log(minibrots);
 	for (let minibrot of minibrots){
@@ -50,7 +50,7 @@ function findMinibrots(maxPeriod=1){
 	const minibrots = [];
 	for (let n=1;n<=maxPeriod;n++){
 		let m = 2**n-1;
-		middle:for (let i=0;i<m;i++){
+		middle:for (let i=0;i<=m;i++){
 			for (let k=1;k<n;k++){
 				if (m%(2**k-1)==0&&(i%(m/((2**k-1))))==0){
 					// minibrot has actually minimal period k<n
@@ -59,9 +59,17 @@ function findMinibrots(maxPeriod=1){
 			}
 			let landingPoint = traceExternalRay(i,m);
 			let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
+			minibrot.kneadingSequence = getKneadingSequence(i,m);
+			minibrot.lowerExternalAngle = i+"/"+m;
 			//console.log(`i: $${i}, $$`)
-			if (m&&!isNaN(minibrot.scale.length)&&!(minibrots.some(m2=>m2.equals(minibrot)))){
+			if (m&&!isNaN(minibrot.scale.length)){
+				let duplicate = minibrots.find(m2=>m2.equals(minibrot));
+				if (duplicate){
+					console.assert(duplicate.kneadingSequence==minibrot.kneadingSequence,"had two external angles with different kneading sequences land at the same point");
+					duplicate.upperExternalAngle = i+"/"+m;
+				}else{
 					minibrots.push(minibrot);
+				}
 			}
 		}
 	}
@@ -142,6 +150,32 @@ function estimateChildren(minibrot){
 	}
 	return Complex.getQuadraticRoots(new Complex(0.5*ddzx,0.5*ddzy),new Complex(dzx,dzy),new Complex(zx,zy)).map(c=>new Complex(c.x+minibrot.x,c.y+minibrot.y));
 }
+/**
+ * Returns the kneading number of the *-periodic external angle n/m.
+ * @param {number} n
+ * @param {number} m must be one less than a power of two.
+ */
+function getKneadingSequence(n,m){
+	let m2 = Math.round(Math.log2(m+1));
+	console.assert(m==2**m2-1,`m must be one less than a power of two, but it is ${m}`);
+	n = n%m;
+	let k = n;
+	let s = "";
+	for (let i=0;i<2*m2;i++){
+		if (k==n/2||k==(n+m)/2){
+			s += "*";
+			break;
+		}else if(k>n/2&&k<(n+m)/2){
+			s += "1";
+		}else{
+			s += "0";
+		}
+		k = (k*2)%m;
+	}
+	return s;
+}
+// @ts-ignore
+window.getKneadingSequence = getKneadingSequence;
 class MinibrotDisplay extends HTMLElement {
 	/**
 	 * @param {MandelbrotPeriodicPoint} minibrot
@@ -154,17 +188,54 @@ class MinibrotDisplay extends HTMLElement {
 				:host {
 					display: inline-block;
 					width: 240px;
-					height: 180px;/*300px;*/
 					border-radius: 4px;
 					box-shadow: 0 0 5px 0 #00000080;
 				}
+				:host > canvas {
+					display: block;
+				}
+				#display-body {
+					padding: 8px;
+				}
+				#display-body > table {
+					width: 100%;
+					table-layout: fixed;
+					word-wrap: break-word;
+				}
+				td {
+					vertical-align: top;
+				}
 			</style>
 			<canvas width="240" height="180"></canvas>
+			<div id="display-body">
+				<table>
+					<tr><td>period:</td><td id="period"></td></tr>
+					<tr><td>position:</td><td id="position"></td></tr>
+					<tr><td>scale:</td><td id="scale"></td></tr>
+					<tr><td>external angles:</td><td id="external-angles"></td></tr>
+					<tr><td>kneading seq.:</td><td id="kneading-sequence"></td></tr>
+				</table>
+			</div>
 		`;
 		this._canvas = this.shadowRoot.querySelector("canvas");
 		this._minibrot = minibrot;
 		this.setAttribute("x",minibrot.x.toString());
 		this.setAttribute("y",minibrot.y.toString());
+		this.shadowRoot.querySelector("#period").textContent = minibrot.period.toString();
+		if (minibrot.period==1&&minibrot.x==0&&minibrot.y==0){
+			this.shadowRoot.querySelector("#position").textContent = "0";
+			this.shadowRoot.querySelector("#scale").textContent = "1";
+			this.shadowRoot.querySelector("#external-angles").textContent = "0, 1";
+		}else if (minibrot.period==2&&minibrot.x==-1&&minibrot.y==0){
+			this.shadowRoot.querySelector("#position").textContent = "-1";
+			this.shadowRoot.querySelector("#scale").textContent = "0.5";
+			this.shadowRoot.querySelector("#external-angles").textContent = "1/3, 2/3";
+		}else{
+			this.shadowRoot.querySelector("#position").textContent = new Complex(minibrot.x,minibrot.y).toString({precision:2+Math.ceil(Math.log10(Math.hypot(minibrot.x,minibrot.y)/minibrot.scale.length)),includeBreakingSpace:true});
+			this.shadowRoot.querySelector("#scale").textContent = minibrot.scale.toString({precision:2});
+			this.shadowRoot.querySelector("#external-angles").textContent = minibrot.lowerExternalAngle+", "+minibrot.upperExternalAngle;
+		}
+		this.shadowRoot.querySelector("#kneading-sequence").textContent = minibrot.kneadingSequence;
 		onFirstVisible(this,()=>this._render());
 	}
 
