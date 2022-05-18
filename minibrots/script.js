@@ -52,6 +52,16 @@ function* findMinibrots(){
 					duplicate.upperExternalAngle = i+"/"+m;
 				}else{
 					minibrots.push(minibrot);
+					minibrot.internalAddress = minibrots.filter(minibrot2=>{
+						if (minibrot2.period==minibrot.period&&minibrot2.upperExternalAngle==undefined){
+							return true;
+						}else{
+							let i2 = parseInt(minibrot2.lowerExternalAngle.split("/")[0]);
+							let i3 = parseInt(minibrot2.upperExternalAngle.split("/")[0]);
+							let m2 = parseInt(minibrot2.lowerExternalAngle.split("/")[1]);
+							return i2*m<=i*m2&&i*m2<i3*m;
+						}
+					}).sort((m1,m2)=>parseInt(m1.lowerExternalAngle.split("/")[0])*parseInt(m2.lowerExternalAngle.split("/")[1])-parseInt(m2.lowerExternalAngle.split("/")[0])*parseInt(m1.lowerExternalAngle.split("/")[1])).filter((m,i,a)=>!a.some((m2,i2)=>i2<i&&m2.period<m.period)).map(m=>m.period);
 				}
 			}
 		}
@@ -106,37 +116,6 @@ function traceExternalRay(n,m){
 }
 // @ts-ignore
 window.traceExternalRay = traceExternalRay;
-/**
- * Returns the approximate positions of two nearby minibrots of period n+1 when given one of period n.
- * @param {MandelbrotPeriodicPoint} minibrot
- * @returns {Complex[]};
- */
-function estimateChildren(minibrot){
-	const cx = minibrot.x;
-	const cy = minibrot.y;
-	const n = minibrot.period;
-	let zx = cx;
-	let zy = cy;
-	let dzx = 1;
-	let dzy = 0;
-	let ddzx = 0;
-	let ddzy = 0;
-	for (let i=0;i<n;i++){
-		let zx2 = zx*zx-zy*zy+cx;
-		let zy2 = 2*zx*zy+cy;
-		let dzx2 = 2*(dzx*zx-dzy*zy);
-		let dzy2 = 2*(dzx*zy+dzy*zx);
-		let ddzx2 = 2*(dzx*dzx-dzy*dzy+ddzx*zx-ddzy*zy);
-		let ddzy2 = 2*(2*dzx*dzy+ddzx*zy+ddzy*zx);
-		zx = zx2;
-		zy = zy2;
-		dzx = dzx2;
-		dzy = dzy2;
-		ddzx = ddzx2;
-		ddzy = ddzy2;
-	}
-	return Complex.getQuadraticRoots(new Complex(0.5*ddzx,0.5*ddzy),new Complex(dzx,dzy),new Complex(zx,zy)).map(c=>new Complex(c.x+minibrot.x,c.y+minibrot.y));
-}
 /**
  * Returns the kneading number of the *-periodic external angle n/m.
  * @param {number} n
@@ -201,6 +180,7 @@ class MinibrotDisplay extends HTMLElement {
 					<tr><td>scale:</td><td id="scale"></td></tr>
 					<tr><td>external angles:</td><td id="external-angles"></td></tr>
 					<tr><td>kneading seq.:</td><td id="kneading-sequence"></td></tr>
+					<tr><td>internal address:</td><td id="internal-address"></td></tr>
 				</table>
 			</div>
 		`;
@@ -223,6 +203,7 @@ class MinibrotDisplay extends HTMLElement {
 			this.shadowRoot.querySelector("#external-angles").textContent = minibrot.lowerExternalAngle+", "+minibrot.upperExternalAngle;
 		}
 		this.shadowRoot.querySelector("#kneading-sequence").textContent = minibrot.kneadingSequence;
+		this.shadowRoot.querySelector("#internal-address").textContent = minibrot.internalAddress.join("-");
 		// TODO compute and display angled internal address
 		// TODO compute and display minibrot formula
 		// TODO fancier formatting with KaTeX?
