@@ -279,17 +279,17 @@ export class ToolsSettingsGroup extends SidebarSection {
 		this.sectionTitle = "Tools";
 		this.innerHTML = `
 			<div style="text-align:center">
-				<span id="find-cyclic-button" class="button" style="display:inline-block">Find cyclic points</span><br><br>
+				<span id="find-periodic-button" class="button" style="display:inline-block">Find periodic points</span><br><br>
 				<span id="show-orbit-button" class="button" style="display:inline-block">Show orbit points</span>
 			</div>
 		`;
-		this._findCyclicPointsButton = this.querySelector("#find-cyclic-button");
+		this._findPeriodicPointsButton = this.querySelector("#find-periodic-button");
 		this._showOrbitPointsButton = this.querySelector("#show-orbit-button");
 	}
 
 	/** @param {()=>void} callback */
-	onFindCyclicPointsButtonClick(callback){
-		this._findCyclicPointsButton.addEventListener("click",()=>{
+	onFindPeriodicPointsButtonClick(callback){
+		this._findPeriodicPointsButton.addEventListener("click",()=>{
 			callback();
 		});
 	}

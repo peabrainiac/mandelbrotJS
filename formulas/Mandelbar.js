@@ -1,4 +1,4 @@
-import {FractalFormula,CyclicPoint,Complex,ComplexJacobian,ComplexJacobianDerivative,FractalViewport} from "../MandelMaths.js";
+import {FractalFormula,PeriodicPoint,Complex,ComplexJacobian,ComplexJacobianDerivative,FractalViewport} from "../MandelMaths.js";
 
 export const TYPE_ELLIPSE = "ellipse";
 export const TYPE_MINIBAR = "minibar";
@@ -67,14 +67,14 @@ export default class MandelbarFormula extends FractalFormula {
 	}
 
 	/**
-	 * Approximates nearby cyclic points - see `./docs/idk.pdf` for a detailed explanation.
+	 * Approximates nearby periodic points - see `./docs/idk.pdf` for a detailed explanation.
 	 * 
 	 * Only applies a single calculation step without further refining, so the results may be wieldly inaccurate.
 	 * @param {number} cx
 	 * @param {number} cy
 	 * @param {number} maxIterations
 	 */
-	approxNearbyCyclicPoints(cx,cy,maxIterations=100){
+	approxNearbyPeriodicPoints(cx,cy,maxIterations=100){
 		let x = cx;
 		let y = cy;
 		let xdx = 1;
@@ -109,13 +109,13 @@ export default class MandelbarFormula extends FractalFormula {
 					let discard = false;
 					for (let i2=0;i2<points.length;i2++){
 						let p = points[i2];
-						if (Complex.distance(new Complex(p.x,p.y),new Complex(pcx,pcy))<((i+1)%p.cycleLength==0?0.5:0.1)*Complex.distance(new Complex(pcx,pcy),new Complex(cx,cy))){
+						if (Complex.distance(new Complex(p.x,p.y),new Complex(pcx,pcy))<((i+1)%p.period==0?0.5:0.1)*Complex.distance(new Complex(pcx,pcy),new Complex(cx,cy))){
 							discard = true;
 							break;
 						}
 					}
 					if (!discard){
-						let point = this.getNearbyCyclicPoint(pcx,pcy,i+1);
+						let point = this.getNearbyPeriodicPoint(pcx,pcy,i+1);
 						if (point!=null){
 							points.push(point);
 						}
@@ -156,19 +156,19 @@ export default class MandelbarFormula extends FractalFormula {
 	}
 
 	/**
-	 * Finds the exact location of a nearby cyclic point and calculates its properties, such as its scale and type. See `./docs/idk.pdf`.
+	 * Finds the exact location of a nearby periodic point and calculates its properties, such as its scale and type. See `./docs/idk.pdf`.
 	 * 
 	 * If the estimate diverges, `null` is returned instead.
 	 * 
 	 * @todo also return `null` if the estimate doesn't converge fast enough for this to be precise.
 	 * 
-	 * @todo scale breaks for cycle length 1025 and larger because `2^1024` overflows to Infinity; multiply twos seperately to fix
+	 * @todo scale breaks for period 1025 and larger because `2^1024` overflows to Infinity; multiply twos seperately to fix
 	 * 
 	 * @param {number} startX
 	 * @param {number} startY
-	 * @param {number} cycleLength
+	 * @param {number} period
 	 */
-	getNearbyCyclicPoint(startX,startY,cycleLength){
+	getNearbyPeriodicPoint(startX,startY,period){
 		let cx = startX;
 		let cy = startY;
 		let estimates = [];
@@ -179,7 +179,7 @@ export default class MandelbarFormula extends FractalFormula {
 			let ydx = 0;
 			let xdy = 0;
 			let ydy = 1;
-			for (let i=1;i<cycleLength;i++){
+			for (let i=1;i<period;i++){
 				let x2 = x*x-y*y+cx;
 				let y2 = -2*x*y+cy;
 				let xdx2 = 2*(xdx*x-ydx*y)+1;
@@ -222,7 +222,7 @@ export default class MandelbarFormula extends FractalFormula {
 		let ydxdy = 0;
 		let xdydy = 0;
 		let ydydy = 0;
-		for (let i=0;i<cycleLength;i++){
+		for (let i=0;i<period;i++){
 			let x2 = x*x-y*y+cx;
 			let y2 = -2*x*y+cy;
 			let xdx2 = 2*(xdx*x-ydx*y)+1;
@@ -251,7 +251,7 @@ export default class MandelbarFormula extends FractalFormula {
 			ydxdy = ydxdy2;
 			xdydy = xdydy2;
 			ydydy = ydydy2;
-			if (i<cycleLength-1){
+			if (i<period-1){
 				let ax2 = 2*(ax*x-ay*y);
 				let ay2 = -2*(ax*y+ay*x);
 				ax = ax2;
@@ -262,7 +262,7 @@ export default class MandelbarFormula extends FractalFormula {
 		let jacobian = new ComplexJacobian(xdx,ydx,xdy,ydy);
 		let jacobianDerivative = new ComplexJacobianDerivative(xdxdx,ydxdx,xdydx,ydydx,xdxdy,ydxdy,xdydy,ydydy);
 		let scale = jacobian.copy();
-		if (cycleLength%2==0){
+		if (period%2==0){
 			scale.multiply(c);
 		}else{
 			let b = c.copy();
@@ -270,24 +270,24 @@ export default class MandelbarFormula extends FractalFormula {
 			scale.multiply(b);
 		}
 		ComplexJacobian.inverse(scale);
-		let point = MandelbarCyclicPoint.create(cx,cy,cycleLength,scale,jacobian,jacobianDerivative);
+		let point = MandelbarPeriodicPoint.create(cx,cy,period,scale,jacobian,jacobianDerivative);
 		Object.apply(point._debugInfo,{steps,estimates,c,jacobian,jacobianDerivative});
 		return point;
 	}
 }
 /**
- * A cyclic point in the mandelbar set.
+ * A periodic point in the mandelbar set.
  */
-export class MandelbarCyclicPoint extends CyclicPoint {
+export class MandelbarPeriodicPoint extends PeriodicPoint {
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} cycleLength
+	 * @param {number} period
 	 * @param {ComplexJacobian} scale
 	 * @param {Complex} relativeApproximationRadius
 	 */
-	constructor(x,y,cycleLength,scale,relativeApproximationRadius){
-		super(x,y,cycleLength);
+	constructor(x,y,period,scale,relativeApproximationRadius){
+		super(x,y,period);
 		this.scale = scale;
 		this.relativeApproximationRadius = relativeApproximationRadius;
 	}
@@ -295,20 +295,20 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} cycleLength
+	 * @param {number} period
 	 * @param {ComplexJacobian} scale
 	 * @param {ComplexJacobian} jacobian
 	 * @param {ComplexJacobianDerivative} jacobianDerivative
 	 */
-	static create(x,y,cycleLength,scale,jacobian,jacobianDerivative){
+	static create(x,y,period,scale,jacobian,jacobianDerivative){
 		let j = jacobian.relativeTo(scale);
 		let jd = jacobianDerivative.relativeTo(scale);
 		let rrx = 0.5*Math.sqrt((j.xdx**2+j.ydx**2)/(jd.xdxdx**2+jd.ydxdx**2));
 		let rry = 0.5*Math.sqrt((j.xdy**2+j.ydy**2)/(jd.xdydy**2+jd.ydydy**2));
 		let rx = rrx*Math.sqrt(scale.xdx**2+scale.ydx**2);
 		let ry = rry*Math.sqrt(scale.xdy**2+scale.ydy**2);
-		/** @type {MandelbarCyclicPoint} */
-		let point = new (rrx<1?Ellipse:(cycleLength%2==1?Minibar:SkewedMinibrot))(x,y,cycleLength,scale,new Complex(rrx,rry));
+		/** @type {MandelbarPeriodicPoint} */
+		let point = new (rrx<1?Ellipse:(period%2==1?Minibar:SkewedMinibrot))(x,y,period,scale,new Complex(rrx,rry));
 		point._debugInfo = {rx,ry};
 		return point;
 	}
@@ -353,8 +353,8 @@ export class MandelbarCyclicPoint extends CyclicPoint {
 		return 1;
 	}
 }
-/** A cyclic point in the mandelbar set that belongs to a skewed, hence elliptical disk. */
-export class Ellipse extends MandelbarCyclicPoint {
+/** A periodic point in the mandelbar set that belongs to a skewed, hence elliptical disk. */
+export class Ellipse extends MandelbarPeriodicPoint {
 
 	get relativeRadius(){
 		return 0.5;
@@ -364,8 +364,8 @@ export class Ellipse extends MandelbarCyclicPoint {
 		return TYPE_ELLIPSE;
 	}
 }
-/** A cyclic point in the mandelbar set that belongs to the main deltoid or the deltoid of a mini-mandelbar. */
-export class Minibar extends MandelbarCyclicPoint {
+/** A periodic point in the mandelbar set that belongs to the main deltoid or the deltoid of a mini-mandelbar. */
+export class Minibar extends MandelbarPeriodicPoint {
 
 	get relativeRadius(){
 		return 2;
@@ -375,8 +375,8 @@ export class Minibar extends MandelbarCyclicPoint {
 		return TYPE_MINIBAR;
 	}
 }
-/** A cyclic point in the mandelbar set that belongs to the cardioid of a minibrot. */
-export class SkewedMinibrot extends MandelbarCyclicPoint {
+/** A periodic point in the mandelbar set that belongs to the cardioid of a minibrot. */
+export class SkewedMinibrot extends MandelbarPeriodicPoint {
 
 	get relativeRadius(){
 		return 2;

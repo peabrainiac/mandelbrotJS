@@ -64,29 +64,29 @@ export class FractalFormula {
 	}
 
 	/**
-	 * Approximates nearby cyclic points - see `./docs/idk.pdf` for a detailed explanation.
+	 * Approximates nearby periodic points - see `./docs/idk.pdf` for a detailed explanation.
 	 * 
 	 * Only applies a single calculation step without further refining, so the results may be wieldly inaccurate.
 	 * @param {number} cx
 	 * @param {number} cy
 	 * @param {number} maxIterations
-	 * @return {CyclicPoint[]}
+	 * @return {PeriodicPoint[]}
 	 */
-	approxNearbyCyclicPoints(cx,cy,maxIterations=100){
+	approxNearbyPeriodicPoints(cx,cy,maxIterations=100){
 		return [];
 	}
 
 	/**
-	 * Finds the exact location of a nearby cyclic point and calculates its properties, such as its scale and type. See `./docs/idk.pdf`.
+	 * Finds the exact location of a nearby periodic point and calculates its properties, such as its scale and type. See `./docs/idk.pdf`.
 	 * 
 	 * If the estimate diverges, `null` is returned instead.
 	 * 
 	 * @param {number} startX
 	 * @param {number} startY
-	 * @param {number} cycleLength
-	 * @return {CyclicPoint}
+	 * @param {number} period
+	 * @return {PeriodicPoint}
 	 */
-	getNearbyCyclicPoint(startX,startY,cycleLength){
+	getNearbyPeriodicPoint(startX,startY,period){
 		return null;
 	}
 
@@ -269,18 +269,18 @@ export class FractalFormulaSwitch extends FractalFormula {
 	 * @param {number} maxIterations
 	 * @inheritdoc
 	 */
-	approxNearbyCyclicPoints(cx,cy,maxIterations){
-		return this._formula.approxNearbyCyclicPoints(cx,cy,maxIterations);
+	approxNearbyPeriodicPoints(cx,cy,maxIterations){
+		return this._formula.approxNearbyPeriodicPoints(cx,cy,maxIterations);
 	}
 
 	/**
 	 * @param {number} startX
 	 * @param {number} startY
-	 * @param {number} cycleLength
+	 * @param {number} period
 	 * @inheritdoc
 	 */
-	getNearbyCyclicPoint(startX,startY,cycleLength){
-		return this._formula.getNearbyCyclicPoint(startX,startY,cycleLength);
+	getNearbyPeriodicPoint(startX,startY,period){
+		return this._formula.getNearbyPeriodicPoint(startX,startY,period);
 	}
 
 	/**
@@ -390,7 +390,7 @@ if (self.constructor.name==="Window"){
 	customElements.define("fractal-formula-switch-settings",FractalFormulaSwitchSettings);
 }
 /**
- * Base class for special points of interest, like cyclic points; extending this allows them to be displayed in the `OrbitPointOverlay`.
+ * Base class for special points of interest, like periodic points; extending this allows them to be displayed in the `OrbitPointOverlay`.
  */
 export class SpecialPoint {
 	constructor(x=0,y=0){
@@ -412,17 +412,17 @@ export class SpecialPoint {
 	}
 }
 /**
- * A point with a cyclic orbit.
+ * A point with a periodic orbit.
  */
-export class CyclicPoint extends SpecialPoint {
+export class PeriodicPoint extends SpecialPoint {
 	/**
 	 * @param {number} x
 	 * @param {number} y
-	 * @param {number} cycleLength
+	 * @param {number} period
 	 */
-	constructor(x,y,cycleLength){
+	constructor(x,y,period){
 		super(x,y);
-		this.cycleLength = cycleLength;
+		this.period = period;
 	}
 
 	/**
@@ -433,7 +433,7 @@ export class CyclicPoint extends SpecialPoint {
 		let element = super.toElement(viewport);
 		let label = document.createElement("label");
 		label.className = "point-label";
-		label.textContent = this.cycleLength.toString();
+		label.textContent = this.period.toString();
 		element.appendChild(label);
 		return element;
 	}
@@ -449,6 +449,7 @@ export class Complex {
 		this.y = y;
 	}
 
+	/** @param {number} scale */
 	scale(scale){
 		this.x *= scale;
 		this.y *= scale;

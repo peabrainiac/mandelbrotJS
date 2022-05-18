@@ -27,7 +27,7 @@ Utils.onPageLoad(()=>{
 	fractalExplorer.fractalCanvas.onViewportChange((viewport)=>{
 		specialPointsOverlay.viewport = viewport;
 	});
-	tools.onFindCyclicPointsButtonClick(()=>{
+	tools.onFindPeriodicPointsButtonClick(()=>{
 		specialPointsOverlay.formula = fractalExplorer.formula;
 		specialPointsOverlay.iterations = fractalExplorer.iterations;
 		specialPointsOverlay.show();

@@ -1,4 +1,4 @@
-import {MandelbrotBaseFormula,MandelbrotCyclicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
+import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import { Complex } from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
 
@@ -12,7 +12,7 @@ Utils.onPageLoad(()=>{
 		[-1.9,0,4],[-1.3,0,4],[0,1,4],[0.5,0.5,4],
 		[-1.98,0,5],[-1.85,0,5],[-1.6,0,5],[-1.3,0.4,5],[-0.5,0.5,5],[-0.2,1.1,5],[0,1,5],[0.4,0.6,5],[0.4,0.3,5],
 		[-1.995,0,6],[-1.97,0,6],[-1.91,0,6],[-1.77,0,6],[-1.5,0,6],[-1.3,0.4,6],[-1.1,0.2,6],[-0.6,0.6,6],[-0.2,1.1,6],[-0.15,1.1,6],[-0.1,0.9,6],[0,1,6],[0.35,0.7,6],[0.4,0.6,6],[0.44,0.37,6],[0.4,0.2,6]
-	].map(([cx,cy,n])=>cy==0?[[cx,cy,n]]:[[cx,cy,n],[cx,-cy,n]]).flat().map(([cx,cy,n])=>formula.getNearbyCyclicPoint(cx,cy,n));*/
+	].map(([cx,cy,n])=>cy==0?[[cx,cy,n]]:[[cx,cy,n],[cx,-cy,n]]).flat().map(([cx,cy,n])=>formula.getNearbyPeriodicPoint(cx,cy,n));*/
 	let t = Date.now();
 	const minibrots = findMinibrots(8);
 	console.log((Date.now()-t)+"ms");
@@ -27,7 +27,7 @@ Utils.onPageLoad(()=>{
  */
 function findMinibrots(maxPeriod=1){
 	const formula = new MandelbrotBaseFormula();
-	/*const minibrots = [formula.getNearbyCyclicPoint(0,0,1),formula.getNearbyCyclicPoint(-1.25,0.4,5)];
+	/*const minibrots = [formula.getNearbyPeriodicPoint(0,0,1),formula.getNearbyPeriodicPoint(-1.25,0.4,5)];
 	let prevMinibrots = [...minibrots];
 	for (let n=1;n<=maxPeriod;n++){
 		/** @type {(Disk|Minibrot)[]} * /
@@ -35,7 +35,7 @@ function findMinibrots(maxPeriod=1){
 		for (let minibrot of prevMinibrots){
 			estimateChildren(minibrot).forEach(c=>{
 				//console.log(c);
-				let m = formula.getNearbyCyclicPoint(c.x,c.y,minibrot.cycleLength+1);
+				let m = formula.getNearbyPeriodicPoint(c.x,c.y,minibrot.period+1);
 				if (m&&!isNaN(m.scale.length)&&!(minibrots.some(m2=>m2.equals(m))||nextMinibrots.some(m2=>m2.equals(m)))){
 					nextMinibrots.push(m);
 				}
@@ -58,7 +58,7 @@ function findMinibrots(maxPeriod=1){
 				}
 			}
 			let landingPoint = traceExternalRay(i,m);
-			let minibrot = formula.getNearbyCyclicPoint(landingPoint.x,landingPoint.y,n);
+			let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
 			//console.log(`i: $${i}, $$`)
 			if (m&&!isNaN(minibrot.scale.length)&&!(minibrots.some(m2=>m2.equals(minibrot)))){
 					minibrots.push(minibrot);
@@ -113,13 +113,13 @@ function traceExternalRay(n,m){
 window.traceExternalRay = traceExternalRay;
 /**
  * Returns the approximate positions of two nearby minibrots of period n+1 when given one of period n.
- * @param {MandelbrotCyclicPoint} minibrot
+ * @param {MandelbrotPeriodicPoint} minibrot
  * @returns {Complex[]};
  */
 function estimateChildren(minibrot){
 	const cx = minibrot.x;
 	const cy = minibrot.y;
-	const n = minibrot.cycleLength;
+	const n = minibrot.period;
 	let zx = cx;
 	let zy = cy;
 	let dzx = 1;
@@ -144,7 +144,7 @@ function estimateChildren(minibrot){
 }
 class MinibrotDisplay extends HTMLElement {
 	/**
-	 * @param {MandelbrotCyclicPoint} minibrot
+	 * @param {MandelbrotPeriodicPoint} minibrot
 	 */
 	constructor(minibrot){
 		super();
@@ -175,7 +175,7 @@ class MinibrotDisplay extends HTMLElement {
 		const pixels = new Uint32Array(imgData.data.buffer);
 		const WIDTH = canvas.width;
 		const HEIGHT = canvas.height;
-		const ITER = this._minibrot.cycleLength*100;
+		const ITER = this._minibrot.period*100;
 		const CX = this._minibrot.x;
 		const CY = this._minibrot.y;
 		const SX = this._minibrot.scale.x;

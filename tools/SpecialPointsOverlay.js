@@ -82,10 +82,10 @@ export default class SpecialPointsOverlay extends HTMLElement {
 			if (e.button==1){
 				let fractalX = this._viewport.toFractalX(e.offsetX/this.offsetWidth);
 				let fractalY = this._viewport.toFractalY(e.offsetY/this.offsetHeight);
-				console.group("Cyclic points data");
+				console.group("Periodic points data");
 				console.log("x:",fractalX);
 				console.log("y:",fractalY);
-				console.log("data:",this._formula.approxNearbyCyclicPoints(fractalX,fractalY,this._iterations));
+				console.log("data:",this._formula.approxNearbyPeriodicPoints(fractalX,fractalY,this._iterations));
 				console.groupEnd();
 			}else{
 				this.hide();
@@ -103,7 +103,7 @@ export default class SpecialPointsOverlay extends HTMLElement {
 	 * @param {number} cy
 	 */
 	showPoints(cx,cy){
-		let points = this._formula.approxNearbyCyclicPoints(cx,cy,this._iterations);
+		let points = this._formula.approxNearbyPeriodicPoints(cx,cy,this._iterations);
 		this._div.innerHTML = "";
 		for (let i=0;i<points.length;i++){
 			this._div.appendChild(points[i].toElement(this._viewport));

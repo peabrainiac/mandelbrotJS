@@ -22,8 +22,8 @@ A working version of this program can be seen on [peabrainiac.github.io/mandelbr
  - [ ] higher zoom depths
  - [x] multithreaded rendering (only works in firefox when loaded from `server.py`, but should always in chrome)
  - [x] multisampling
- - [x] cyclic point overlay
-   - [x] shows cyclic points and their cycle lengths
+ - [x] periodic point overlay
+   - [x] shows periodic points and their periods
    - [x] approximates the scale and orientation of minibrots and disks
    - [x] mandelbrot set support
    - [x] mandelbar set support
