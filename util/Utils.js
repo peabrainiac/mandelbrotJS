@@ -28,6 +28,24 @@ export default class Utils {
 			window.addEventListener("load",callback);
 		}
 	};
+
+	/**
+	 * Registers a callback to be called whenever the user has scrolled down to within a given offset of the bottom of the element
+	 * @param {HTMLElement} element
+	 * @param {()=>Promise<void>} callback
+	 * @param {object} [options]
+	 * @param {number} [options.offset] how close to the bottom one needs to be for this to trigger, in pixels
+	 */
+	static async onElementBottomHit(element,callback,{offset=500}={}){
+		while(element.scrollTop+(element==document.documentElement?window.innerHeight:element.offsetHeight)+offset>=element.scrollHeight){
+			await callback();
+		}
+		window.addEventListener('scroll',async()=>{
+			if(element.scrollTop+(element==document.documentElement?window.innerHeight:element.offsetHeight)+offset>=element.scrollHeight){
+				await callback();
+			}
+		})
+	}
 	
 	/**
 	 * @param {HTMLElement} element
