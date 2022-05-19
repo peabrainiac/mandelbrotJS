@@ -13,6 +13,7 @@ Utils.onPageLoad(()=>{
 		[-1.98,0,5],[-1.85,0,5],[-1.6,0,5],[-1.3,0.4,5],[-0.5,0.5,5],[-0.2,1.1,5],[0,1,5],[0.4,0.6,5],[0.4,0.3,5],
 		[-1.995,0,6],[-1.97,0,6],[-1.91,0,6],[-1.77,0,6],[-1.5,0,6],[-1.3,0.4,6],[-1.1,0.2,6],[-0.6,0.6,6],[-0.2,1.1,6],[-0.15,1.1,6],[-0.1,0.9,6],[0,1,6],[0.35,0.7,6],[0.4,0.6,6],[0.44,0.37,6],[0.4,0.2,6]
 	].map(([cx,cy,n])=>cy==0?[[cx,cy,n]]:[[cx,cy,n],[cx,-cy,n]]).flat().map(([cx,cy,n])=>formula.getNearbyPeriodicPoint(cx,cy,n));*/
+	// TODO button to export data as json
 	const minibrots = findMinibrots();
 	Utils.onElementBottomHit(document.documentElement,async()=>{
 		for (let i=0;i<12;i++){
@@ -61,7 +62,7 @@ function* findMinibrots(){
 							let m2 = parseInt(minibrot2.lowerExternalAngle.split("/")[1]);
 							return i2*m<=i*m2&&i*m2<i3*m;
 						}
-					}).sort((m1,m2)=>parseInt(m1.lowerExternalAngle.split("/")[0])*parseInt(m2.lowerExternalAngle.split("/")[1])-parseInt(m2.lowerExternalAngle.split("/")[0])*parseInt(m1.lowerExternalAngle.split("/")[1])).filter((m,i,a)=>!a.some((m2,i2)=>i2<i&&m2.period<m.period)).map(m=>m.period);
+					}).sort((m1,m2)=>parseInt(m1.lowerExternalAngle.split("/")[0])*parseInt(m2.lowerExternalAngle.split("/")[1])-parseInt(m2.lowerExternalAngle.split("/")[0])*parseInt(m1.lowerExternalAngle.split("/")[1])).filter((m,i,a)=>!a.some((m2,i2)=>i2>i&&m2.period<m.period)).map(m=>m.period);
 				}
 			}
 		}
@@ -142,6 +143,7 @@ function getKneadingSequence(n,m){
 }
 // @ts-ignore
 window.getKneadingSequence = getKneadingSequence;
+// TODO compute internal addresses from kneading sequences too
 class MinibrotDisplay extends HTMLElement {
 	/**
 	 * @param {MandelbrotPeriodicPoint} minibrot
