@@ -142,6 +142,10 @@ class MinibrotDisplay extends HTMLElement {
 				td {
 					vertical-align: top;
 				}
+				.subscript {
+					vertical-align: sub;
+					font-size: 0.75em;
+				}
 			</style>
 			<canvas width="240" height="180"></canvas>
 			<div id="display-body">
@@ -174,7 +178,7 @@ class MinibrotDisplay extends HTMLElement {
 			this.shadowRoot.querySelector("#external-angles").textContent = minibrot.lowerExternalAngle+", "+minibrot.upperExternalAngle;
 		}
 		this.shadowRoot.querySelector("#kneading-sequence").textContent = minibrot.kneadingSequence;
-		this.shadowRoot.querySelector("#internal-address").textContent = minibrot.angledInternalAddress.map(({period,angle})=>period+(angle?`_${angle.numerator}/${angle.denominator}`:"")).join("\u200b->");
+		this.shadowRoot.querySelector("#internal-address").innerHTML = minibrot.angledInternalAddress.map(({period,angle})=>period+(angle?`<span class="subscript">${angle.numerator}/${angle.denominator}</span>`:"")).join("\u200b - ");
 		// TODO compute and display angled internal address
 		// TODO compute and display minibrot formula
 		// TODO fancier formatting with KaTeX?
