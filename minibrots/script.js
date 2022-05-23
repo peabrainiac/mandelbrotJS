@@ -1,7 +1,7 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
-import {externalAngleType,getInternalAddress,getInternalAngle,getKneadingSequence} from "./SymbolicMandelMaths.js";
+import {externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence} from "./SymbolicMandelMaths.js";
 
 Utils.onPageLoad(()=>{
 	const container = document.getElementById("container");
@@ -42,55 +42,38 @@ function* findMinibrots(){
 					continue middle;
 				}
 			}
-			let landingPoint = traceExternalRay(i,m);
+			let angle = new Fraction(i,m);
+			let landingPoint = traceExternalRay(angle);
 			let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
-			minibrot.kneadingSequence = getKneadingSequence(i,m);
-			minibrot.lowerExternalAngle = i+"/"+m;
-			//console.log(`i: $${i}, $$`)
+			minibrot.kneadingSequence = getKneadingSequence(angle);
+			minibrot.lowerExternalAngle = angle;
 			if (m&&!isNaN(minibrot.scale.length)){
 				let duplicate = minibrots.find(m2=>m2.equals(minibrot));
 				if (duplicate){
 					console.assert(duplicate.kneadingSequence==minibrot.kneadingSequence,"had two external angles with different kneading sequences land at the same point");
-					duplicate.upperExternalAngle = i+"/"+m;
+					duplicate.upperExternalAngle = angle;
 				}else{
+					minibrot.angledInternalAddress = getAngledInternalAddress(angle);
 					minibrots.push(minibrot);
-					let internalAddressMinibrots = minibrots.filter(minibrot2=>{
-						if (minibrot2.period==minibrot.period&&minibrot2.upperExternalAngle==undefined){
-							return true;
-						}else{
-							let i2 = parseInt(minibrot2.lowerExternalAngle.split("/")[0]);
-							let i3 = parseInt(minibrot2.upperExternalAngle.split("/")[0]);
-							let m2 = parseInt(minibrot2.lowerExternalAngle.split("/")[1]);
-							return i2*m<=i*m2&&i*m2<i3*m;
-						}
-					}).sort((m1,m2)=>parseInt(m1.lowerExternalAngle.split("/")[0])*parseInt(m2.lowerExternalAngle.split("/")[1])-parseInt(m2.lowerExternalAngle.split("/")[0])*parseInt(m1.lowerExternalAngle.split("/")[1])).filter((m,i,a)=>!a.some((m2,i2)=>i2>i&&m2.period<m.period));
-					let internalAddress = internalAddressMinibrots.map(m=>m.period);
-					console.assert(internalAddress.join(",")==getInternalAddress(minibrot.kneadingSequence).join(","));
-					minibrot.angledInternalAddress = internalAddress.map((period,index)=>{
-						if (index+1<internalAddress.length){
-							return {period,angle:getInternalAngle(minibrot.kneadingSequence,period,internalAddress[index+1],i,m)};
-						}else{
-							return {period};
-						}
-					});
 				}
 			}
 		}
 		console.log(`found ${minibrots.length-nextYieldIndex} more minibrots in ${(Date.now()-t)}ms`);
 		for (let i=nextYieldIndex;i<minibrots.length;i++){
-			console.assert(externalAngleType(parseInt(minibrots[i].lowerExternalAngle.split("/")[0]),parseInt(minibrots[i].lowerExternalAngle.split("/")[1]))=="lower");
-			console.assert(externalAngleType(parseInt(minibrots[i].upperExternalAngle.split("/")[0]),parseInt(minibrots[i].upperExternalAngle.split("/")[1]))=="upper");
+			console.assert(externalAngleType(minibrots[i].lowerExternalAngle)=="lower");
+			console.assert(externalAngleType(minibrots[i].upperExternalAngle)=="upper");
 			yield minibrots[i];
 		}
 		nextYieldIndex = minibrots.length;
 	}
 }
 /**
- * Traces the external ray at angle n/m.
- * @param {number} n
- * @param {number} m
+ * Traces the external ray at the given angle.
+ * @param {Fraction} angle
  */
-function traceExternalRay(n,m){
+function traceExternalRay(angle){
+	const n = angle.a;
+	const m = angle.b;
 	const bailout = 8;
 	const stepFactor = 0.4; // sort of step size, but multiplicative
 	let cx = bailout*Math.cos(n/m*Math.PI*2);
