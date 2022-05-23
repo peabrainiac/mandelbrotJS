@@ -1,6 +1,7 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
-import { Complex } from "../MandelMaths.js";
+import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
+import {externalAngleType,getInternalAddress,getInternalAngle,getKneadingSequence} from "./SymbolicMandelMaths.js";
 
 Utils.onPageLoad(()=>{
 	const container = document.getElementById("container");
@@ -53,7 +54,7 @@ function* findMinibrots(){
 					duplicate.upperExternalAngle = i+"/"+m;
 				}else{
 					minibrots.push(minibrot);
-					minibrot.internalAddress = minibrots.filter(minibrot2=>{
+					let internalAddressMinibrots = minibrots.filter(minibrot2=>{
 						if (minibrot2.period==minibrot.period&&minibrot2.upperExternalAngle==undefined){
 							return true;
 						}else{
@@ -62,12 +63,23 @@ function* findMinibrots(){
 							let m2 = parseInt(minibrot2.lowerExternalAngle.split("/")[1]);
 							return i2*m<=i*m2&&i*m2<i3*m;
 						}
-					}).sort((m1,m2)=>parseInt(m1.lowerExternalAngle.split("/")[0])*parseInt(m2.lowerExternalAngle.split("/")[1])-parseInt(m2.lowerExternalAngle.split("/")[0])*parseInt(m1.lowerExternalAngle.split("/")[1])).filter((m,i,a)=>!a.some((m2,i2)=>i2>i&&m2.period<m.period)).map(m=>m.period);
+					}).sort((m1,m2)=>parseInt(m1.lowerExternalAngle.split("/")[0])*parseInt(m2.lowerExternalAngle.split("/")[1])-parseInt(m2.lowerExternalAngle.split("/")[0])*parseInt(m1.lowerExternalAngle.split("/")[1])).filter((m,i,a)=>!a.some((m2,i2)=>i2>i&&m2.period<m.period));
+					let internalAddress = internalAddressMinibrots.map(m=>m.period);
+					console.assert(internalAddress.join(",")==getInternalAddress(minibrot.kneadingSequence).join(","));
+					minibrot.angledInternalAddress = internalAddress.map((period,index)=>{
+						if (index+1<internalAddress.length){
+							return {period,angle:getInternalAngle(minibrot.kneadingSequence,period,internalAddress[index+1],i,m)};
+						}else{
+							return {period};
+						}
+					});
 				}
 			}
 		}
 		console.log(`found ${minibrots.length-nextYieldIndex} more minibrots in ${(Date.now()-t)}ms`);
 		for (let i=nextYieldIndex;i<minibrots.length;i++){
+			console.assert(externalAngleType(parseInt(minibrots[i].lowerExternalAngle.split("/")[0]),parseInt(minibrots[i].lowerExternalAngle.split("/")[1]))=="lower");
+			console.assert(externalAngleType(parseInt(minibrots[i].upperExternalAngle.split("/")[0]),parseInt(minibrots[i].upperExternalAngle.split("/")[1]))=="upper");
 			yield minibrots[i];
 		}
 		nextYieldIndex = minibrots.length;
@@ -117,32 +129,6 @@ function traceExternalRay(n,m){
 }
 // @ts-ignore
 window.traceExternalRay = traceExternalRay;
-/**
- * Returns the kneading number of the *-periodic external angle n/m.
- * @param {number} n
- * @param {number} m must be one less than a power of two.
- */
-function getKneadingSequence(n,m){
-	let m2 = Math.round(Math.log2(m+1));
-	console.assert(m==2**m2-1,`m must be one less than a power of two, but it is ${m}`);
-	n = n%m;
-	let k = n;
-	let s = "";
-	for (let i=0;i<2*m2;i++){
-		if (k==n/2||k==(n+m)/2){
-			s += "*";
-			break;
-		}else if(k>n/2&&k<(n+m)/2){
-			s += "1";
-		}else{
-			s += "0";
-		}
-		k = (k*2)%m;
-	}
-	return s;
-}
-// @ts-ignore
-window.getKneadingSequence = getKneadingSequence;
 // TODO compute internal addresses from kneading sequences too
 class MinibrotDisplay extends HTMLElement {
 	/**
@@ -205,7 +191,7 @@ class MinibrotDisplay extends HTMLElement {
 			this.shadowRoot.querySelector("#external-angles").textContent = minibrot.lowerExternalAngle+", "+minibrot.upperExternalAngle;
 		}
 		this.shadowRoot.querySelector("#kneading-sequence").textContent = minibrot.kneadingSequence;
-		this.shadowRoot.querySelector("#internal-address").textContent = minibrot.internalAddress.join("-");
+		this.shadowRoot.querySelector("#internal-address").textContent = minibrot.angledInternalAddress.map(({period,angle})=>period+(angle?`_${angle.numerator}/${angle.denominator}`:"")).join("\u200b->");
 		// TODO compute and display angled internal address
 		// TODO compute and display minibrot formula
 		// TODO fancier formatting with KaTeX?
