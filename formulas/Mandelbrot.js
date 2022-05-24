@@ -594,7 +594,7 @@ export class MandelbrotPeriodicPoint extends PeriodicPoint {
 		this.lowerExternalAngle = undefined;
 		/** @type {import("../minibrots/SymbolicMandelMaths.js").Fraction|undefined} */
 		this.upperExternalAngle = undefined;
-		/** @type {{period:number,angle?:{numerator:number,denominator:number}}[]|undefined} */
+		/** @type {{period:number,angle?:import("../minibrots/SymbolicMandelMaths.js").Fraction}[]|undefined} */
 		this.angledInternalAddress = undefined;
 	}
 

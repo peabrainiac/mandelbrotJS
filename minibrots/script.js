@@ -112,7 +112,7 @@ function traceExternalRay(angle){
 }
 // @ts-ignore
 window.traceExternalRay = traceExternalRay;
-// TODO compute internal addresses from kneading sequences too
+let minDiskRadius = Infinity;
 class MinibrotDisplay extends HTMLElement {
 	/**
 	 * @param {MandelbrotPeriodicPoint} minibrot
@@ -178,13 +178,13 @@ class MinibrotDisplay extends HTMLElement {
 			this.shadowRoot.querySelector("#external-angles").textContent = minibrot.lowerExternalAngle+", "+minibrot.upperExternalAngle;
 		}
 		this.shadowRoot.querySelector("#kneading-sequence").textContent = minibrot.kneadingSequence;
-		this.shadowRoot.querySelector("#internal-address").innerHTML = minibrot.angledInternalAddress.map(({period,angle})=>period+(angle?`<span class="subscript">${angle.numerator}/${angle.denominator}</span>`:"")).join("\u200b - ");
-		// TODO compute and display angled internal address
+		// TODO link to corresponding minibrots in internal address?
+		this.shadowRoot.querySelector("#internal-address").innerHTML = minibrot.angledInternalAddress.map(({period,angle})=>period+(angle?`<span class="subscript">${angle}</span>`:"")).join("\u200b - ");
 		// TODO compute and display minibrot formula
-		// TODO fancier formatting with KaTeX?
 		onFirstVisible(this,()=>this._render());
 	}
 
+	// TODO optimize rendering
 	_render(){
 		const canvas = this._canvas;
 		const ctx = canvas.getContext("2d");
@@ -192,25 +192,30 @@ class MinibrotDisplay extends HTMLElement {
 		const pixels = new Uint32Array(imgData.data.buffer);
 		const WIDTH = canvas.width;
 		const HEIGHT = canvas.height;
+		const ZOOM = 50;
 		const ITER = this._minibrot.period*100;
 		const CX = this._minibrot.x;
 		const CY = this._minibrot.y;
 		const SX = this._minibrot.scale.x;
 		const SY = this._minibrot.scale.y;
 		const SAMPLESIZE = 2;
+		const address = this._minibrot.angledInternalAddress;
+		const isDisk = address.length>=2&&(address[address.length-1].period%address[address.length-2].period==0);
 		for (let x=0;x<WIDTH;x++){
 			for (let y=0;y<HEIGHT;y++){
 				let d = 0;
 				for (let x2=0;x2<SAMPLESIZE;x2++){
 					for (let y2=0;y2<SAMPLESIZE;y2++){
-						let cx = (x+(x2+0.5)/SAMPLESIZE-0.5-WIDTH/2)/50-0.5;
-						let cy = (-(y+(y2+0.5)/SAMPLESIZE-0.5)+HEIGHT/2)/50+1e-5;
-						let cx2 = cx*SX-cy*SY;
-						let cy2 = cx*SY+cy*SX;
-						cx = cx2+CX;
-						cy = cy2+CY;
-						let dcx = SX/50;
-						let dcy = SY/50;
+						let rcx = (x+(x2+0.5)/SAMPLESIZE-0.5-WIDTH/2)/ZOOM-0.5;
+						let rcy = (-(y+(y2+0.5)/SAMPLESIZE-0.5)+HEIGHT/2)/ZOOM+1e-5;
+						if (isDisk?rcx*rcx+rcy*rcy<0.45*0.45:((rcx-0.25)**2+rcy**2)**2+(rcx-0.25)*((rcx-0.25)**2+rcy**2)-0.25*rcy*rcy<-0.035){
+							d += 1;
+							continue;
+						}
+						let cx = rcx*SX-rcy*SY+CX;
+						let cy = rcx*SY+rcy*SX+CY;
+						let dcx = SX/ZOOM;
+						let dcy = SY/ZOOM;
 						let zx = 0;
 						let zy = 0;
 						let dzx = 0;
@@ -226,6 +231,11 @@ class MinibrotDisplay extends HTMLElement {
 							dzy = dzy2;
 						}
 						d += Math.min(1,i==ITER?1:2*Math.sqrt((zx*zx+zy*zy)/(dzx*dzx+dzy*dzy))*0.5*Math.log(zx*zx+zy*zy));
+						/*let r = ((rcx-0.25)**2+rcy**2)**2+(rcx-0.25)*((rcx-0.25)**2+rcy**2)-0.25*rcy*rcy;//Math.hypot(rcx,rcy);
+						if (i!=ITER&&!isDisk&&r<minDiskRadius){
+							console.log("new minDiskRadius:",r,", period:",this._minibrot.period);
+							minDiskRadius = r;
+						}*/
 					}
 				}
 				d /= SAMPLESIZE*SAMPLESIZE;

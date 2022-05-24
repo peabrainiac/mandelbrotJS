@@ -87,18 +87,19 @@ export function getInternalAngle(kneadingSequence,period,nextPeriod,angle){
 			p++;
 		}
 	}
-	return {numerator:p,denominator:q};
+	return new Fraction(p,q);
 }
 // @ts-ignore
 window.getInternalAngle = getInternalAngle;
 /**
  * Returns the angled internal address of a *-periodic external angle.
  * @param {Fraction} angle
+ * @return {{period:number,angle?:Fraction}[]}
  */
 export function getAngledInternalAddress(angle){
 	let kneadingSequence = getKneadingSequence(angle);
 	let internalAddress = getInternalAddress(kneadingSequence);
-	return internalAddress.map((period,index)=>{
+	return internalAddress.map(/** @return {{period:number,angle?:Fraction}}*/(period,index)=>{
 		if (index+1<internalAddress.length){
 			return {period,angle:getInternalAngle(kneadingSequence,period,internalAddress[index+1],angle)};
 		}else{
