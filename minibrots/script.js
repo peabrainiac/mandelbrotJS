@@ -23,6 +23,9 @@ Utils.onPageLoad(()=>{
 		container.append(display);
 		}
 	});
+	//let n = 132922799578491586829212104185295668n;
+	//let m = (1n<<119n)-1n;
+	//console.log(traceExternalRay())
 });
 /**
  * Finds (or at least tries to) all minibrots, ordered by their period and lower external angle.
@@ -88,7 +91,7 @@ function traceExternalRay(angle){
 		for (i2=0;i2<1000&&zx*zx+zy*zy<bailout*bailout;i2++){
 			let zx2 = zx*zx-zy*zy+cx;
 			let zy2 = 2*zx*zy+cy;
-			let dzx2 = 2*(dzx*zx-dzy*zy)+1.0;
+			let dzx2 = 2*(dzx*zx-dzy*zy)+1;
 			let dzy2 = 2*(dzx*zy+dzy*zx);
 			zx = zx2;
 			zy = zy2;
@@ -112,7 +115,74 @@ function traceExternalRay(angle){
 }
 // @ts-ignore
 window.traceExternalRay = traceExternalRay;
-let minDiskRadius = Infinity;
+/**
+ * Returns a binary approximation of the external angle of a given point.
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} iter
+ */
+function getExternalAngle(cx,cy,iter){
+	const bailout = 8;
+	const stepFactor = 1.5;
+	let zx = 0;
+	let zy = 0;
+	for (var i=0;i<iter&&zx*zx+zy*zy<bailout*bailout;i++){
+		let zx2 = zx*zx-zy*zy+cx;
+		let zy2 = 2*zx*zy+cy;
+		zx = zx2;
+		zy = zy2;
+	}
+	console.assert(i<iter,`c must diverge in less than ${iter} iterations, but doesn't`);
+	let s = ((1+Math.atan2(zy,zx)/(Math.PI*2)).toString(2).split(".")[1]||"").padEnd(53,"0").substring(0,53);
+	console.assert(s.length==53);
+	s = "";
+	while (i>1){
+		zx = 0;
+		zy = 0;
+		let dzx = 0;
+		let dzy = 0;
+		for (var i2=0;i2<i&&zx*zx+zy*zy<bailout*bailout;i2++){
+			let zx2 = zx*zx-zy*zy+cx;
+			let zy2 = 2*zx*zy+cy;
+			let dzx2 = 2*(dzx*zx-dzy*zy)+1.0;
+			let dzy2 = 2*(dzx*zy+dzy*zx);
+			zx = zx2;
+			zy = zy2;
+			dzx = dzx2;
+			dzy = dzy2;
+		}
+		let i3 = i2;
+		let s2 = "";
+		for (;i2<i;i2++){
+			s2 += (zy>0||(zy==0&&zx>0))?"0":"1";
+			let zx2 = zx*zx-zy*zy+cx;
+			let zy2 = 2*zx*zy+cy;
+			let dzx2 = 2*(dzx*zx-dzy*zy)+1.0;
+			let dzy2 = 2*(dzx*zy+dzy*zx);
+			zx = zx2;
+			zy = zy2;
+			dzx = dzx2;
+			dzy = dzy2;
+		}
+		s = s2+s;
+		let dx = stepFactor*zx-zx;
+		let dy = stepFactor*zy-zy;
+		cx += (dx*dzx+dy*dzy)/(dzx*dzx+dzy*dzy);
+		cy += (dy*dzx-dx*dzy)/(dzx*dzx+dzy*dzy);
+		i = i3;
+	}
+	return "0."+s;
+}
+// @ts-ignore
+window.getExternalAngle = getExternalAngle;
+// @ts-ignore
+window.testExternalAngle = function(n,m){
+	let c = traceExternalRay(new Fraction(n,m));
+	let externalAngle = getExternalAngle(c.x,c.y,2000);
+	let actualAngle = (n/m).toString(2);
+	console.log("computed angle: \n",externalAngle.substring(0,actualAngle.length));
+	console.log("actual angle: \n",actualAngle)
+}
 class MinibrotDisplay extends HTMLElement {
 	/**
 	 * @param {MandelbrotPeriodicPoint} minibrot
@@ -237,11 +307,6 @@ class MinibrotDisplay extends HTMLElement {
 							dzy = dzy2;
 						}
 						d += Math.min(1,i==ITER?1:2*Math.sqrt((zx*zx+zy*zy)/(dzx*dzx+dzy*dzy))*0.5*Math.log(zx*zx+zy*zy));
-						/*let r = ((rcx-0.25)**2+rcy**2)**2+(rcx-0.25)*((rcx-0.25)**2+rcy**2)-0.25*rcy*rcy;//Math.hypot(rcx,rcy);
-						if (i!=ITER&&!isDisk&&r<minDiskRadius){
-							console.log("new minDiskRadius:",r,", period:",this._minibrot.period);
-							minDiskRadius = r;
-						}*/
 					}
 				}
 				d /= SAMPLESIZE*SAMPLESIZE;
