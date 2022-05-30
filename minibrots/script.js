@@ -127,6 +127,7 @@ class MinibrotDisplay extends HTMLElement {
 					width: 240px;
 					border-radius: 4px;
 					box-shadow: 0 0 5px 0 #00000080;
+					overflow: hidden;
 				}
 				:host > canvas {
 					display: block;
@@ -145,6 +146,11 @@ class MinibrotDisplay extends HTMLElement {
 				.subscript {
 					vertical-align: sub;
 					font-size: 0.75em;
+				}
+				@media (prefers-color-scheme: dark) {
+					:host > canvas {
+						filter: invert(1);
+					}
 				}
 			</style>
 			<canvas width="240" height="180"></canvas>

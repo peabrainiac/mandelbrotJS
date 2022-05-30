@@ -13,3 +13,16 @@ body > h1 {
 	gap: 10px;
 	/*align-items: start;*/
 }
+@media (prefers-color-scheme: dark) {
+	body {
+		background: #101010;
+		color: #dfdfdf;
+	}
+	body > h1 {
+		color: #ffaf00;
+	}
+	minibrot-display {
+		background: #181818;
+		box-shadow: 0 0 5px 0 #000000;
+	}
+}
