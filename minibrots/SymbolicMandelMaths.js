@@ -1,26 +1,26 @@
 // Module with methods for working with kneading sequences, external angles, internal addresses and the like. based on https://arxiv.org/abs/math/9411238
 /**
- * Returns the kneading number of the *-periodic external angle.
- * @param {Fraction} angle
+ * Returns the kneading sequence of the *-periodic external angle.
+ * @param {BigFrac} angle
  */
 export function getKneadingSequence(angle){
 	let n = angle.a;
 	let m = angle.b;
-	let m2 = Math.round(Math.log2(m+1));
-	console.assert(m==2**m2-1,`m must be one less than a power of two, but it is ${m}`);
+	let m2 = Math.round(Math.log2(Number(m+1n)));
+	console.assert(m==(1n<<BigInt(m2))-1n,`m must be one less than a power of two, but it is ${m}`);
 	n = n%m;
 	let k = n;
 	let s = "";
 	for (let i=0;i<2*m2;i++){
-		if (k==n/2||k==(n+m)/2){
+		if (2n*k==n||2n*k==n+m){
 			s += "*";
 			break;
-		}else if(k>n/2&&k<(n+m)/2){
+		}else if(2n*k>n&&2n*k<n+m){
 			s += "1";
 		}else{
 			s += "0";
 		}
-		k = (k*2)%m;
+		k = (2n*k)%m;
 	}
 	return s;
 }
@@ -45,18 +45,18 @@ export function getInternalAddress(kneadingSequence){
 window.getInternalAddress = getInternalAddress;
 /**
  * Returns whether a given *-periodic external angle is the upper or lower one in its periodic ray pair
- * @param {Fraction} angle
+ * @param {BigFrac} angle
  */
 export function externalAngleType(angle){
 	const n = angle.a;
 	const m = angle.b;
-    if (m==1){
-        return n==0?"lower":"upper";
+    if (m==1n){
+        return n==0n?"lower":"upper";
     }else{
         let kneadingSequence = getKneadingSequence(angle);
         let address = getInternalAddress(kneadingSequence);
         //console.log(address,kneadingSequence,kneadingSequence[(kneadingSequence.length-1)%address[address.length-2]],(kneadingSequence.length-1)%address[address.length-2]);
-        return (((n*2**(kneadingSequence.length-1))%m==n/2?"1":"0")==kneadingSequence[(kneadingSequence.length-1)%address[address.length-2]])?"upper":"lower";
+        return ((2n*((n*(1n<<BigInt(kneadingSequence.length-1).valueOf()))%m)==n?"1":"0")==kneadingSequence[(kneadingSequence.length-1)%address[address.length-2]])?"upper":"lower";
     }
 }
 // @ts-ignore
@@ -66,7 +66,7 @@ window.externalAngleType = externalAngleType;
  * @param {string} kneadingSequence
  * @param {number} period
  * @param {number} nextPeriod
- * @param {Fraction} angle
+ * @param {BigFrac} angle
  */
 export function getInternalAngle(kneadingSequence,period,nextPeriod,angle){
 	const n = angle.a;
@@ -80,10 +80,10 @@ export function getInternalAngle(kneadingSequence,period,nextPeriod,angle){
 	}
 	let q = (nextPeriod-r)/period+(k==period?1:2);
 	let p = 1;
-	k = n;
+	let k2 = n;
 	for (let i=1;i<q-1;i++){
-		k = (2**period*k)%m;
-		if (k<=n){
+		k2 = ((1n<<BigInt(period))*k2)%m;
+		if (k2<=n){
 			p++;
 		}
 	}
@@ -93,7 +93,7 @@ export function getInternalAngle(kneadingSequence,period,nextPeriod,angle){
 window.getInternalAngle = getInternalAngle;
 /**
  * Returns the angled internal address of a *-periodic external angle.
- * @param {Fraction} angle
+ * @param {BigFrac} angle
  * @return {{period:number,angle?:Fraction}[]}
  */
 export function getAngledInternalAddress(angle){
@@ -128,3 +128,26 @@ export class Fraction {
 		return this.a/this.b;
 	}
 }
+/**
+ * A fraction a/b, where a and b may be big.
+ */
+export class BigFrac {
+	/**
+	 * @param {bigint|number} a
+	 * @param {bigint|number} b
+	 */
+	 constructor(a,b){
+		this.a = BigInt(a).valueOf();
+		this.b = BigInt(b).valueOf();
+	}
+
+	toString(){
+		return `${this.a}/${this.b}`;
+	}
+
+	toFloat(){
+		return Number(this.a)/Number(this.b);
+	}
+}
+// @ts-ignore
+window.BigFrac = BigFrac;

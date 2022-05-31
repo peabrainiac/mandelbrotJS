@@ -1,31 +1,36 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
-import {externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence} from "./SymbolicMandelMaths.js";
+import {BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence} from "./SymbolicMandelMaths.js";
 
 Utils.onPageLoad(()=>{
 	const container = document.getElementById("container");
-	/*const formula = new MandelbrotBaseFormula();
-	const minibrots = [
-		[0,0,1],
-		[-1,0,2],
-		[-1.75,0,3],[0,1,3],
-		[-1.9,0,4],[-1.3,0,4],[0,1,4],[0.5,0.5,4],
-		[-1.98,0,5],[-1.85,0,5],[-1.6,0,5],[-1.3,0.4,5],[-0.5,0.5,5],[-0.2,1.1,5],[0,1,5],[0.4,0.6,5],[0.4,0.3,5],
-		[-1.995,0,6],[-1.97,0,6],[-1.91,0,6],[-1.77,0,6],[-1.5,0,6],[-1.3,0.4,6],[-1.1,0.2,6],[-0.6,0.6,6],[-0.2,1.1,6],[-0.15,1.1,6],[-0.1,0.9,6],[0,1,6],[0.35,0.7,6],[0.4,0.6,6],[0.44,0.37,6],[0.4,0.2,6]
-	].map(([cx,cy,n])=>cy==0?[[cx,cy,n]]:[[cx,cy,n],[cx,-cy,n]]).flat().map(([cx,cy,n])=>formula.getNearbyPeriodicPoint(cx,cy,n));*/
+
+	/*let lowerAngle = new BigFrac(132922799578491586829212104185295667n,(1n<<119n)-1n);
+	let upperAngle = new BigFrac(132922799578491586829212104185295668n,(1n<<119n)-1n);
+	let c = traceExternalRay(lowerAngle,11900);
+	console.log(c);
+	console.log(getKneadingSequence(lowerAngle));
+	console.log(externalAngleType(lowerAngle));
+	console.log(getAngledInternalAddress(lowerAngle));
+	let minibrot = (new MandelbrotBaseFormula()).getNearbyPeriodicPoint(c.x,c.y,119);
+	minibrot.lowerExternalAngle = lowerAngle;
+	minibrot.upperExternalAngle = upperAngle;
+	minibrot.kneadingSequence = getKneadingSequence(lowerAngle);
+	minibrot.angledInternalAddress = getAngledInternalAddress(lowerAngle);
+	let display = new MinibrotDisplay(minibrot);
+	container.append(display);*/
+
+
 	// TODO button to export data as json
 	const minibrots = findMinibrots();
 	Utils.onElementBottomHit(document.documentElement,async()=>{
 		for (let i=0;i<12;i++){
-		// @ts-ignore
-		let display = new MinibrotDisplay(minibrots.next().value);
-		container.append(display);
+			// @ts-ignore
+			let display = new MinibrotDisplay(minibrots.next().value);
+			container.append(display);
 		}
 	});
-	//let n = 132922799578491586829212104185295668n;
-	//let m = (1n<<119n)-1n;
-	//console.log(traceExternalRay())
 });
 /**
  * Finds (or at least tries to) all minibrots, ordered by their period and lower external angle.
@@ -45,7 +50,7 @@ function* findMinibrots(){
 					continue middle;
 				}
 			}
-			let angle = new Fraction(i,m);
+			let angle = new BigFrac(i,m);
 			let landingPoint = traceExternalRay(angle);
 			let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
 			minibrot.kneadingSequence = getKneadingSequence(angle);
@@ -72,15 +77,15 @@ function* findMinibrots(){
 }
 /**
  * Traces the external ray at the given angle.
- * @param {Fraction} angle
+ * @param {BigFrac} angle
  */
-function traceExternalRay(angle){
+function traceExternalRay(angle,steps=1000){
 	const n = angle.a;
 	const m = angle.b;
 	const bailout = 8;
 	const stepFactor = 0.4; // sort of step size, but multiplicative
-	let cx = bailout*Math.cos(n/m*Math.PI*2);
-	let cy = bailout*Math.sin(n/m*Math.PI*2);
+	let cx = bailout*Math.cos(angle.toFloat()*Math.PI*2);
+	let cy = bailout*Math.sin(angle.toFloat()*Math.PI*2);
 	for (let i=0;i<1000;i++){
 		let zx = cx;
 		let zy = cy;
@@ -97,11 +102,11 @@ function traceExternalRay(angle){
 			zy = zy2;
 			dzx = dzx2;
 			dzy = dzy2;
-			k = (2*k)%m;
+			k = (2n*k)%m;
 		}
 		if (true||zx*zx+zy*zy>=bailout*bailout){
-			let sx = Math.cos(k/m*Math.PI*2);
-			let sy = Math.sin(k/m*Math.PI*2);
+			let sx = Math.cos(Number(k)/Number(m)*Math.PI*2);
+			let sy = Math.sin(Number(k)/Number(m)*Math.PI*2);
 			let r = Math.hypot(zx,zy);
 			let dx = stepFactor*r*sx-zx;
 			let dy = stepFactor*r*sy-zy;
@@ -175,11 +180,15 @@ function getExternalAngle(cx,cy,iter){
 }
 // @ts-ignore
 window.getExternalAngle = getExternalAngle;
+/**
+ * @param {bigint} n
+ * @param {bigint} m
+ */
 // @ts-ignore
 window.testExternalAngle = function(n,m){
-	let c = traceExternalRay(new Fraction(n,m));
+	let c = traceExternalRay(new BigFrac(n,m));
 	let externalAngle = getExternalAngle(c.x,c.y,2000);
-	let actualAngle = (n/m).toString(2);
+	let actualAngle = (Number(n)/Number(m)).toString(2);
 	console.log("computed angle: \n",externalAngle.substring(0,actualAngle.length));
 	console.log("actual angle: \n",actualAngle)
 }
