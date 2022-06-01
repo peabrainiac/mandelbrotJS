@@ -2,18 +2,25 @@ import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../fo
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
 import {BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence} from "./SymbolicMandelMaths.js";
+import WebGLMinibrotRenderer from "./WebGLMinibrotRenderer.js";
+
+const renderer = new WebGLMinibrotRenderer();
 
 Utils.onPageLoad(()=>{
 	const container = document.getElementById("container");
 
-	/*let lowerAngle = new BigFrac(132922799578491586829212104185295667n,(1n<<119n)-1n);
-	let upperAngle = new BigFrac(132922799578491586829212104185295668n,(1n<<119n)-1n);
-	let c = traceExternalRay(lowerAngle,11900);
+	/*//let period = 119;
+	//let lowerAngle = new BigFrac(132922799578491586829212104185295667n,(1n<<BigInt(period).valueOf())-1n);
+	//let upperAngle = new BigFrac(132922799578491586829212104185295668n,(1n<<BigInt(period).valueOf())-1n);
+	let period = 185;
+	let lowerAngle = new BigFrac(13077295282055584936000640195713920483555510361939649059n,(1n<<BigInt(period).valueOf())-1n);
+	let upperAngle = new BigFrac(13077295282055584936000640195713920483555510361939649060n,(1n<<BigInt(period).valueOf())-1n);
+	let c = traceExternalRay(lowerAngle,period*100);
 	console.log(c);
 	console.log(getKneadingSequence(lowerAngle));
 	console.log(externalAngleType(lowerAngle));
 	console.log(getAngledInternalAddress(lowerAngle));
-	let minibrot = (new MandelbrotBaseFormula()).getNearbyPeriodicPoint(c.x,c.y,119);
+	let minibrot = (new MandelbrotBaseFormula()).getNearbyPeriodicPoint(c.x,c.y,period);
 	minibrot.lowerExternalAngle = lowerAngle;
 	minibrot.upperExternalAngle = upperAngle;
 	minibrot.kneadingSequence = getKneadingSequence(lowerAngle);
@@ -268,61 +275,64 @@ class MinibrotDisplay extends HTMLElement {
 		// TODO compute and display minibrot formula
 		onFirstVisible(this,()=>this._render());
 	}
-
-	// TODO optimize rendering
 	_render(){
-		const canvas = this._canvas;
-		const ctx = canvas.getContext("2d");
-		const imgData = new ImageData(canvas.width,canvas.height);
-		const pixels = new Uint32Array(imgData.data.buffer);
-		const WIDTH = canvas.width;
-		const HEIGHT = canvas.height;
-		const ZOOM = 50;
-		const ITER = this._minibrot.period*100;
-		const CX = this._minibrot.x;
-		const CY = this._minibrot.y;
-		const SX = this._minibrot.scale.x;
-		const SY = this._minibrot.scale.y;
-		const SAMPLESIZE = 2;
-		const address = this._minibrot.angledInternalAddress;
-		const isDisk = address.length>=2&&(address[address.length-1].period%address[address.length-2].period==0);
-		for (let x=0;x<WIDTH;x++){
-			for (let y=0;y<HEIGHT;y++){
-				let d = 0;
-				for (let x2=0;x2<SAMPLESIZE;x2++){
-					for (let y2=0;y2<SAMPLESIZE;y2++){
-						let rcx = (x+(x2+0.5)/SAMPLESIZE-0.5-WIDTH/2)/ZOOM-0.5;
-						let rcy = (-(y+(y2+0.5)/SAMPLESIZE-0.5)+HEIGHT/2)/ZOOM+1e-5;
-						if (isDisk?rcx*rcx+rcy*rcy<0.45*0.45:((rcx-0.25)**2+rcy**2)**2+(rcx-0.25)*((rcx-0.25)**2+rcy**2)-0.25*rcy*rcy<-0.035){
-							d += 1;
-							continue;
+		// TODO implement 64-bit gpu rendering too?
+		if (this._minibrot.scale.length>1e-5){
+			renderer.render(this._canvas,this._minibrot);
+		}else{
+			const canvas = this._canvas;
+			const ctx = canvas.getContext("2d");
+			const imgData = new ImageData(canvas.width,canvas.height);
+			const pixels = new Uint32Array(imgData.data.buffer);
+			const WIDTH = canvas.width;
+			const HEIGHT = canvas.height;
+			const ZOOM = 50;
+			const ITER = this._minibrot.period*100;
+			const CX = this._minibrot.x;
+			const CY = this._minibrot.y;
+			const SX = this._minibrot.scale.x;
+			const SY = this._minibrot.scale.y;
+			const SAMPLESIZE = 2;
+			const address = this._minibrot.angledInternalAddress;
+			const isDisk = address.length>=2&&(address[address.length-1].period%address[address.length-2].period==0);
+			for (let x=0;x<WIDTH;x++){
+				for (let y=0;y<HEIGHT;y++){
+					let d = 0;
+					for (let x2=0;x2<SAMPLESIZE;x2++){
+						for (let y2=0;y2<SAMPLESIZE;y2++){
+							let rcx = (x+(x2+0.5)/SAMPLESIZE-0.5-WIDTH/2)/ZOOM-0.5;
+							let rcy = (-(y+(y2+0.5)/SAMPLESIZE-0.5)+HEIGHT/2)/ZOOM+1e-5;
+							if (isDisk?rcx*rcx+rcy*rcy<0.45*0.45:((rcx-0.25)**2+rcy**2)**2+(rcx-0.25)*((rcx-0.25)**2+rcy**2)-0.25*rcy*rcy<-0.035){
+								d += 1;
+								continue;
+							}
+							let cx = rcx*SX-rcy*SY+CX;
+							let cy = rcx*SY+rcy*SX+CY;
+							let dcx = SX/ZOOM;
+							let dcy = SY/ZOOM;
+							let zx = 0;
+							let zy = 0;
+							let dzx = 0;
+							let dzy = 0;
+							for (var i=0;i<ITER&&zx*zx+zy*zy<16;i++){
+								let zx2 = zx*zx-zy*zy+cx;
+								let zy2 = 2*zx*zy+cy;
+								let dzx2 = 2.0*(zx*dzx-zy*dzy)+dcx;
+								let dzy2 = 2.0*(zx*dzy+zy*dzx)+dcy;
+								zx = zx2;
+								zy = zy2;
+								dzx = dzx2;
+								dzy = dzy2;
+							}
+							d += Math.min(1,i==ITER?1:2*Math.sqrt((zx*zx+zy*zy)/(dzx*dzx+dzy*dzy))*0.5*Math.log(zx*zx+zy*zy));
 						}
-						let cx = rcx*SX-rcy*SY+CX;
-						let cy = rcx*SY+rcy*SX+CY;
-						let dcx = SX/ZOOM;
-						let dcy = SY/ZOOM;
-						let zx = 0;
-						let zy = 0;
-						let dzx = 0;
-						let dzy = 0;
-						for (var i=0;i<ITER&&zx*zx+zy*zy<16;i++){
-							let zx2 = zx*zx-zy*zy+cx;
-							let zy2 = 2*zx*zy+cy;
-							let dzx2 = 2.0*(zx*dzx-zy*dzy)+dcx;
-							let dzy2 = 2.0*(zx*dzy+zy*dzx)+dcy;
-							zx = zx2;
-							zy = zy2;
-							dzx = dzx2;
-							dzy = dzy2;
-						}
-						d += Math.min(1,i==ITER?1:2*Math.sqrt((zx*zx+zy*zy)/(dzx*dzx+dzy*dzy))*0.5*Math.log(zx*zx+zy*zy));
 					}
+					d /= SAMPLESIZE*SAMPLESIZE;
+					pixels[x+y*canvas.width] = 0xff000000+0x010101*Math.floor(255.9*0.95*d);
 				}
-				d /= SAMPLESIZE*SAMPLESIZE;
-				pixels[x+y*canvas.width] = 0xff000000+0x010101*Math.floor(255.9*0.95*d);
 			}
+			ctx.putImageData(imgData,0,0);
 		}
-		ctx.putImageData(imgData,0,0);
 	}
 }
 customElements.define("minibrot-display",MinibrotDisplay);
