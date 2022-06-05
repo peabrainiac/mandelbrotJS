@@ -1,7 +1,7 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
-import {BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence} from "./SymbolicMandelMaths.js";
+import {BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, lowerToUpperAngle} from "./SymbolicMandelMaths.js";
 import WebGLMinibrotRenderer from "./WebGLMinibrotRenderer.js";
 
 const renderer = new WebGLMinibrotRenderer();
@@ -77,6 +77,7 @@ function* findMinibrots(){
 		for (let i=nextYieldIndex;i<minibrots.length;i++){
 			console.assert(externalAngleType(minibrots[i].lowerExternalAngle)=="lower");
 			console.assert(externalAngleType(minibrots[i].upperExternalAngle)=="upper");
+			console.assert(lowerToUpperAngle(minibrots[i].lowerExternalAngle).equals(minibrots[i].upperExternalAngle),minibrots[i].lowerExternalAngle);
 			yield minibrots[i];
 		}
 		nextYieldIndex = minibrots.length;

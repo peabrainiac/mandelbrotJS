@@ -108,6 +108,36 @@ export function getAngledInternalAddress(angle){
 	});
 }
 /**
+ * Returns the upper external angle corresponding to the given lower one.
+ * @param {BigFrac} angle
+ * @returns {BigFrac}
+ */
+export function lowerToUpperAngle(angle){
+	console.assert(externalAngleType(angle)=="lower");
+	if (angle.equals(new BigFrac(0n,1n))){
+		return new BigFrac(1n,1n);
+	}
+	let smallerDenominators = [];
+	let k = angle.b;
+	while (k>1){
+		k = k/2n;
+		smallerDenominators.push(k);
+		if (angle.b%k==0n&&angle.a%(angle.b/k)==0n){
+			return lowerToUpperAngle(new BigFrac(angle.a/(angle.b/k),k));
+		}
+	}
+	let currentAngle = angle;
+	let nextAngle = BigFrac.min(...smallerDenominators.map(n=>currentAngle.nextLarger(n)));
+	while(nextAngle.compareTo(currentAngle.nextLarger(angle.b))<=0){
+		console.assert(externalAngleType(nextAngle)=="lower");
+		currentAngle = lowerToUpperAngle(nextAngle);
+		nextAngle = BigFrac.min(...smallerDenominators.map(n=>currentAngle.nextLarger(n)));
+	}
+	return currentAngle.nextLarger(angle.b);
+}
+// @ts-ignore
+window.lowerToUpperAngle = lowerToUpperAngle;
+/**
  * A fraction a/b.
  */
 export class Fraction {
@@ -141,12 +171,63 @@ export class BigFrac {
 		this.b = BigInt(b).valueOf();
 	}
 
+	/**
+	 * @param {bigint} b
+	 */
+	set b(b){
+		this._b = b;
+		if (b<0){
+			this._b = -this._b;
+			this.a = -this.a;
+		}
+	}
+
+	get b(){
+		return this._b;
+	}
+
 	toString(){
 		return `${this.a}/${this.b}`;
 	}
 
 	toFloat(){
 		return Number(this.a)/Number(this.b);
+	}
+
+	/**
+	 * @param {BigFrac} frac
+	 */
+	equals(frac){
+		return this.a*frac.b==frac.a*this.b;
+	}
+
+	/**
+	 * Returns 1 if it is bigger than the given fraction, -1 if it is smaller, and 0 if they're equal.
+	 * @param {BigFrac} frac
+	 */
+	compareTo(frac){
+		let diff = this.a*frac.b-frac.a*this.b;
+		return diff>0?1:diff<0?-1:0;
+	}
+
+	/**
+	 * Returns the next larger fraction with the given denominator.
+	 * @param {bigint} denominator
+	 */
+	nextLarger(denominator){
+		let frac = new BigFrac((this.a*denominator)/this.b,denominator);
+		if (frac.compareTo(this)!=1){
+			frac.a++;
+		}
+		return frac;
+	}
+
+	/**
+	 * Returns the smallest of the given fractions.
+	 * @param  {...BigFrac} fracs
+	 */
+	static min(...fracs){
+		return fracs.reduce((f1,f2)=>f1.compareTo(f2)<=0?f1:f2);
 	}
 }
 // @ts-ignore
