@@ -1,7 +1,7 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
-import {BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, lowerToUpperAngle} from "./SymbolicMandelMaths.js";
+import {angledInternalAddressToExternalAngle, BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, lowerToUpperAngle} from "./SymbolicMandelMaths.js";
 import WebGLMinibrotRenderer from "./WebGLMinibrotRenderer.js";
 
 const renderer = new WebGLMinibrotRenderer();
@@ -58,18 +58,19 @@ function* findMinibrots(){
 				}
 			}
 			let angle = new BigFrac(i,m);
-			let landingPoint = traceExternalRay(angle);
-			let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
-			minibrot.kneadingSequence = getKneadingSequence(angle);
-			minibrot.lowerExternalAngle = angle;
-			if (m&&!isNaN(minibrot.scale.length)){
-				let duplicate = minibrots.find(m2=>m2.equals(minibrot));
-				if (duplicate){
-					console.assert(duplicate.kneadingSequence==minibrot.kneadingSequence,"had two external angles with different kneading sequences land at the same point");
-					duplicate.upperExternalAngle = angle;
-				}else{
+			if (externalAngleType(angle)=="lower"){
+				let landingPoint = traceExternalRay(angle);
+				let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
+				if (m&&!isNaN(minibrot.scale.length)){
+					let duplicate = minibrots.find(m2=>m2.equals(minibrot));
+					if (duplicate){
+						console.warn("had two different lower external angles land at the same point:",duplicate.lowerExternalAngle.toString(),angle.toString());
+					}
+					minibrot.lowerExternalAngle = angle;
+					minibrot.upperExternalAngle = lowerToUpperAngle(angle);
+					minibrot.kneadingSequence = getKneadingSequence(angle);
 					minibrot.angledInternalAddress = getAngledInternalAddress(angle);
-					minibrots.push(minibrot);
+					if (externalAngleType(angle)=="lower") minibrots.push(minibrot);
 				}
 			}
 		}
@@ -78,6 +79,7 @@ function* findMinibrots(){
 			console.assert(externalAngleType(minibrots[i].lowerExternalAngle)=="lower");
 			console.assert(externalAngleType(minibrots[i].upperExternalAngle)=="upper");
 			console.assert(lowerToUpperAngle(minibrots[i].lowerExternalAngle).equals(minibrots[i].upperExternalAngle),minibrots[i].lowerExternalAngle);
+			console.assert(minibrots[i].lowerExternalAngle.equals(angledInternalAddressToExternalAngle(minibrots[i].angledInternalAddress)),minibrots[i].lowerExternalAngle,"!=",angledInternalAddressToExternalAngle(minibrots[i].angledInternalAddress));
 			yield minibrots[i];
 		}
 		nextYieldIndex = minibrots.length;

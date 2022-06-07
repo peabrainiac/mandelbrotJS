@@ -1,4 +1,49 @@
-// Module with methods for working with kneading sequences, external angles, internal addresses and the like. based on https://arxiv.org/abs/math/9411238
+// Module with methods for working with external angles, kneading sequences, angled internal addresses and the like. based on https://arxiv.org/abs/math/9411238
+/**
+ * Returns wether a given rational angle is periodic under the angle doubling map. If it isn't, it must be pre-periodic, as all rational angles are.
+ * @param {BigFrac} angle
+ */
+export function isPeriodic(angle){
+	return (angle.b/gcd(angle.a,angle.b))%2n==1n;
+}
+// @ts-ignore
+window.isPeriodic = isPeriodic;
+/**
+ * Returns the period of a given rational angle. Note that the angle doesn't have to be periodic, just pre-periodic, as all rational angles are.
+ * @param {BigFrac} angle
+ */
+export function getPeriod(angle){
+	let c = gcd(angle.a,angle.b);
+	let n = angle.a/c;
+	let m = angle.b/c;
+	while (m%2n==0n){
+		m = m/2n;
+	}
+	n = n<0n?n%m+m:n%m;
+	let k = (n*2n)%m;
+	for (var i=1n;i<m&&k!=n;i++){
+		k = (k*2n)%m;
+	}
+	console.assert(k==n);
+	return i;
+}
+// @ts-ignore
+window.getPeriod = getPeriod;
+/**
+ * Returns the preperiod of a given rational angle. 0 if the angle is periodic, positive otherwise.
+ * @param {BigFrac} angle
+ */
+export function getPreperiod(angle){
+	let m = angle.b/gcd(angle.a,angle.b);
+	let i = 0n;
+	while (m%2n==0n){
+		m = m/2n;
+		i++;
+	}
+	return i;
+}
+// @ts-ignore
+window.getPreperiod = getPreperiod;
 /**
  * Returns the kneading sequence of the *-periodic external angle.
  * @param {BigFrac} angle
@@ -107,8 +152,10 @@ export function getAngledInternalAddress(angle){
 		}
 	});
 }
+// @ts-ignore
+window.getAngledInternalAddress = getAngledInternalAddress;
 /**
- * Returns the upper external angle corresponding to the given lower one.
+ * Returns the upper external angle corresponding to the given lower one. Based on Lavaur's algorithm.
  * @param {BigFrac} angle
  * @returns {BigFrac}
  */
@@ -138,6 +185,132 @@ export function lowerToUpperAngle(angle){
 // @ts-ignore
 window.lowerToUpperAngle = lowerToUpperAngle;
 /**
+ * Computes the lower external angle of the parameter ray pair corresponding to an angled internal address.
+ * @param {{period:number,angle?:Fraction}[]} angledAddress
+ */
+export function angledInternalAddressToExternalAngle(angledAddress){
+	let n = 0n;
+	let m = 1n;
+	for (let index=0;index<angledAddress.length;index++){
+		let period = angledAddress[index].period;
+		let nextM = (1n<<(BigInt(period).valueOf()))-1n;
+		if (m!=nextM){
+			/** @type {bigint[]} */
+			let smallerDenominators = [];
+			let k = 1n;
+			while (k<nextM){
+				smallerDenominators.push(k);
+				k = 2n*k+1n;
+			}
+			console.assert(k==nextM);
+			let currentAngle = new BigFrac(n,m);
+			let nextAngle = BigFrac.min(...smallerDenominators.map(n=>currentAngle.nextLarger(n)));
+			while(nextAngle.compareTo(currentAngle.nextLarger(nextM))<=0){
+				console.assert(externalAngleType(nextAngle)=="lower");
+				currentAngle = lowerToUpperAngle(nextAngle);
+				nextAngle = BigFrac.min(...smallerDenominators.map(n=>currentAngle.nextLarger(n)));
+			}
+			n = currentAngle.nextLarger(nextM).a;
+			m = nextM;
+		}
+		if (index<angledAddress.length-1){
+			let internalAngle = angledAddress[index].angle;
+			console.assert(internalAngle!==undefined&&internalAngle.a>0&&internalAngle.b>1);
+			period *= internalAngle.b;
+			let nextM = (1n<<(BigInt(period).valueOf()))-1n;
+			/** @type {bigint[]} */
+			let smallerDenominators = [];
+			let k = 1n;
+			while (k<nextM){
+				smallerDenominators.push(k);
+				k = 2n*k+1n;
+			}
+			console.assert(k==nextM);
+			let bulbIndex = 0;
+			for (let j=1;j<=internalAngle.a;j++){
+				if (gcd(BigInt(j).valueOf(),BigInt(internalAngle.b).valueOf())==1n){
+					bulbIndex++;
+				}
+			}
+			let currentAngle = new BigFrac(n,m);
+			for (let i=0;i<bulbIndex;i++){
+				let nextAngle = BigFrac.min(...smallerDenominators.map(n=>currentAngle.nextLarger(n)));
+				while(nextAngle.compareTo(currentAngle.nextLarger(nextM))<=0){
+					console.assert(externalAngleType(nextAngle)=="lower",currentAngle,nextAngle);
+					currentAngle = lowerToUpperAngle(nextAngle);
+					nextAngle = BigFrac.min(...smallerDenominators.map(n=>currentAngle.nextLarger(n)));
+				}
+				if (i<bulbIndex-1){
+					currentAngle = lowerToUpperAngle(currentAngle.nextLarger(nextM));
+				}
+			}
+			n = currentAngle.nextLarger(nextM).a;
+			m = nextM;
+		}
+	}
+	return new BigFrac(n,m);
+}
+//console.log(angledInternalAddressToExternalAngle([{period:1,angle:new Fraction(1,2)},{period:2,angle:new Fraction(1,3)},{period:5}]));
+// @ts-ignore
+window.angledInternalAddressToExternalAngle = angledInternalAddressToExternalAngle;
+/**
+ * A pair of periodic parameter rays landing at a common point. Immutable.
+ */
+export class ParameterRayPair {
+	/**
+	 * @param {BigFrac} angle
+	 */
+	constructor(angle){
+		if (!isPeriodic(angle)){
+			throw new Error(`tried to construct parameter ray pair from non-periodic angle ${angle}`);
+		}else if (externalAngleType(angle)=="lower"){
+			this._lowerAngle = angle;
+		}else{
+			this._upperAngle = angle;
+		}
+	}
+
+	/**
+	 * The lower of the two angles.
+	 * @readonly
+	 */
+	get lowerAngle(){
+		if (!this._lowerAngle){
+			let conjugate = lowerToUpperAngle(new BigFrac(this._upperAngle.b-this._upperAngle.a,this._upperAngle.b));
+			this._lowerAngle = new BigFrac(conjugate.b-conjugate.a,conjugate.b);
+		}
+		return this._lowerAngle;
+	}
+
+	/**
+	 * The upper of the two angles.
+	 * @readonly
+	 */
+	get upperAngle(){
+		if (!this._upperAngle){
+			this._upperAngle = lowerToUpperAngle(this._lowerAngle);
+		}
+		return this._upperAngle;
+	}
+
+	toString(){
+		return `(${this.lowerAngle},${this.upperAngle})`;
+	}
+}
+// @ts-ignore
+window.ParameterRayPair = ParameterRayPair;
+/**
+ * Returns the greatest common divisor of two integers.
+ * @param {bigint} a
+ * @param {bigint} b
+ * @returns {bigint}
+ */
+function gcd(a,b){
+	return b?gcd(b,a%b):a<0?-a:a;
+}
+// @ts-ignore
+window.gcd = gcd;
+/**
  * A fraction a/b.
  */
 export class Fraction {
@@ -158,8 +331,10 @@ export class Fraction {
 		return this.a/this.b;
 	}
 }
+// @ts-ignore
+window.Fraction = Fraction;
 /**
- * A fraction a/b, where a and b may be big.
+ * A fraction a/b, where a and b may be big. Immutable.
  */
 export class BigFrac {
 	/**
@@ -167,21 +342,28 @@ export class BigFrac {
 	 * @param {bigint|number} b
 	 */
 	 constructor(a,b){
-		this.a = BigInt(a).valueOf();
-		this.b = BigInt(b).valueOf();
-	}
-
-	/**
-	 * @param {bigint} b
-	 */
-	set b(b){
-		this._b = b;
-		if (b<0){
+		this._a = BigInt(a).valueOf();
+		this._b = BigInt(b).valueOf();
+		if (this._b==0n){
+			throw new Error("Fraction must have a non-zero denominator!");
+		}else if (this._b<0){
+			this._a = -this._a;
 			this._b = -this._b;
-			this.a = -this.a;
 		}
 	}
 
+	/**
+	 * Numerator of the fraction.
+	 * @readonly 
+	 */
+	get a(){
+		return this._a;
+	}
+
+	/**
+	 * Denominator of the fraction. Guaranteed to be positive.
+	 * @readonly
+	 */
 	get b(){
 		return this._b;
 	}
@@ -217,7 +399,7 @@ export class BigFrac {
 	nextLarger(denominator){
 		let frac = new BigFrac((this.a*denominator)/this.b,denominator);
 		if (frac.compareTo(this)!=1){
-			frac.a++;
+			frac = new BigFrac(frac.a+1n,frac.b);
 		}
 		return frac;
 	}
