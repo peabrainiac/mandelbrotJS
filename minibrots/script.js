@@ -1,7 +1,7 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
-import {angledInternalAddressToExternalAngle, BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, internalAddressFromString, lowerToUpperAngle, upperToLowerAngle} from "./SymbolicMandelMaths.js";
+import {angledInternalAddressToExternalAngle, BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, internalAddressFromString, internalAddressToString, lowerToUpperAngle, upperToLowerAngle} from "./SymbolicMandelMaths.js";
 import WebGLMinibrotRenderer from "./WebGLMinibrotRenderer.js";
 
 const renderer = new WebGLMinibrotRenderer();
@@ -269,6 +269,14 @@ class MinibrotDisplay extends HTMLElement {
 						filter: invert(1);
 					}
 				}
+				#internal-address a {
+					color: inherit;
+					text-decoration: none;
+				}
+				#internal-address a:hover {
+					color: inherit;
+					text-decoration: underline;
+				}
 			</style>
 			<canvas width="240" height="180"></canvas>
 			<div id="display-body">
@@ -302,7 +310,7 @@ class MinibrotDisplay extends HTMLElement {
 		}
 		this.shadowRoot.querySelector("#kneading-sequence").textContent = minibrot.kneadingSequence;
 		// TODO link to corresponding minibrots in internal address?
-		this.shadowRoot.querySelector("#internal-address").innerHTML = minibrot.angledInternalAddress.map(({period,angle})=>period+(angle?`<span class="subscript">${angle}</span>`:"")).join("\u200b - ");
+		this.shadowRoot.querySelector("#internal-address").innerHTML = minibrot.angledInternalAddress.map(({period,angle},i,address)=>`<a href="?address=${internalAddressToString([...address.slice(0,i),{period}])}">${period}</a>`+(angle?`<span class="subscript">${angle}</span>`:"")).join("\u200b - ");
 		// TODO compute and display minibrot formula
 		onFirstVisible(this,()=>this._render());
 	}

@@ -262,6 +262,13 @@ export function angledInternalAddressToExternalAngle(angledAddress){
 	return new BigFrac(n,m);
 }
 /**
+ * Returns a string like `1_p/q-S2_p2/q2-S3_p3/q3-S4` corresponding to the given angled internal address.
+ * @param {{period:number,angle?:Fraction}[]} address
+ */
+export function internalAddressToString(address){
+	return address.map(({period,angle})=>period+(angle?"_"+angle.toString():"")).join("-");
+}
+/**
  * Returns the angled internal address corresponding to a string like `1_p/q-S2_p2/q2-S3_p3/q3-S4`.
  * @param {string} s
  * @returns {{period:number,angle?:Fraction}[]}
