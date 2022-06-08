@@ -1,7 +1,7 @@
 import {MandelbrotBaseFormula,MandelbrotPeriodicPoint,Disk,Minibrot} from "../formulas/Mandelbrot.js";
 import {Complex} from "../MandelMaths.js";
 import Utils, {onFirstVisible} from "../util/Utils.js";
-import {angledInternalAddressToExternalAngle, BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, lowerToUpperAngle} from "./SymbolicMandelMaths.js";
+import {angledInternalAddressToExternalAngle, BigFrac,externalAngleType,Fraction,getAngledInternalAddress,getKneadingSequence, internalAddressFromString, lowerToUpperAngle, upperToLowerAngle} from "./SymbolicMandelMaths.js";
 import WebGLMinibrotRenderer from "./WebGLMinibrotRenderer.js";
 
 const renderer = new WebGLMinibrotRenderer();
@@ -27,10 +27,19 @@ Utils.onPageLoad(()=>{
 	minibrot.angledInternalAddress = getAngledInternalAddress(lowerAngle);
 	let display = new MinibrotDisplay(minibrot);
 	container.append(display);*/
-
+	const urlParams = new URLSearchParams(window.location.search);
+	/** @type {{minAngle:BigFrac,maxAngle:BigFrac}|{address:{period:number,angle?:Fraction}[]}} */
+	let options = undefined;
+	if (urlParams.has("angles")){
+		let angles = urlParams.get("angles").split("-").map(s=>BigFrac.fromString(s));
+		options = {minAngle:angles[0],maxAngle:angles[1]};
+	}
+	if (urlParams.has("address")){
+		options = {address:internalAddressFromString(urlParams.get("address"))};
+	}
 
 	// TODO button to export data as json
-	const minibrots = findMinibrots();
+	const minibrots = findMinibrots(options);
 	Utils.onElementBottomHit(document.documentElement,async()=>{
 		for (let i=0;i<12;i++){
 			// @ts-ignore
@@ -41,37 +50,56 @@ Utils.onPageLoad(()=>{
 });
 /**
  * Finds (or at least tries to) all minibrots, ordered by their period and lower external angle.
+ * @param {{minAngle:BigFrac,maxAngle:BigFrac}|{address:{period:number,angle?:Fraction}[]}} [options]
  */
-function* findMinibrots(){
+function* findMinibrots(options={minAngle:new BigFrac(0,1),maxAngle:new BigFrac(1,1)}){
+	/** @type {BigFrac} */
+	let minAngle;
+	/** @type {BigFrac} */
+	let maxAngle;
+	if ("address" in options){
+		// TODO only include minibrots whose address actually starts with the given address, not ones which just happen to lie between its upper and lower angles
+		minAngle = angledInternalAddressToExternalAngle(options.address);
+		maxAngle = lowerToUpperAngle(minAngle);
+	}else{
+		minAngle = options.minAngle;
+		maxAngle = options.maxAngle;
+	}
 	const formula = new MandelbrotBaseFormula();
 	/** @type {(Disk|Minibrot)[]} */
 	const minibrots = [];
 	let nextYieldIndex = 0;
-	for (let n=1;;n++){
-		let m = 2**n-1;
+	for (let n=1n;;n++){
+		let m = (1n<<n)-1n;
 		let t = Date.now();
-		middle:for (let i=0;i<=m;i++){
-			for (let k=1;k<n;k++){
-				if (m%(2**k-1)==0&&(i%(m/((2**k-1))))==0){
+		let minIndex = minAngle.nextSmaller(m).nextLarger(m).a;
+		let maxIndex = maxAngle.nextLarger(m).a;
+		middle:for (let i=minIndex;i<maxIndex;i++){
+			for (let k=1n;k<n;k++){
+				if (m%((1n<<k)-1n)==0n&&(i%(m/(((1n<<k)-1n))))==0n){
 					// minibrot has actually minimal period k<n
 					continue middle;
 				}
 			}
 			let angle = new BigFrac(i,m);
-			if (externalAngleType(angle)=="lower"){
-				let landingPoint = traceExternalRay(angle);
-				let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,n);
-				if (m&&!isNaN(minibrot.scale.length)){
-					let duplicate = minibrots.find(m2=>m2.equals(minibrot));
-					if (duplicate){
-						console.warn("had two different lower external angles land at the same point:",duplicate.lowerExternalAngle.toString(),angle.toString());
-					}
-					minibrot.lowerExternalAngle = angle;
-					minibrot.upperExternalAngle = lowerToUpperAngle(angle);
-					minibrot.kneadingSequence = getKneadingSequence(angle);
-					minibrot.angledInternalAddress = getAngledInternalAddress(angle);
-					if (externalAngleType(angle)=="lower") minibrots.push(minibrot);
+			if (externalAngleType(angle)=="upper"){
+				angle = upperToLowerAngle(angle);
+				if (angle.compareTo(minAngle)>=0){
+					continue;
 				}
+			}
+			let landingPoint = traceExternalRay(angle);
+			let minibrot = formula.getNearbyPeriodicPoint(landingPoint.x,landingPoint.y,Number(n));
+			if (m&&!isNaN(minibrot.scale.length)){
+				let duplicate = minibrots.find(m2=>m2.equals(minibrot));
+				if (duplicate){
+					console.warn("had two different lower external angles land at the same point:",duplicate.lowerExternalAngle.toString(),angle.toString());
+				}
+				minibrot.lowerExternalAngle = angle;
+				minibrot.upperExternalAngle = lowerToUpperAngle(angle);
+				minibrot.kneadingSequence = getKneadingSequence(angle);
+				minibrot.angledInternalAddress = getAngledInternalAddress(angle);
+				if (externalAngleType(angle)=="lower") minibrots.push(minibrot);
 			}
 		}
 		console.log(`found ${minibrots.length-nextYieldIndex} more minibrots in ${(Date.now()-t)}ms`);

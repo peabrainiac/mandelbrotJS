@@ -185,6 +185,17 @@ export function lowerToUpperAngle(angle){
 // @ts-ignore
 window.lowerToUpperAngle = lowerToUpperAngle;
 /**
+ * Returns the lower external angle corresponding to the given upper one. Based on Lavaur's algorithm.
+ * @param {BigFrac} angle
+ * @returns {BigFrac}
+ */
+export function upperToLowerAngle(angle){
+	let conjugate = lowerToUpperAngle(new BigFrac(angle.b-angle.a,angle.b));
+	return new BigFrac(conjugate.b-conjugate.a,conjugate.b);
+}
+// @ts-ignore
+window.upperToLowerAngle = upperToLowerAngle;
+/**
  * Computes the lower external angle of the parameter ray pair corresponding to an angled internal address.
  * @param {{period:number,angle?:Fraction}[]} angledAddress
  */
@@ -250,6 +261,18 @@ export function angledInternalAddressToExternalAngle(angledAddress){
 	}
 	return new BigFrac(n,m);
 }
+/**
+ * Returns the angled internal address corresponding to a string like `1_p/q-S2_p2/q2-S3_p3/q3-S4`.
+ * @param {string} s
+ * @returns {{period:number,angle?:Fraction}[]}
+ */
+export function internalAddressFromString(s){
+	if (!/^(?:\d+_\d+\/\d+-)*\d+$/.test(s)){
+		throw new Error(`Couldn't parse internal address "${s}"`);
+	}else{
+		return s.split("-").map(s=>s.split("_")).map(([period,angle])=>(angle?{period:Number(period),angle:Fraction.fromString(angle)}:{period:Number(period)}));
+	}
+}
 //console.log(angledInternalAddressToExternalAngle([{period:1,angle:new Fraction(1,2)},{period:2,angle:new Fraction(1,3)},{period:5}]));
 // @ts-ignore
 window.angledInternalAddressToExternalAngle = angledInternalAddressToExternalAngle;
@@ -276,8 +299,7 @@ export class ParameterRayPair {
 	 */
 	get lowerAngle(){
 		if (!this._lowerAngle){
-			let conjugate = lowerToUpperAngle(new BigFrac(this._upperAngle.b-this._upperAngle.a,this._upperAngle.b));
-			this._lowerAngle = new BigFrac(conjugate.b-conjugate.a,conjugate.b);
+			this._lowerAngle = upperToLowerAngle(this._upperAngle);
 		}
 		return this._lowerAngle;
 	}
@@ -330,6 +352,18 @@ export class Fraction {
 	toFloat(){
 		return this.a/this.b;
 	}
+	
+	/**
+	 * Constructs a new Fraction from a string of the form a/b, where a and b are both integers.
+	 * @param {string} s
+	 */
+	 static fromString(s){
+		let matchResults = s.match(/^(\d+)\/(\d+)$/);
+		if (matchResults===null){
+			throw new Error(`couldn't parse string "${s}" as a fraction`);
+		}
+		return new Fraction(parseInt(matchResults[1]),parseInt(matchResults[2]));
+	}
 }
 // @ts-ignore
 window.Fraction = Fraction;
@@ -377,6 +411,18 @@ export class BigFrac {
 	}
 
 	/**
+	 * Constructs a new BigFrac from a string of the form a/b, where a and b are both integers.
+	 * @param {string} s
+	 */
+	static fromString(s){
+		let matchResults = s.match(/^(\d+)\/(\d+)$/);
+		if (matchResults===null){
+			throw new Error(`couldn't parse string "${s}" as a fraction`);
+		}
+		return new BigFrac(BigInt(matchResults[1]).valueOf(),BigInt(matchResults[2]).valueOf());
+	}
+
+	/**
 	 * @param {BigFrac} frac
 	 */
 	equals(frac){
@@ -392,14 +438,31 @@ export class BigFrac {
 		return diff>0?1:diff<0?-1:0;
 	}
 
+	reduce(){
+		let c = gcd(this.a,this.b);
+		return new BigFrac(this.a/c,this.b/c);
+	}
+
 	/**
 	 * Returns the next larger fraction with the given denominator.
 	 * @param {bigint} denominator
 	 */
 	nextLarger(denominator){
 		let frac = new BigFrac((this.a*denominator)/this.b,denominator);
-		if (frac.compareTo(this)!=1){
+		if (frac.compareTo(this)<=0){
 			frac = new BigFrac(frac.a+1n,frac.b);
+		}
+		return frac;
+	}
+
+	/**
+	 * Returns the next smaller fraction with the given denominator.
+	 * @param {bigint} denominator
+	 */
+	nextSmaller(denominator){
+		let frac = new BigFrac((this.a*denominator)/this.b,denominator);
+		if (frac.compareTo(this)>=0){
+			frac = new BigFrac(frac.a-1n,frac.b);
 		}
 		return frac;
 	}
